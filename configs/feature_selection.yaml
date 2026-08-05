@@ -1,0 +1,69 @@
+# ============================================================================
+# Classification Transcriptomic with XAI
+# Feature Selection Configuration
+# ============================================================================
+# All methods run independently when enabled.
+# Each produces its own reduced dataset and its own model evaluation.
+#
+# Explainability (SHAP, rule extraction) lives in configs/interpretation.yaml
+# — it is not a feature-selection concern.
+
+# Rare-class threshold (min_samples_per_class) sweep for the baseline flows
+# (CV/full-data benchmark.py and the train/test-split baseline). Classes with
+# fewer than k samples are dropped before splitting/training. Rule extraction
+# has its own (narrower) sweep in holdout.yaml -> rare_class_k_values.
+rare_class_k_values: [2, 3, 4, 5, 6]
+
+feature_selection:
+  benchmark:
+    methods:
+
+      raw:
+        enabled: true
+        name: "Raw Features (no selection)"
+        description: "Baseline — all features retained"
+        params: {}
+
+      mrmr_mid:
+        enabled: false
+        name: "mRMR-MID"
+        description: "Minimum Redundancy Maximum Relevance (MID criterion)"
+        params:
+          criterion: "MID"
+          K: 50             # Number of features to select
+          n_bins: 3         # Legacy no-op (mrmr-selection needs no discretisation)
+
+      mrmr_k50:
+        enabled: true
+        name: "mRMR-MIQ (K=50)"
+        description: "Minimum Redundancy Maximum Relevance (MIQ criterion), top 50 features"
+        params:
+          criterion: "MIQ"
+          K: 50
+          n_bins: 3
+
+      mrmr_k75:
+        enabled: true
+        name: "mRMR-MIQ (K=75)"
+        description: "Minimum Redundancy Maximum Relevance (MIQ criterion), top 75 features"
+        params:
+          criterion: "MIQ"
+          K: 75
+          n_bins: 3
+
+      boruta:
+        enabled: true
+        name: "Boruta"
+        description: "Boruta with RandomForest — confirms statistically relevant features"
+        params:
+          n_estimators: "auto"    # Boruta shadow-feature iterations ('auto' = sqrt)
+          rf_n_estimators: 500    # Trees in internal RandomForest
+          max_depth: null         # null = unlimited depth (original Boruta default)
+          max_iter: 100
+          perc: 100
+          alpha: 0.05
+          class_weight: "balanced"
+          random_state: 42
+          selection_mode: "auto"  # "confirmed" | "confirmed_tentative" | "top_k" | "auto"
+          dynamic_threshold: 50   # "auto": confirmed if len(confirmed) >= this, else confirmed_tentative
+          k: null                      # required when selection_mode == "top_k"

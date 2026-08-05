@@ -1,0 +1,246 @@
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ChevronDown, ChevronUp, GitMerge, AlertTriangle } from 'lucide-react';
+import { api } from '../lib/api';
+import { PALETTE, DROPPED_COLOR } from '../lib/palette';
+
+interface ClassContent {
+  display_name_vi?: string;
+  description_vi?: string;
+  excluded_from_model?: boolean;
+}
+
+interface ContentInfo {
+  classes?: Record<string, ClassContent>;
+  dataset_note_vi?: string;
+}
+
+interface SplitStats {
+  class_labels: string[];
+  train_class_counts: Record<string, number>;
+  test_class_counts: Record<string, number>;
+  raw_class_counts: Record<string, number>;
+  dropped_classes: string[];
+  n_samples_total: number;
+  n_train: number;
+  n_test: number;
+  test_size: number;
+  min_samples_per_class: number;
+}
+
+/** Right-column display for Bước 2 "Xử lý & Chia Dữ liệu" — moved out of
+ * DatasetOverview so that component keeps only the dataset-identity content
+ * (title/organism/GEO/original-study/annotation) while everything about the
+ * rare-class-drop + train/test split lives here, driven by whatever stats
+ * (cached overview OR a live /split/preview) the parent last loaded.
+ */
+export default function DatasetSplit({ datasetId, stats, collapseSignal }: { datasetId: string, stats: SplitStats | null, collapseSignal?: boolean }) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [content, setContent] = useState<ContentInfo>({});
+
+  useEffect(() => {
+    setIsCollapsed(!!collapseSignal);
+  }, [collapseSignal]);
+
+  useEffect(() => {
+    if (!datasetId) return;
+    let ignore = false;
+    setContent({});
+    api.getOverview(datasetId)
+      .then(o => { if (!ignore) setContent(o.content || {}); })
+      .catch(() => { if (!ignore) setContent({}); });
+    return () => { ignore = true; };
+  }, [datasetId]);
+
+  if (!datasetId || !stats) return null;
+
+  const allLabels = Object.keys(stats.raw_class_counts);
+  const droppedSet = new Set(stats.dropped_classes || []);
+  const classesContent = content.classes || {};
+  const vieName = (label: string) => classesContent[label]?.display_name_vi;
+
+  const classDistributionData = allLabels.map((label, idx) => ({
+    name: droppedSet.has(label) ? `${label} (Đã loại bỏ)` : label,
+    count: stats.raw_class_counts[label] || 0,
+    fill: droppedSet.has(label) ? DROPPED_COLOR : PALETTE[idx % PALETTE.length],
+  }));
+
+  // Colored the SAME way as "Phân phối các lớp" — Train is a solid fill in
+  // the class's color, Test is the SAME color but diagonally hatched (via an
+  // SVG pattern, see <defs> below) instead of a lighter alpha — an alpha tint
+  // reads as "less important" and is hard to tell apart from other classes'
+  // Train bars at a glance; a hatch pattern stays visually distinct while
+  // keeping the same hue tied to the class.
+  const splitData = stats.class_labels.map((label) => {
+    const idx = allLabels.indexOf(label);
+    const color = idx >= 0 ? PALETTE[idx % PALETTE.length] : DROPPED_COLOR;
+    return {
+      name: label,
+      Train: stats.train_class_counts[label] || 0,
+      Test: stats.test_class_counts[label] || 0,
+      color,
+    };
+  });
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 transition-all duration-300">
+        <div
+          className="flex items-center justify-between cursor-pointer group"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+              <GitMerge size={20} />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">
+              Chia Dữ liệu (Train/Test)
+            </h2>
+          </div>
+          <button className="p-2 rounded-full hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-colors">
+            {isCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
+          </button>
+        </div>
+
+        {!isCollapsed && (
+          <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Tổng số mẫu ban đầu</span>
+                  <span className="text-slate-800 font-bold font-mono">
+                    {Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Số mẫu sau khi loại lớp hiếm</span>
+                  <span className="text-slate-800 font-bold font-mono">{stats.n_samples_total}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Tổng số lớp ban đầu</span>
+                  <span className="text-slate-800 font-bold font-mono">{allLabels.length}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Số lớp sau khi loại lớp hiếm</span>
+                  <span className="text-slate-800 font-bold font-mono">{stats.class_labels.length}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Ngưỡng loại lớp hiếm</span>
+                  <span className="text-slate-800 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
+                </div>
+              </div>
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Huấn luyện / Kiểm thử</span>
+                  <span className="text-slate-800 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium">Tỷ lệ test_size</span>
+                  <span className="text-slate-800 font-bold font-mono">{stats.test_size}</span>
+                </div>
+                <div className="flex flex-col py-2 border-b border-slate-200/60">
+                  <span className="text-slate-500 font-medium mb-1.5">Số lớp ({allLabels.length})</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {allLabels.map((label, idx) => {
+                      const dropped = droppedSet.has(label);
+                      const color = dropped ? DROPPED_COLOR : PALETTE[idx % PALETTE.length];
+                      return (
+                        <div
+                          key={label}
+                          className="flex flex-col items-center bg-white border rounded-lg px-2 py-1 leading-tight"
+                          style={{ borderColor: color + '55' }}
+                          title={dropped ? 'Bị loại do quá ít mẫu' : undefined}
+                        >
+                          <span className="text-xs font-semibold flex items-center gap-1" style={{ color }}>
+                            {dropped && <AlertTriangle size={10} />}
+                            {vieName(label) || label}
+                          </span>
+                          {vieName(label) && (
+                            <span className="text-[10px] text-slate-400 font-mono">{label}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              <div className="h-72 border border-slate-100 rounded-xl p-4 pt-6 relative">
+                <h3 className="absolute -top-3 left-4 bg-white px-2 text-sm font-semibold text-slate-600">Phân phối các lớp</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={classDistributionData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11 }} />
+                    <Tooltip cursor={{fill: 'transparent'}} />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                      {classDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="h-72 border border-slate-100 rounded-xl p-4 pt-6 relative">
+                <div className="absolute -top-3 left-4 right-4 flex items-center justify-between">
+                  <h3 className="bg-white px-2 text-sm font-semibold text-slate-600">Tỷ lệ Train / Test</h3>
+                  <div className="flex items-center gap-3 bg-white px-2 text-[11px] font-medium text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3 h-3 rounded-sm bg-slate-400 inline-block" /> Train
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span
+                        className="w-3 h-3 rounded-sm inline-block border border-slate-400"
+                        style={{ backgroundImage: 'repeating-linear-gradient(45deg, #94a3b8 0 2px, transparent 2px 4px)' }}
+                      />
+                      Test
+                    </span>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={splitData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <defs>
+                      {/* Test bars reuse the SAME color as their class's Train bar, just
+                          diagonally hatched (white stripes over the solid color) instead
+                          of a lighter alpha — keeps the class-color link obvious while
+                          staying visually distinct from Train at a glance. */}
+                      {splitData.map((entry, index) => (
+                        <pattern
+                          key={`hatch-def-${index}`}
+                          id={`test-hatch-${index}`}
+                          patternUnits="userSpaceOnUse"
+                          width="6" height="6"
+                          patternTransform="rotate(45)"
+                        >
+                          <rect width="6" height="6" fill={entry.color} />
+                          <line x1="0" y1="0" x2="0" y2="6" stroke="#ffffff" strokeWidth="2.5" />
+                        </pattern>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis />
+                    <Tooltip cursor={{fill: '#f1f5f9'}} />
+                    <Bar dataKey="Train" name="Train" radius={[4, 4, 0, 0]}>
+                      {splitData.map((entry, index) => (
+                        <Cell key={`train-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                    <Bar dataKey="Test" name="Test" radius={[4, 4, 0, 0]}>
+                      {splitData.map((entry, index) => (
+                        <Cell key={`test-${index}`} fill={`url(#test-hatch-${index})`} stroke={entry.color} strokeWidth={1} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

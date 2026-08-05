@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+/* Hide native number-input spinner arrows everywhere. Browsers reserve
+   ~16-20px on the right edge of <input type="number"> for the up/down
+   spinner buttons, but not for type="text" — so a right-aligned value in a
+   number input visually ends earlier than one in a text input of the same
+   width, even with identical padding. Config panels mix both types (e.g.
+   text n_estimators/criterion next to number max_depth/K), so without this
+   their right edges don't line up. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

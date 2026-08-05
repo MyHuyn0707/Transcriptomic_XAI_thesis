@@ -1,0 +1,49 @@
+[project]
+name = "luanvan-khmt"
+version = "0.1.0"
+description = "Classification Transcriptomic with XAI — Phase 1 & Phase 2"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # ── Data & ML ──────────────────────────────────────────────────────────────
+    "numpy>=2.4.5",
+    "pandas>=3.0.3",
+    "scikit-learn>=1.8.0",
+    "xgboost>=3.2.0",
+    # ── Feature selection ──────────────────────────────────────────────────────
+    "boruta>=0.4.3",
+    "mrmr-selection>=0.2.8",
+    # ── Deep learning (ANN) ────────────────────────────────────────────────────
+    # NOTE: install torch separately with the correct CUDA variant from pytorch.org
+    # CPU-only: pip install torch --index-url https://download.pytorch.org/whl/cpu
+    "torch>=2.0.0",
+    "lightning>=2.0.0",          # covers both lightning.pytorch and pytorch_lightning
+    # ── Experiment tracking ────────────────────────────────────────────────────
+    "wandb>=0.19.0",
+    # ── Phase 2: Interpretation ────────────────────────────────────────────────
+    "shap>=0.46.0",              # SHAP DeepExplainer for ANN
+    # FP-Growth + association rules
+    "gprofiler-official>=1.0.0", # GO enrichment via g:Profiler REST API
+    # ── Visualisation ─────────────────────────────────────────────────────────
+    "matplotlib>=3.10.9",
+    "seaborn>=0.13.2",
+    "umap-learn>=0.5.12",
+    # ── Console / notebook presentation ─────────────────────────────────────────
+    "rich>=13.0.0",
+    # ── Jupyter ───────────────────────────────────────────────────────────────
+    "notebook>=7.5.6",
+    "ipykernel>=7.2.0",
+    "mygene>=3.2.2",
+    # ── API backend (defense demo UI) ──────────────────────────────────────────
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "google-genai>=0.3.0",
+    "python-dotenv>=1.0.1",
+    "python-multipart>=0.0.12",
+]
+
+[dependency-groups]
+dev = [
+    "playwright>=1.61.0",
+    "pytest>=8.3.0",
+]

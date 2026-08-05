@@ -1,0 +1,6 @@
+{
+  "name": "BioML Dashboard",
+  "description": "Bioinformatics Machine Learning Dashboard for Dataset and Model selection with Rule Visualization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

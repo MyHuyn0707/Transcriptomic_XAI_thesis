@@ -1,0 +1,80 @@
+# ============================================================================
+# Classification Transcriptomic with XAI
+# Interpretation / Explainability Configuration
+# ============================================================================
+# Explainability is a set of tools pointed at already trained models.
+# This file controls both:
+#   - shap  : feature attribution (points at trained models)
+#   - rules : tree-based IF-THEN rule extraction
+#
+# Feature selection lives in feature_selection.yaml.
+# This file is loaded via ConfigLoader.load_interpretation_config().
+
+interpretation:
+
+  # ── SHAP (feature attribution) ──────────────────────────────────────────
+  # SHAP is applied at up to two automatic points, plus on demand.
+  #   on_best_benchmark : after the fs × model benchmark comparison, explain the
+  #                       single winning combo (by select_metric).
+  #   on_rule_model     : explain the dedicated rule-extraction model(s).
+  # On-demand: pipe.run_shap(dataset, fs_method, model_name[, fold]) explains
+  #            ANY already-trained benchmark model (see src/pipeline).
+  shap:
+    enabled: true
+    top_k: 20                              # Top features to extract and display
+    select_metric: "f1_macro"              # metric used to pick the best combo
+    on_best_benchmark: true                # (a) explain the winning fs × model
+    on_rule_model: true                    # (b) explain the rule-extraction model
+
+  # ── Tree-based rule extraction (pipeline.run_rule_extraction) ────────────
+  # Trains dedicated, shallow tree models tuned for INTERPRETABLE rule
+  # extraction (separate from the deep benchmark models, which stay tuned for
+  # predictive comparison), on the best FS feature set, then walks every
+  # root->leaf path into IF-THEN rules.
+  #   - decisiontree : single interpretable tree (exact, few clean rules)
+  #   - rf           : ensemble (more candidate rules, captures interactions)
+  #   - listing both enables a cross-check: rules confirmed by BOTH models are
+  #     the highest-trust set (written to rules/compare/).
+  # Output: outputs/{dataset}/rules/{rf,dt,compare}/  (see src/interpretation/rules.py)
+  rules:
+    enabled: true
+    models: ["rf", "decisiontree"]   # train + extract from each; >=2 enables compare
+    select_metric: "balanced_accuracy"  # picks the best FS feature set (by benchmark RF)
+
+    # Hyperparameters for the dedicated rule-extraction models. Kept shallow so
+    # rules stay short and readable; these do NOT affect the benchmark models.
+    model_params:
+      rf:
+        n_estimators: 200
+        max_depth: 5                # cap path length -> short rules
+        min_samples_leaf: 2
+        class_weight: "balanced_subsample"
+        random_state: 42
+      decisiontree:
+        max_depth: 5                # shallow single tree (~Skope-rules depth)
+        min_samples_leaf: 2
+        ccp_alpha: 0.0              # >0 for cost-complexity pruning
+        class_weight: "balanced"
+        random_state: 42
+
+    # Rules simplification & filtering
+    filter:
+      min_confidence: 0.80   # keep rules whose consequent-class fraction >= this
+      min_fidelity: 0.0      # floor on agreement with the source model (0 = off)
+      min_support: 0.05      # relative-support floor (fraction of samples covered)
+      min_abs_support: 3     # absolute-support floor (rule kept if either floor passes)
+      max_conditions: 5      # antecedent length cap (distinct genes)
+      merge_same_gene: true  # collapse multiple probes of one gene into one interval
+      dedup: true            # drop duplicate antecedent -> class rules
+      dedup_sig_figs: 2      # dedup precision (sig figs) on thresholds — collapses
+                             # near-duplicate splits from different trees, e.g.
+                             # PIR<=5.189 vs PIR<=5.182 (both round to 5.2)
+      merge_generalization: true  # drop a rule when another rule (same genes, same
+                             # class) is strictly more general on every one of them
+                             # (keeps A>1 over A>2, B<=2 over B<=1) — catches
+                             # near-duplicates too far apart for dedup_sig_figs to merge
+      max_rules_per_class: 20
+      max_rules_total: 100   # set to null (or omit the key for the code default) for no cap
+
+    discretize: false        # false -> numeric thresholds (ERBB2>8.12); true -> GENE=High/Low vs median
+    export: ["json", "csv", "csv_probes", "human", "summary", "genes"]   # artifacts to write per model

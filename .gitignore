@@ -1,0 +1,37 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Pipeline outputs & caches (generated at runtime)
+outputs/
+cache/
+outputs_live/
+outputs_baseline_full/
+outputs_baseline_split/
+# output_holdout/
+outputs_baseline_old/
+outputs_holdout_old/
+
+
+# API backend secrets
+.env
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+
+notebooks/wandb
+
+Knowledge_Notes/
+Dataset/
+Dataset_Description/
+Platform_Annotations/
+
+tests/

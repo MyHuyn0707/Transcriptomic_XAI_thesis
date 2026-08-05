@@ -1,0 +1,104 @@
+# ============================================================================
+# Classification Transcriptomic with XAI
+# Model Configuration
+# ============================================================================
+
+models:
+
+  nb:
+    enabled: true
+    name: "Gaussian Naive Bayes"
+    hyperparams:
+      var_smoothing: 1.0e-9   # variance floor added for numerical stability
+
+  knn:
+    enabled: true
+    name: "k-Nearest Neighbors"
+    hyperparams:
+      n_neighbors: 5
+      weights: "distance"     # weight votes by inverse distance (helps imbalance)
+      metric: "minkowski"
+      p: 2                    # p=2 → Euclidean distance
+
+  svm:
+    enabled: true
+    name: "Support Vector Machine"
+    hyperparams:
+      kernel: "rbf"
+      C: 1.0
+      gamma: "scale"
+      # class_weight: "balanced" is set inside build_svm by default
+
+  rf:
+    enabled: true
+    name: "Random Forest"
+    hyperparams:
+      n_estimators: 200
+      max_depth: 20
+      min_samples_split: 5
+      min_samples_leaf: 2
+
+  dt:
+    enabled: true
+    name: "Decision Tree"
+    # Deeper/untuned-for-interpretability than interpretation.yaml's
+    # rule-extraction tree (interpretation.rules.model_params.decisiontree,
+    # max_depth=5) — this one is tuned for predictive benchmark comparison,
+    # same duality rf already has between here and rule_mining.py.
+    hyperparams:
+      max_depth: 20
+      min_samples_split: 5
+      min_samples_leaf: 2
+
+  xgboost:
+    enabled: true
+    name: "XGBoost"
+    hyperparams:
+      n_estimators: 100
+      max_depth: 6
+      learning_rate: 0.1
+      subsample: 0.8
+      colsample_bytree: 0.8
+
+  ann:
+    enabled: true
+    name: "Artificial Neural Network (MLP)"
+    hyperparams:
+      hidden_dims: [128, 64]
+      dropout: 0.3
+      learning_rate: 0.001
+      batch_size: 16
+      max_epochs: 150
+      patience: 10
+
+# ── Scaling ──────────────────────────────────────────────────────────────────
+# Which models get their input StandardScaler-fitted-on-train before fit/predict.
+# Distance/gradient-based models (knn, svm, ann) need it; tree/boosting-based
+# models (rf, xgboost, dt) split on raw feature values and don't. nb (Gaussian
+# Naive Bayes) fits per-feature mean/var so scaling doesn't change its
+# predictions either way — kept true here purely for backward-compat with
+# existing nb results/artifacts. See src/helper/scaling.py.
+scaling:
+  nb: true
+  knn: true
+  svm: true
+  ann: true
+  rf: false
+  xgboost: false
+  dt: false
+
+# ── Cross-validation ────────────────────────────────────────────────────────
+cross_validation:
+  n_splits: 5          # Upper bound; actual = min(5, smallest_class_count)
+  stratified: true
+  shuffle: true
+  random_state: 42
+
+# ── Experiment tracking ─────────────────────────────────────────────────────
+training:
+  use_wandb: true                              # Set true to enable W&B logging
+  wandb_project: "transcriptomic_xai"
+  verbose: true
+  # Append a benchmark comparison (each fs × model, and fs × model pivot) plus a
+  # SHAP summary to outputs/{dataset}/DATASET_PROVENANCE.md after the benchmark.
+  write_benchmark_provenance: true

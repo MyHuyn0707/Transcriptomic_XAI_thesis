@@ -1,0 +1,181 @@
+# ============================================================================
+# Classification Transcriptomic with XAI
+# Dataset Origins (build-time config)
+# ============================================================================
+# Paths are relative to the project root (the folder containing configs/).
+# One entry per raw GEO series-matrix file. Edit this file to add a new
+# dataset, then run notebook 00.a_Format_GEO_Datasets to build its CSVs.
+#
+# This file feeds src/dataset_builder.build_geo_dataset(); it has no notion of
+# "enabled" — that is a run-time concept and lives in configs/datasets.yaml.
+#
+# origin fields
+# -------------
+#   tissue                : prefix for the built dataset filenames (e.g. "Breast")
+#   series_matrix          : raw GSE*_series_matrix.txt.gz
+#   annotation_file        : local GPL annotation (.annot/.annot.gz); mygene fallback
+#   output_dir             : directory to write built CSVs + provenance files into
+#   class_characteristic   : !Sample_characteristics_ch1 key used as the class
+#   dedup_strategy         : probe→gene collapse ('mean' | 'max_var')
+#   na_class_action        : 'exclude' | 'keep_as_unknown'
+#   use_mygene_fallback    : query MyGene.info for probes the annotation file misses
+#   species                : species for MyGene.info queries
+
+origins:
+
+  GSE20711:
+    tissue: "Breast"
+    series_matrix: "Dataset/GSE_Dataset_from_NBCI/GSE_20711/GSE20711_series_matrix.txt.gz"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL570.annot.gz"
+    output_dir: "Dataset/GSE_Dataset_from_NBCI/GSE_20711"
+    class_characteristic: "subtypeihc"
+    dedup_strategy: "mean"
+    na_class_action: "exclude"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE29354:
+    tissue: "Mesothelioma"
+    series_matrix: "Dataset/GSE_Dataset_from_NBCI/GSE_29354/GSE29354_series_matrix.txt.gz"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL96.annot.gz"
+    output_dir: "Dataset/GSE_Dataset_from_NBCI/GSE_29354"
+    class_characteristic: "subtype"
+    dedup_strategy: "mean"
+    na_class_action: "exclude"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE36895:
+    tissue: "Kidney"
+    series_matrix: "Dataset/GSE_Dataset_from_NBCI/GSE_36895/GSE36895_series_matrix.txt.gz"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL570.annot.gz"
+    output_dir: "Dataset/GSE_Dataset_from_NBCI/GSE_36895"
+    # pathologic_tnm_staging: 13 real TNM combos (from the 29 human ccRCC tumor
+    # samples) + samples with no staging (Normal cortex + Mouse tumorgraft, 47
+    # total) kept as one "NON_TNM" class rather than excluded — this is the
+    # dataset's largest class and a meaningful group (no staging measured),
+    # not junk to drop. See discover_class_characteristics() output for GSE36895:
+    # the raw "pathologic tnm staging" characteristic only surfaced as its own
+    # column after fixing parse_series_matrix's handling of GEO files that mix
+    # different characteristic keys in the same characteristics_ch1 slot.
+    class_characteristic: "pathologic_tnm_staging"
+    dedup_strategy: "mean"
+    na_class_action: "keep_as_unknown"
+    na_class_label: "NON_TNM"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE68468:
+    tissue: "Colon"
+    series_matrix: "Dataset/GSE_Dataset_from_NBCI/GSE_68468/GSE68468_series_matrix.txt.gz"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL96.annot.gz"
+    output_dir: "Dataset/GSE_Dataset_from_NBCI/GSE_68468"
+    class_characteristic: "organism_part"
+    dedup_strategy: "mean"
+    na_class_action: "exclude"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE68606:
+    tissue: "MultiCancer"
+    series_matrix: "Dataset/GSE_Dataset_from_NBCI/GSE_68606/GSE68606_series_matrix.txt.gz"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL96.annot.gz"
+    output_dir: "Dataset/GSE_Dataset_from_NBCI/GSE_68606"
+    class_characteristic: "disease_state"
+    dedup_strategy: "mean"
+    na_class_action: "exclude"
+    use_mygene_fallback: true
+    species: "human"
+
+# ============================================================================
+# CuMiDa-format origins (https://sbcb.inf.ufrgs.br/cumida)
+# ============================================================================
+# These already ship as analysis-ready probe-level CuMiDa CSVs
+# (`samples, type, probe_1, …`) with curated class labels — no series-matrix
+# parsing or class-characteristic discovery needed, only probe→gene
+# annotation. Built via src/dataset_builder.build_cumida_dataset() (notebook
+# 00.b_Format_Cumida_Datasets).
+#
+# cumida_origin fields
+# --------------------
+#   tissue                : prefix for the built dataset filenames (e.g. "Breast")
+#   probe_csv              : the existing CuMiDa probe-level CSV
+#   platform               : GPL accession (annotation file below); recorded
+#                            in the report only — CuMiDa CSVs carry no platform metadata
+#   annotation_file        : local flat platform annotation file (Cumida_platform/*_limpo.txt.gz)
+#   output_dir             : directory to write built CSVs + provenance files into
+#   dedup_strategy         : probe→gene collapse ('mean' | 'max_var')
+#   use_mygene_fallback    : query MyGene.info for probes the annotation file misses
+#   species                : species for MyGene.info queries
+
+cumida_origins:
+
+  GSE6008:
+    tissue: "Ovary"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_6008/Ovary_GSE6008.csv"
+    platform: "GPL96"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL96_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_6008"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE15824:
+    tissue: "Brain"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_15824/Brain_GSE15824.csv"
+    platform: "GPL570"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL570_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_15824"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE26304:
+    tissue: "Breast"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_26304/Breast_GSE26304.csv"
+    platform: "GPL6848"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL6848_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_26304"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE28497:
+    tissue: "Leukemia"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_28497/Leukemia_GSE28497.csv"
+    platform: "GPL96"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL96_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_28497"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE41657:
+    tissue: "Colorectal"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_41657/Colorectal_GSE41657.csv"
+    platform: "GPL6480"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL6480_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_41657"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE45827:
+    tissue: "Breast"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_45827/Breast_GSE45827.csv"
+    platform: "GPL570"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL570_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_45827"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"
+
+  GSE50161:
+    tissue: "Brain"
+    probe_csv: "Dataset/GSE_Dataset_from_Cumida/GSE_50161/Brain_GSE50161.csv"
+    platform: "GPL570"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL570_limpo.txt.gz"
+    output_dir: "Dataset/GSE_Dataset_from_Cumida/GSE_50161"
+    dedup_strategy: "mean"
+    use_mygene_fallback: true
+    species: "human"

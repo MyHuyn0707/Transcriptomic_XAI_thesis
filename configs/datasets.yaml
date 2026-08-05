@@ -1,0 +1,142 @@
+# ============================================================================
+# Classification Transcriptomic with XAI
+# Dataset Registry (run-time config)
+# ============================================================================
+# Paths are relative to the project root (the folder containing configs/).
+# One entry per dataset — both the probe-level and gene-level CSVs built from
+# the same GEO/CuMiDa series are merged here (see `levels`) instead of
+# duplicating the entry. Build-time-only fields (series_matrix,
+# class_characteristic, …) live in configs/dataset_origin.yaml.
+#
+# Every dataset here is CuMiDa-format on disk (samples, type, feature_1, …) —
+# there's no other run-time format, so there's no `type` field to set.
+#
+# Set enabled: true to include a dataset in pipeline runs. `levels` lists
+# which CSVs this entry can run as; the pipeline expands each enabled entry
+# into one run-key per level — "<name>" for "probe", "<name>-gene" for "gene"
+# — so outputs/ folder names are unaffected by this config split.
+#
+# platform: GPL accession (e.g. "GPL570"); used for probe→gene annotation.
+# annotation_file / mapping_file stay here (not only in dataset_origin.yaml)
+# because the pipeline reads them at run time to label SHAP/rule features
+# with gene symbols.
+
+datasets:
+
+  GEO-Breast-20711:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL570"       # Affymetrix HG-U133 Plus 2.0
+    description: "Breast cancer – IHC subtypes (GSE20711)"
+    n_classes: 5
+    class_labels: ["Basal", "HER2", "LumA", "LumB", "Normal"]
+    probe_path: "Dataset/GSE_Dataset_from_NBCI/GSE_20711/Breast_GSE20711_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_NBCI/GSE_20711/Breast_GSE20711_gene.csv"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL570.annot.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_NBCI/GSE_20711/GSE20711_mapping.csv"
+
+  GEO-Mesothelioma-29354:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL96"        # Affymetrix HG-U133A
+    description: "Pleural mesothelioma subtypes (GSE29354)"
+    probe_path: "Dataset/GSE_Dataset_from_NBCI/GSE_29354/Mesothelioma_GSE29354_probe.csv"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL96.annot.gz"
+
+  GEO-Kidney-36895:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL570"       # Affymetrix HG-U133 Plus 2.0
+    description: "Clear-cell renal cell carcinoma (GSE36895)"
+    probe_path: "Dataset/GSE_Dataset_from_NBCI/GSE_36895/Kidney_GSE36895_probe.csv"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL570.annot.gz"
+
+  GEO-Colon-68468:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL96"        # Affymetrix HG-U133A
+    description: "Colon cancer molecular dissection (GSE68468)"
+    probe_path: "Dataset/GSE_Dataset_from_NBCI/GSE_68468/Colon_GSE68468_probe.csv"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL96.annot.gz"
+
+  GEO-MultiCancer-68606:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL96"        # Affymetrix HG-U133A
+    description: "Multi-cancer interlaboratory study (GSE68606)"
+    probe_path: "Dataset/GSE_Dataset_from_NBCI/GSE_68606/MultiCancer_GSE68606_probe.csv"
+    annotation_file: "Platform_Annotations/NBCI_platform/GPL96.annot.gz"
+
+  # ── CuMiDa-format datasets (built via 00.b_Format_Cumida_Datasets, see
+  #    dataset_origin.yaml -> cumida_origins) ──────────────────────────────
+  #    enable once built (probe/gene CSVs + mapping.csv exist on disk).
+
+  CuMiDa-Ovary-6008:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL96"
+    description: "Ovarian cancer (GSE6008)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_6008/Ovary_GSE6008_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_6008/Ovary_GSE6008_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL96_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_6008/GSE6008_mapping.csv"
+
+  CuMiDa-Brain-15824:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL570"
+    description: "Brain tumor subtypes (GSE15824)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_15824/Brain_GSE15824_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_15824/Brain_GSE15824_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL570_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_15824/GSE15824_mapping.csv"
+
+  CuMiDa-Breast-26304:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL6848"
+    description: "Breast cancer (GSE26304)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_26304/Breast_GSE26304_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_26304/Breast_GSE26304_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL6848_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_26304/GSE26304_mapping.csv"
+
+  CuMiDa-Leukemia-28497:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL96"
+    description: "Leukemia subtypes (GSE28497)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_28497/Leukemia_GSE28497_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_28497/Leukemia_GSE28497_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL96_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_28497/GSE28497_mapping.csv"
+
+  CuMiDa-Colorectal-41657:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL6480"
+    description: "Colorectal cancer (GSE41657)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_41657/Colorectal_GSE41657_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_41657/Colorectal_GSE41657_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL6480_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_41657/GSE41657_mapping.csv"
+
+  CuMiDa-Breast-45827:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL570"
+    description: "Breast cancer subtypes (GSE45827)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_45827/Breast_GSE45827_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_45827/Breast_GSE45827_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL570_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_45827/GSE45827_mapping.csv"
+
+  CuMiDa-Brain-50161:
+    enabled: true
+    levels: ["probe"]
+    platform: "GPL570"
+    description: "Brain tumor subtypes (GSE50161)"
+    probe_path: "Dataset/GSE_Dataset_from_Cumida/GSE_50161/Brain_GSE50161_probe.csv"
+    gene_path: "Dataset/GSE_Dataset_from_Cumida/GSE_50161/Brain_GSE50161_gene.csv"
+    annotation_file: "Platform_Annotations/Cumida_platform/GPL570_limpo.txt.gz"
+    mapping_file: "Dataset/GSE_Dataset_from_Cumida/GSE_50161/GSE50161_mapping.csv"

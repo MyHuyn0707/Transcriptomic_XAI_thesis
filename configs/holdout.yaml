@@ -1,0 +1,72 @@
+# ============================================================================
+# Classification Transcriptomic with XAI
+# Holdout Rule-Extraction Configuration (train/test split)
+# ============================================================================
+# Three independent things live in this file, kept in separate sub-blocks
+# below since they're read by different code paths and must not be confused:
+#
+#   holdout.split_baseline  -- read by pipe.run_baseline_split()
+#                              (src/pipeline/baseline_split.py) to CREATE the
+#                              canonical stratified train/test split, written
+#                              to outputs_baseline_split/k{k}/{dataset}/.
+#
+#   holdout.batch            -- controls pipe.run_rule_extraction_holdout()
+#                              (the notebook-driven batch sweep). For each
+#                              rare-class threshold k in rare_class_k_values,
+#                              REUSES the split + feature-selection artifacts
+#                              run_baseline_split() already produced for that
+#                              k (does not create its own split), and trains
+#                              the dedicated rule-extraction models (rf,
+#                              decisiontree) on top of them n_repeats times
+#                              each, keeping the run with the best
+#                              select_metric on the test set.
+#
+#   holdout.live_ui_defaults -- read ONLY by src/api/registry.py's
+#                              compute_holdout_split(), the on-demand split
+#                              used by the live UI's "Step 2" split-
+#                              configuration screen ("Thuc hien lai"). NOT
+#                              used by either flow above.
+#
+# Rule model hyperparameters, simplification filters and SHAP config are read
+# from configs/interpretation.yaml (interpretation.rules / interpretation.shap).
+
+holdout:
+  enabled: true
+  output_root: "outputs_holdout"
+
+  # Which k (from batch.rare_class_k_values) the API/UI currently serves --
+  # see src/api/registry.py's holdout_root_for(). Change this + restart the
+  # API to switch which outputs_holdout/k{N}/ folder is exposed; no runtime
+  # UI selector.
+  active_min_samples_per_class: 4
+
+  split_baseline:
+    # Where run_baseline_split() writes (and run_rule_extraction_holdout()
+    # below reads from) -- both must agree on this path.
+    baseline_split_root: "outputs_baseline_split"
+    test_size: 0.15
+    split_random_state: 42
+
+  batch:
+    # Rare-class thresholds (min_samples_per_class) to reuse from the split
+    # baseline. Must be a subset of feature_selection.yaml -> rare_class_k_values,
+    # since each k here requires that k's split-baseline artifacts to exist.
+    rare_class_k_values: [3, 4, 5]
+
+    # Feature-selection methods whose artifacts get reused (must already
+    # exist under split_baseline.baseline_split_root/k{k}/{dataset}/feature_selection/<fs_method>/).
+    fs_methods: ["boruta", "mrmr_k50", "mrmr_k75"]
+
+    # Repeated training of each rule model. Each repeat uses a different model
+    # random_state (repeat_base_seed + i); the train/test split itself is fixed
+    # (inherited from the split baseline, not derived here). The run with the
+    # best select_metric on the test set is kept.
+    models: ["rf", "decisiontree"]
+    n_repeats: 10
+    repeat_base_seed: 0
+    select_metric: "f1_macro"
+
+  live_ui_defaults:
+    min_samples_per_class: 4
+    test_size: 0.15
+    split_random_state: 42
