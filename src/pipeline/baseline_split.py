@@ -169,6 +169,16 @@ class BaselineSplitMixin:
                         min_samples=k, train_idx=train_idx, test_idx=test_idx,
                     )
 
+                    # Class distribution BEFORE rare-class removal, straight from the
+                    # already-loaded raw dataframe (data["dataframe"], see
+                    # load_dataset()'s docstring) — same source plot_class_distribution()
+                    # uses. Folding this into split_info.json means the API
+                    # (src/api/registry.load_raw_class_counts) no longer needs a
+                    # separate cache file or a manual export script to have this data.
+                    raw_counts_series = data["dataframe"].iloc[:, 1].astype(str).value_counts()
+                    raw_class_counts = {str(c): int(n) for c, n in raw_counts_series.items()}
+                    dropped_classes = [c for c in raw_class_counts if c not in class_labels]
+
                     split_info = {
                         "dataset": ds_name,
                         "min_samples_per_class": k,
@@ -186,6 +196,8 @@ class BaselineSplitMixin:
                             class_labels[c] if c < len(class_labels) else str(c): int(n)
                             for c, n in enumerate(np.bincount(y[test_idx], minlength=len(class_labels)))
                         },
+                        "raw_class_counts": raw_class_counts,
+                        "dropped_classes": dropped_classes,
                         "train_idx": train_idx.tolist(),
                         "test_idx": test_idx.tolist(),
                     }

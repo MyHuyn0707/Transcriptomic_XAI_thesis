@@ -413,17 +413,36 @@ def _raw_class_counts_cache_path(dataset_id: str) -> Path:
 
 @lru_cache(maxsize=32)
 def load_raw_class_counts(dataset_id: str) -> Dict[str, Any]:
-    """``{"raw_class_counts": {...}, "dropped_classes": [...]}`` — both fixed
-    for a given dataset (the raw CSV and the holdout split never change at
-    runtime), so this is read from
-    ``outputs_holdout/{dataset}/raw_class_counts.json`` (written once by
-    ``scripts/export_raw_class_counts.py``) instead of re-reading the raw CSV
-    on every request. Self-healing: if the cache file is missing (e.g. a
-    dataset added after the last export run), computes it live from the CSV
-    + split_info.json and writes the cache file so the NEXT request doesn't
-    have to. Cached in-memory per dataset_id for the process lifetime either
-    way.
+    """``{"raw_class_counts": {...}, "dropped_classes": [...]}``.
+
+    Primary source: ``outputs_holdout/{dataset}/split_info.json`` — since
+    ``run_baseline_split()`` now computes and embeds ``raw_class_counts``/
+    ``dropped_classes`` directly into ``split_info.json`` (and
+    ``run_rule_extraction_holdout()`` copies that file into this flow's own
+    output root), no separate cache file or manual export step is needed for
+    any dataset produced by the current pipeline.
+
+    Fallback (legacy ``outputs_holdout`` results written before this change,
+    whose ``split_info.json`` doesn't have these two keys yet): the old
+    separate cache file (``raw_class_counts.json``, written by
+    ``scripts/export_raw_class_counts.py``), else a live CSV read. Cached
+    in-memory per dataset_id for the process lifetime either way.
     """
+    split_info_path = holdout_root_for() / dataset_id / "split_info.json"
+    if split_info_path.exists():
+        try:
+            split_info = json.loads(split_info_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            split_info = {}
+        if "raw_class_counts" in split_info and "dropped_classes" in split_info:
+            return {
+                "raw_class_counts": split_info["raw_class_counts"],
+                "dropped_classes": split_info["dropped_classes"],
+            }
+    else:
+        split_info = {}
+
+    # --- Legacy fallback (pre-merge split_info.json, or none at all) ---
     cache_path = _raw_class_counts_cache_path(dataset_id)
     if cache_path.exists():
         try:
@@ -432,10 +451,7 @@ def load_raw_class_counts(dataset_id: str) -> Dict[str, Any]:
             pass
 
     raw_counts = _compute_raw_class_counts_from_csv(dataset_id)
-    split_info_path = holdout_root_for() / dataset_id / "split_info.json"
-    survived = set()
-    if split_info_path.exists():
-        survived = set(json.loads(split_info_path.read_text(encoding="utf-8")).get("class_labels", []))
+    survived = set(split_info.get("class_labels", []))
     result = {
         "raw_class_counts": raw_counts,
         "dropped_classes": [c for c in raw_counts if c not in survived],

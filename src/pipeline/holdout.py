@@ -159,6 +159,17 @@ class HoldoutMixin:
                     ds_root = k_holdout_root / ds_name
                     ds_root.mkdir(parents=True, exist_ok=True)
 
+                    # Copy split_info.json (now including raw_class_counts/
+                    # dropped_classes — see baseline_split.py) into this flow's
+                    # own output root, since the API (src/api/registry.py) reads
+                    # dataset overview/split data from holdout_root_for(), not
+                    # from outputs_baseline_split. Keeps GET /overview and the
+                    # UI's class-distribution / train-test-split charts working
+                    # without duplicating the split+FS artifacts themselves.
+                    (ds_root / "split_info.json").write_text(
+                        split_info_path.read_text(encoding="utf-8"), encoding="utf-8"
+                    )
+
                     # Reload with the same k — load_dataset's rare-class
                     # removal is deterministic given the same source file and
                     # k, so these rows line up with the indices saved above.
