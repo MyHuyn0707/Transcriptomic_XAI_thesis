@@ -328,9 +328,8 @@ class BaselineSplitMixin:
                                 metric_names = [
                                     col[len("test_"):] for col in results_df.columns if col.startswith("test_")
                                 ]
-                                summarize_repeats(results_df, metric_names, prefix="test_").to_csv(
-                                    model_dir / "repeats_summary.csv", index=False
-                                )
+                                repeats_summary_df = summarize_repeats(results_df, metric_names, prefix="test_")
+                                repeats_summary_df.to_csv(model_dir / "repeats_summary.csv", index=False)
 
                                 cm_fig = plot_confusion_matrix(
                                     cm, class_labels=class_labels,
@@ -361,6 +360,7 @@ class BaselineSplitMixin:
                                 self._wandb_log_baseline_split(
                                     ds_name, k, fs_method, model_name, train_metrics, test_metrics,
                                     best_seed, n_repeats, y_test, y_test_pred_best, class_labels, per_class,
+                                    results_df, repeats_summary_df,
                                 )
                                 report.ok(
                                     f"{model_name}: best seed={best_seed} (of {n_repeats}) · "
@@ -531,10 +531,17 @@ class BaselineSplitMixin:
         y_test_pred: np.ndarray,
         class_labels: List[str],
         per_class: Dict[str, Any],
+        repeats_df: pd.DataFrame,
+        repeats_summary_df: pd.DataFrame,
     ) -> None:
         """One W&B run per (dataset, k, fs_method, model) — train+test scalars,
-        an interactive confusion matrix, and per-class precision/recall/f1,
-        all for the winning (best-seed) repeat.
+        an interactive confusion matrix, per-class precision/recall/f1 (all
+        for the winning best-seed repeat), plus the full ``repeats`` table
+        (every one of the ``n_repeats`` runs, same content as repeats.csv)
+        and ``repeats_summary`` (mean/std per metric across them, same as
+        repeats_summary.csv) — the tables needed to chart repeat variance /
+        reproducibility across runs, same as trainer.py's cv_results/
+        cv_summary tables for the CV flow.
 
         Logged to its own project (training.wandb_project_baseline_split),
         separate from run_benchmark's and run_rule_extraction_holdout's.
@@ -581,6 +588,11 @@ class BaselineSplitMixin:
             })
 
             wandb_log_per_class(run, per_class, class_labels)
+
+            run.log({
+                "repeats": wandb.Table(dataframe=repeats_df),
+                "repeats_summary": wandb.Table(dataframe=repeats_summary_df),
+            })
         finally:
             run.finish()
 

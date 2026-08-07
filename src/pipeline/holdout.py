@@ -298,8 +298,13 @@ class HoldoutMixin:
         class_labels: List[str],
     ) -> None:
         """One W&B run per (dataset, k, fs_method, model) — train+test scalars,
-        an interactive confusion matrix, and per-class precision/recall/f1,
-        for the winning repeated-training run.
+        an interactive confusion matrix, per-class precision/recall/f1 (all
+        for the winning repeated-training run), plus the full ``repeats``
+        table (every one of the ``n_repeats`` runs, same content as
+        repeats.csv) and ``repeats_summary`` (mean/std per metric across
+        them, same as repeats_summary.csv) — the tables needed to chart
+        repeat variance / reproducibility across runs, same as trainer.py's
+        cv_results/cv_summary tables for the CV flow.
 
         Logged to its own project (training.wandb_project_holdout), separate
         from run_benchmark's and run_baseline_split's. ``config=`` carries
@@ -351,6 +356,14 @@ class HoldoutMixin:
             per_class = summary.get("_per_class")
             if per_class:
                 wandb_log_per_class(run, per_class, class_labels)
+
+            repeats_df = summary.get("_repeats_df")
+            repeats_summary_df = summary.get("_repeats_summary_df")
+            if repeats_df is not None and repeats_summary_df is not None:
+                run.log({
+                    "repeats": wandb.Table(dataframe=repeats_df),
+                    "repeats_summary": wandb.Table(dataframe=repeats_summary_df),
+                })
         finally:
             run.finish()
 
@@ -614,6 +627,8 @@ class HoldoutMixin:
                 "train": train_metrics_best["per_class"],
                 "test": test_metrics_best_full["per_class"],
             }
+            summary["_repeats_df"] = results_df[csv_cols]
+            summary["_repeats_summary_df"] = summary_df
 
             if not simplified.empty:
                 temp_df = pd.DataFrame({
