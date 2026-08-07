@@ -12,7 +12,7 @@
 # (CV/full-data benchmark.py and the train/test-split baseline). Classes with
 # fewer than k samples are dropped before splitting/training. Rule extraction
 # has its own (narrower) sweep in holdout.yaml -> rare_class_k_values.
-rare_class_k_values: [2, 3, 4, 5, 6]
+rare_class_k_values: [4, 5]
 
 feature_selection:
   benchmark:

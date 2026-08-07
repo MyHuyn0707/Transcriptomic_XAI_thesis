@@ -27,20 +27,27 @@ from sklearn.model_selection import StratifiedKFold
 from src.helper import report
 from src.helper.metrics import METRIC_COLUMNS, compute_metrics
 from src.helper.scaling import apply_scaler, fit_scaler
+from src.helper.wandb_utils import import_wandb
 from src.models.factory import get_model
 
-# Optional W&B — imported lazily inside run_cv
+# Optional W&B — imported lazily inside run_cv. Only the positive result is
+# cached: a prior failure might just be a half-initialized module left by an
+# import interrupted earlier in this kernel/process (see
+# src.helper.wandb_utils.import_wandb), which import_wandb() can self-heal on
+# a later call — caching that failure forever would silently disable W&B for
+# the rest of the session even after the underlying issue clears up.
 _WANDB_AVAILABLE: Optional[bool] = None
 
 
 def _try_import_wandb() -> bool:
     global _WANDB_AVAILABLE
-    if _WANDB_AVAILABLE is None:
-        try:
-            import wandb  # noqa: F401
-            _WANDB_AVAILABLE = True
-        except ImportError:
-            _WANDB_AVAILABLE = False
+    if _WANDB_AVAILABLE:
+        return True
+    try:
+        import_wandb()
+        _WANDB_AVAILABLE = True
+    except ImportError:
+        _WANDB_AVAILABLE = False
     return _WANDB_AVAILABLE
 
 

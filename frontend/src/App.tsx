@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Dna, Microscope, Activity, Database, GitMerge,
   CheckCircle2, Info, FileText, Settings2, PlayCircle, Loader2, Table2,
-  History, UploadCloud, ListChecks, ChevronDown, ChevronUp, AlertTriangle
+  UploadCloud, ListChecks, ChevronDown, ChevronUp, AlertTriangle,
+  Download,
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { classColor } from './lib/palette';
@@ -14,6 +15,7 @@ import DatasetOverview from './components/DatasetOverview';
 import DatasetSplit from './components/DatasetSplit';
 import FeatureExtractionOverview from './components/FeatureExtractionOverview';
 import RuleExtractionResults from './components/RuleExtractionResults';
+import RunHistoryList from './components/RunHistoryList';
 
 interface TestSample {
   sample_id: string;
@@ -768,49 +770,21 @@ export default function App() {
                         </div>
                       )}
 
-                      {uploadRuns.length > 0 && (
-                        <div className="mt-4">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-2">
-                            <History size={14} /> Lịch sử tải lên ({uploadRuns.length})
-                          </div>
-                          <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                            {uploadRuns.map(run => {
-                              const stillAvailable = !!run.dataset && datasets.some(d => d.id === run.dataset);
-                              return (
-                                <button
-                                  key={run.run_id}
-                                  onClick={() => {
-                                    if (!stillAvailable || !run.dataset) return;
-                                    setDatasetId(run.dataset);
-                                    setDatasetTab('existing');
-                                  }}
-                                  disabled={isUploadBuilding || !stillAvailable}
-                                  title={!stillAvailable ? 'Dataset này không còn tồn tại (mất khi khởi động lại server)' : undefined}
-                                  className={cn(
-                                    "w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
-                                    run.status === 'error'
-                                      ? "border-rose-100 bg-rose-50/50 text-rose-500"
-                                      : !stillAvailable
-                                        ? "border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
-                                        : datasetId === run.dataset
-                                          ? "border-teal-300 bg-teal-50 text-teal-700"
-                                          : "border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                                  )}
-                                >
-                                  <span className="font-mono truncate">{String(run.summary?.tissue ?? '')} · {run.run_id}</span>
-                                  <span className="shrink-0">
-                                    {run.status === 'error'
-                                      ? 'lỗi'
-                                      : !stillAvailable
-                                        ? 'đã mất'
-                                        : `${run.summary?.n_samples ?? '?'} mẫu`}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                      <RunHistoryList
+                        title="Lịch sử tải lên"
+                        runs={uploadRuns}
+                        disabled={isUploadBuilding}
+                        isAvailable={run => !!run.dataset && datasets.some(d => d.id === run.dataset)}
+                        isSelected={run => datasetId === run.dataset}
+                        unavailableTitle="Dataset này không còn tồn tại (mất khi khởi động lại server)"
+                        onSelect={run => {
+                          if (!run.dataset) return;
+                          setDatasetId(run.dataset);
+                          setDatasetTab('existing');
+                        }}
+                        renderLabel={run => `${String(run.summary?.tissue ?? '')} · ${run.run_id}`}
+                        renderStatus={run => `${run.summary?.n_samples ?? '?'} mẫu`}
+                      />
                     </fieldset>
                   )}
                 </div>
@@ -890,35 +864,14 @@ export default function App() {
                       </div>
                     )}
 
-                    {splitRuns.length > 0 && (
-                      <div className="mt-4">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-2">
-                          <History size={14} /> Lịch sử xử lý và phân chia dữ liệu ({splitRuns.length})
-                        </div>
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                          {splitRuns.map(run => (
-                            <button
-                              key={run.run_id}
-                              onClick={() => loadPastSplitRun(run)}
-                              disabled={isSplitLoading}
-                              className={cn(
-                                "w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
-                                run.status === 'error'
-                                  ? "border-rose-100 bg-rose-50/50 text-rose-500"
-                                  : "border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                              )}
-                            >
-                              <span className="font-mono">min={String(run.summary?.min_samples_per_class)} test={String(run.summary?.test_size)} · {run.run_id}</span>
-                              <span>
-                                {run.status === 'error'
-                                  ? 'lỗi'
-                                  : `${run.summary?.n_train ?? '?'}/${run.summary?.n_test ?? '?'}`}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <RunHistoryList
+                      title="Lịch sử xử lý và phân chia dữ liệu"
+                      runs={splitRuns}
+                      disabled={isSplitLoading}
+                      onSelect={loadPastSplitRun}
+                      renderLabel={run => `min=${String(run.summary?.min_samples_per_class)} test=${String(run.summary?.test_size)} · ${run.run_id}`}
+                      renderStatus={run => `${run.summary?.n_train ?? '?'}/${run.summary?.n_test ?? '?'}`}
+                    />
                   </fieldset>
                 </div>
               </div>
@@ -1099,37 +1052,15 @@ export default function App() {
                     </div>
                   )}
 
-                  {fsRuns.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-2">
-                        <History size={14} /> Lịch sử trích xuất ({fsRuns.length})
-                      </div>
-                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                        {fsRuns.map(run => (
-                          <button
-                            key={run.run_id}
-                            onClick={() => loadPastFsRun(run)}
-                            disabled={isFsLoading}
-                            className={cn(
-                              "w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
-                              run.status === 'error'
-                                ? "border-rose-100 bg-rose-50/50 text-rose-500"
-                                : fsRunId === run.run_id
-                                  ? "border-teal-300 bg-teal-50 text-teal-700"
-                                  : "border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                            )}
-                          >
-                            <span className="font-mono">{run.fs_method} · {run.run_id}</span>
-                            <span>
-                              {run.status === 'error'
-                                ? 'lỗi'
-                                : `${run.summary?.n_selected_features ?? '?'} đặc trưng`}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <RunHistoryList
+                    title="Lịch sử trích xuất"
+                    runs={fsRuns}
+                    disabled={isFsLoading}
+                    isSelected={run => fsRunId === run.run_id}
+                    onSelect={loadPastFsRun}
+                    renderLabel={run => `${run.fs_method} · ${run.run_id}`}
+                    renderStatus={run => `${run.summary?.n_selected_features ?? '?'} đặc trưng`}
+                  />
                   </fieldset>
                 </div>
               </div>
@@ -1291,37 +1222,15 @@ export default function App() {
                     </div>
                   )}
 
-                  {modelRuns.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-2">
-                        <History size={14} /> Lịch sử huấn luyện ({modelRuns.length})
-                      </div>
-                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                        {modelRuns.map(run => (
-                          <button
-                            key={run.run_id}
-                            onClick={() => loadPastModelRun(run)}
-                            disabled={isModelLoading}
-                            className={cn(
-                              "w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
-                              run.status === 'error'
-                                ? "border-rose-100 bg-rose-50/50 text-rose-500"
-                                : modelRunId === run.run_id
-                                  ? "border-teal-300 bg-teal-50 text-teal-700"
-                                  : "border-slate-100 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                            )}
-                          >
-                            <span className="font-mono">{run.fs_method}/{run.model} · {run.run_id}</span>
-                            <span>
-                              {run.status === 'error'
-                                ? 'lỗi'
-                                : `acc=${((run.summary?.accuracy as number ?? 0) * 100).toFixed(1)}%`}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <RunHistoryList
+                    title="Lịch sử huấn luyện"
+                    runs={modelRuns}
+                    disabled={isModelLoading}
+                    isSelected={run => modelRunId === run.run_id}
+                    onSelect={loadPastModelRun}
+                    renderLabel={run => `${run.fs_method}/${run.model} · ${run.run_id}`}
+                    renderStatus={run => `acc=${((run.summary?.accuracy as number ?? 0) * 100).toFixed(1)}%`}
+                  />
                   </fieldset>
                 </div>
               </div>
@@ -1367,6 +1276,23 @@ export default function App() {
                          <UploadCloud size={14} /> Tải lên file
                        </button>
                      </div>
+
+                     {/* Download the exact held-out test set (test_set.csv +
+                         manifest.csv + samples/*.json) — for transparency
+                         (audit which rows were held out) and for re-testing
+                         via "Tải lên file" above. Works for both a cached
+                         dataset and a fresh upload / custom "Thực hiện lại"
+                         split (backend recomputes live when there's no cache
+                         yet) — the URL already carries the current splitParams. */}
+                     {datasetId && (
+                       <a
+                         href={api.getTestSetDownloadUrl(datasetId, fsMethodKey, splitParams)}
+                         download
+                         className="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"
+                       >
+                         <Download size={14} /> Tải xuống test set (ZIP) — minh bạch dữ liệu đánh giá
+                       </a>
+                     )}
 
                      {testMode === 'sample' ? (
                        <select

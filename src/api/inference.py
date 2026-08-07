@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 import joblib
 import numpy as np
 
+from src.helper.paths import safe_filename
 from src.helper.scaling import apply_scaler
 from src.interpretation.rules import _antecedent_mask
 from src.api import llm
@@ -50,7 +51,7 @@ def load_test_sample(
 
     from src.api.registry import holdout_root_for
 
-    safe_sid = sample_id.replace("/", "_").replace("\\", "_")
+    safe_sid = safe_filename(sample_id)
     path = holdout_root_for() / dataset / "test_set" / "samples" / f"{safe_sid}.json"
     if not path.exists():
         raise FileNotFoundError(f"Test sample not found: {path}")
@@ -95,6 +96,57 @@ def get_test_samples(dataset: str, split_params: Optional[Dict[str, Any]] = None
     return out
 
 
+def build_test_set_zip(dataset: str, split_params: Optional[Dict[str, Any]] = None) -> bytes:
+    """ZIP of the held-out test set — for downloading and re-uploading
+    through the existing "test 1 sample" flow (predict-upload), and for
+    auditing exactly which rows were held out ("đảm bảo tính tường minh").
+
+    Two sources, covering both flows the UI supports:
+      - No ``split_params`` AND a cached ``test_set/`` already exists on disk
+        (outputs_holdout/k{active}/{dataset}/test_set/, written by
+        run_baseline_split() + copied by run_rule_extraction_holdout()) ->
+        zip those files directly, no recompute.
+      - Otherwise (custom "Thực hiện lại" split, or a brand-new upload with
+        no cache yet) -> recompute the split live via compute_holdout_split()
+        and build the same artifacts in-memory (build_test_set_artifacts),
+        so download works even before any model has been trained.
+
+    Zip contents: test_set.csv, manifest.csv, samples/{sample_id}.json — same
+    layout either way, so the downloaded file is identical in shape
+    regardless of which source produced it.
+    """
+    import io
+    import zipfile
+
+    from src.api.registry import holdout_root_for
+
+    cached_dir = holdout_root_for() / dataset / "test_set"
+    buf = io.BytesIO()
+
+    if not split_params and cached_dir.exists():
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for path in cached_dir.rglob("*"):
+                if path.is_file():
+                    zf.write(path, arcname=str(path.relative_to(cached_dir.parent)))
+        return buf.getvalue()
+
+    from src.api.registry import compute_holdout_split
+    from src.helper.split import build_test_set_artifacts
+
+    ctx = compute_holdout_split(dataset, split_params)
+    artifacts = build_test_set_artifacts(
+        ctx["feature_names"], ctx["sample_ids"], ctx["X"], ctx["y"],
+        ctx["test_idx"], ctx["class_labels"],
+    )
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("test_set/test_set.csv", artifacts["test_set_df"].to_csv(index=False))
+        zf.writestr("test_set/manifest.csv", artifacts["manifest_df"].to_csv(index=False))
+        for sid, payload in artifacts["samples"].items():
+            safe_sid = safe_filename(sid)
+            zf.writestr(f"test_set/samples/{safe_sid}.json", json.dumps(payload, indent=2))
+    return buf.getvalue()
+
+
 def _rule_matches(
     rule: Dict[str, Any], feature_values: Dict[str, float]
 ) -> Optional[bool]:
@@ -123,9 +175,15 @@ def _rule_match_detail(rule: Dict[str, Any], feature_values: Dict[str, float]) -
     conds = rule.get("antecedent_raw", [])
     if not conds:
         return None
+    antecedent = rule.get("antecedent", conds)
+    if len(antecedent) != len(conds):
+        raise ValueError(
+            f"antecedent/antecedent_raw length mismatch ({len(antecedent)} != {len(conds)}) "
+            f"for rule {rule.get('rule_id', '?')!r}"
+        )
     detail_conds: List[Dict[str, Any]] = []
     satisfied = 0
-    for c, a in zip(conds, rule.get("antecedent", conds)):
+    for c, a in zip(conds, antecedent):
         probe = c.get("probe")
         if probe not in feature_values:
             return None

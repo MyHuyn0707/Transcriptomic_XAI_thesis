@@ -80,17 +80,33 @@ class GeneExpressionPipeline(
         self.output_root = Path(output_root)
         self.output_root.mkdir(parents=True, exist_ok=True)
 
-        # Resolve W&B project from config (config can disable it)
-        wandb_proj = self.config_loader.get_wandb_project()
-        self.wandb_project: Optional[str] = wandb_proj if use_wandb else None
+        # Resolve W&B project(s) from config (config can disable it). Three
+        # separate projects — one per pipeline stage — so each stage's runs
+        # don't mix together in the W&B UI: run_benchmark uses
+        # self.wandb_project, run_baseline_split uses
+        # self.wandb_project_baseline_split, run_rule_extraction_holdout uses
+        # self.wandb_project_holdout. Each falls back to the main
+        # wandb_project if its own key isn't set in configs/models.yaml.
+        self.wandb_project: Optional[str] = (
+            self.config_loader.get_wandb_project() if use_wandb else None
+        )
+        self.wandb_project_baseline_split: Optional[str] = (
+            self.config_loader.get_wandb_project_baseline_split() if use_wandb else None
+        )
+        self.wandb_project_holdout: Optional[str] = (
+            self.config_loader.get_wandb_project_holdout() if use_wandb else None
+        )
 
-        if self.wandb_project:
+        if self.wandb_project or self.wandb_project_baseline_split or self.wandb_project_holdout:
             try:
-                import wandb
+                from src.helper.wandb_utils import import_wandb
+                wandb = import_wandb()
                 wandb.login()
             except Exception as e:
                 report.warn(f"W&B login failed: {e}. Continuing without W&B.")
                 self.wandb_project = None
+                self.wandb_project_baseline_split = None
+                self.wandb_project_holdout = None
 
     @staticmethod
     def _resolve_class_labels(

@@ -96,9 +96,17 @@ cross_validation:
 
 # ── Experiment tracking ─────────────────────────────────────────────────────
 training:
-  use_wandb: true                              # Set true to enable W&B logging
-  wandb_project: "transcriptomic_xai"
+  use_wandb: true                              # Master switch — false disables W&B for all 3 projects below
   verbose: true
   # Append a benchmark comparison (each fs × model, and fs × model pivot) plus a
   # SHAP summary to outputs/{dataset}/DATASET_PROVENANCE.md after the benchmark.
   write_benchmark_provenance: true
+
+  # Three pipeline stages, three separate W&B projects — so run_benchmark's
+  # CV-fold runs, run_baseline_split's train/test-split runs, and
+  # run_rule_extraction_holdout's rule-extraction runs never mix together in
+  # the W&B UI. wandb_project_baseline_split/wandb_project_holdout each fall
+  # back to wandb_project if left unset.
+  wandb_project: "transcriptomic_xai"                            # run_benchmark()               -> outputs_baseline_full/
+  wandb_project_baseline_split: "transcriptomic_xai_baseline_split"  # run_baseline_split()           -> outputs_baseline_split/
+  wandb_project_holdout: "transcriptomic_xai_holdout"            # run_rule_extraction_holdout()  -> outputs_holdout/

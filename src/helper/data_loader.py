@@ -120,11 +120,13 @@ def handle_missing_values(
     print(f"  Warning: {n_missing} missing values detected. Strategy: '{strategy}'.")
 
     if strategy == "mean":
+        X = X.copy()
         col_means = np.nanmean(X, axis=0)
         idx = np.where(np.isnan(X))
         X[idx] = np.take(col_means, idx[1])
 
     elif strategy == "median":
+        X = X.copy()
         col_medians = np.nanmedian(X, axis=0)
         idx = np.where(np.isnan(X))
         X[idx] = np.take(col_medians, idx[1])

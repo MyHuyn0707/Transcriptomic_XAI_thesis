@@ -1,5 +1,5 @@
 """
-src/dataset_builder.py
+src/dataset_builder/builder.py
 
 Build CuMiDa-format datasets from a raw NCBI GEO **series matrix** file
 (``GSE*_series_matrix.txt.gz``).

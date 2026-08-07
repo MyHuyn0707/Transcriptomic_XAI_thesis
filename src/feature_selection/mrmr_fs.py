@@ -161,24 +161,6 @@ def compute_mrmr_ranking(
     return pd.DataFrame(rows)
 
 
-def compute_mi_ranking(
-    X: np.ndarray,
-    y: np.ndarray,
-    selected_features: List[str],
-    feature_names: List[str],
-    random_state: int = 42,
-) -> pd.DataFrame:
-    """Deprecated alias — kept for backward compatibility.
-
-    Routes to :func:`compute_mrmr_ranking` (MID variant). The old post-hoc
-    Mutual-Information ranking is no longer produced.
-    """
-    return compute_mrmr_ranking(
-        X, y, selected_features, feature_names,
-        variant="MID", random_state=random_state,
-    )
-
-
 # =============================================================================
 # Public entry point
 # =============================================================================

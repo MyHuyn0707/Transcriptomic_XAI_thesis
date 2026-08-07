@@ -16,6 +16,7 @@ Framework: Classification Transcriptomic with XAI
 from __future__ import annotations
 
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -26,7 +27,10 @@ import pandas as pd
 from src.helper import report
 from src.helper.data_loader import load_dataset
 from src.helper.metrics import METRIC_COLUMNS, compute_metrics
+from src.helper.paths import resolve_path
 from src.helper.scaling import apply_scaler, fit_scaler
+from src.helper.training import pick_best_run, summarize_repeats
+from src.helper.wandb_utils import wandb_log_per_class
 from src.benchmark.trainer import _serialize as _to_native
 from src.interpretation.rules import evaluate_rules
 from src.interpretation.rule_mining import (
@@ -91,20 +95,21 @@ class HoldoutMixin:
             report.warn("Holdout rule extraction disabled (holdout.enabled = false).")
             return {}
 
-        holdout_root = Path(holdout_cfg.get("output_root", "outputs_holdout"))
-        if not holdout_root.is_absolute():
-            # Same convention as ConfigLoader.get_dataset_config: relative
-            # paths resolve against the project root (parent of configs/),
-            # not the caller's working directory (e.g. notebooks/).
-            holdout_root = self.config_loader.project_root / holdout_root
+        # Same convention as ConfigLoader.get_dataset_config: relative paths
+        # resolve against the project root (parent of configs/), not the
+        # caller's working directory (e.g. notebooks/).
+        holdout_root = Path(resolve_path(
+            self.config_loader.project_root, holdout_cfg.get("output_root", "outputs_holdout")
+        ))
         holdout_root.mkdir(parents=True, exist_ok=True)
 
         split_baseline_cfg = dict(holdout_cfg.get("split_baseline", {}))
         batch_cfg = dict(holdout_cfg.get("batch", {}))
 
-        split_root = Path(split_baseline_cfg.get("baseline_split_root", "outputs_baseline_split"))
-        if not split_root.is_absolute():
-            split_root = self.config_loader.project_root / split_root
+        split_root = Path(resolve_path(
+            self.config_loader.project_root,
+            split_baseline_cfg.get("baseline_split_root", "outputs_baseline_split"),
+        ))
 
         k_values = k_values or list(batch_cfg.get("rare_class_k_values", [4]))
         fs_methods = list(batch_cfg.get("fs_methods", ["boruta", "mrmr_k50", "mrmr_k75"]))
@@ -184,10 +189,14 @@ class HoldoutMixin:
                     if not class_labels:
                         class_labels = self._resolve_class_labels(data, ds_cfg)
 
-                    self._export_holdout_test_set(
-                        ds_root=ds_root, feature_names=feature_names, sample_ids=sample_ids,
-                        X=X, y=y, test_idx=test_idx, class_labels=class_labels,
-                    )
+                    # test_set/ is generated once by run_baseline_split() (same
+                    # train/test split, same raw feature space) — copy it here
+                    # instead of re-deriving it, so both flows always agree.
+                    split_test_set_dir = split_ds_root / "test_set"
+                    if split_test_set_dir.exists():
+                        shutil.copytree(split_test_set_dir, ds_root / "test_set", dirs_exist_ok=True)
+                    else:
+                        report.warn(f"{ds_name}: no test_set/ at {split_test_set_dir} (run_baseline_split outdated?)")
 
                     X_train, y_train = X[train_idx], y[train_idx]
                     X_test, y_test = X[test_idx], y[test_idx]
@@ -198,10 +207,8 @@ class HoldoutMixin:
 
                     for fs_method in fs_methods:
                         report.step(f"Reusing FS artifacts ({fs_method}, k={k})")
-                        sel_json_path = (
-                            k_split_root / "feature_selection" / ds_name / fs_method
-                            / "selected_features" / "selected_features.json"
-                        )
+                        split_fs_dir = k_split_root / "feature_selection" / ds_name / fs_method
+                        sel_json_path = split_fs_dir / "selected_features" / "selected_features.json"
                         if not sel_json_path.exists():
                             report.err(
                                 f"{ds_name}/{fs_method}: no selected_features.json at "
@@ -219,6 +226,19 @@ class HoldoutMixin:
                         X_train_sel = X_train[:, sel_idx]
                         X_test_sel = X_test[:, sel_idx]
                         report.ok(f"{fs_method}: {len(feat_sel)} features reused from split-baseline (k={k})")
+
+                        # Copy the FS metadata/selected_features (not the
+                        # train-only processed_datasets/ CSV, which nothing
+                        # here reads) into this flow's own output root — the
+                        # API's GET .../feature-selection/{fs_method} and the
+                        # live predict path (src/api/inference.py) both read
+                        # feature_selection/{dataset}/{fs_method}/ under
+                        # holdout_root_for(), not under outputs_baseline_split.
+                        holdout_fs_dir = k_holdout_root / "feature_selection" / ds_name / fs_method
+                        for sub in ("params", "selected_features"):
+                            src_sub = split_fs_dir / sub
+                            if src_sub.exists():
+                                shutil.copytree(src_sub, holdout_fs_dir / sub, dirs_exist_ok=True)
 
                         fs_root = ds_root / fs_method
                         model_summaries: Dict[str, Any] = {}
@@ -245,7 +265,7 @@ class HoldoutMixin:
                                 model_summaries[model_name] = result["summary"]
                                 model_rules[model_name] = result["rules_df"]
                                 self._wandb_log_holdout_model(
-                                    ds_name, k, fs_method, model_name, result["summary"],
+                                    ds_name, k, fs_method, model_name, result["summary"], n_repeats, class_labels,
                                 )
 
                         compare_info: Optional[Dict[str, Any]] = None
@@ -274,20 +294,40 @@ class HoldoutMixin:
         fs_method: str,
         model_name: str,
         summary: Dict[str, Any],
+        n_repeats: int,
+        class_labels: List[str],
     ) -> None:
-        """One W&B run per (dataset, k, fs_method, model) — train+test scalars
-        for the winning repeated-training run."""
-        if not self.wandb_project:
+        """One W&B run per (dataset, k, fs_method, model) — train+test scalars,
+        an interactive confusion matrix, and per-class precision/recall/f1,
+        for the winning repeated-training run.
+
+        Logged to its own project (training.wandb_project_holdout), separate
+        from run_benchmark's and run_baseline_split's. ``config=`` carries
+        dataset/k/fs_method/model/seed as real, filterable/groupable columns
+        in the W&B UI — the run ``name``/``group`` strings are for human
+        reading, not for W&B's own filter/group-by controls.
+        """
+        if not self.wandb_project_holdout:
             return
         try:
             import wandb
         except ImportError:
             return
+        best_seed = summary.get("best_seed")
         run = wandb.init(
-            project=self.wandb_project,
-            name=f"{dataset_name}_k{k}_{fs_method}_{model_name}_holdout",
+            project=self.wandb_project_holdout,
+            name=f"{dataset_name}_k{k}_{fs_method}_{model_name}_seed{best_seed}_holdout",
             group=f"{dataset_name}_k{k}_{fs_method}_{model_name}",
             job_type="holdout_repeat",
+            config={
+                "flow": "holdout",
+                "dataset": dataset_name,
+                "k": k,
+                "fs_method": fs_method,
+                "model": model_name,
+                "best_seed": best_seed,
+                "n_repeats": n_repeats,
+            },
             reinit=True,
         )
         try:
@@ -297,6 +337,20 @@ class HoldoutMixin:
                     if mv is not None:
                         log_data[f"{split_name}_{mk}"] = mv
             run.log(log_data)
+
+            y_test = summary.get("_y_test")
+            y_pred_test = summary.get("_y_pred_test")
+            if y_test is not None and y_pred_test is not None:
+                run.log({
+                    "confusion_matrix": wandb.plot.confusion_matrix(
+                        probs=None, y_true=list(y_test), preds=list(y_pred_test),
+                        class_names=class_labels,
+                    )
+                })
+
+            per_class = summary.get("_per_class")
+            if per_class:
+                wandb_log_per_class(run, per_class, class_labels)
         finally:
             run.finish()
 
@@ -307,7 +361,7 @@ class HoldoutMixin:
     ) -> None:
         """One summary W&B run per k — a table of every (dataset, fs_method,
         model) test-set row, for cross-model/fs comparison at this k."""
-        if not self.wandb_project or not k_results:
+        if not self.wandb_project_holdout or not k_results:
             return
         try:
             import wandb
@@ -327,9 +381,10 @@ class HoldoutMixin:
         if not rows:
             return
         run = wandb.init(
-            project=self.wandb_project,
+            project=self.wandb_project_holdout,
             name=f"holdout_k{k}_comparison",
             job_type="k_comparison",
+            config={"flow": "holdout", "k": k},
             reinit=True,
         )
         try:
@@ -369,10 +424,18 @@ class HoldoutMixin:
 
         Exports (under ``output_dir``)::
 
-            models/  model_best.joblib, cv_results.csv, cv_summary.csv,
+            models/  model_best.joblib, repeats.csv, repeats_summary.csv,
                      params_des.json, best_run.json,
                      confusion_matrix_test.png/.csv (winning run, test set)
             rules/   rules.json/.csv/.../rules_test_eval.csv, shap/
+
+        ``repeats.csv``/``repeats_summary.csv`` are named for what this
+        actually is — ``n_repeats`` runs of the SAME train/test split with a
+        different model ``random_state`` each time, NOT k-fold
+        cross-validation (there is no k-fold anywhere in this flow; compare
+        ``src/benchmark/trainer.py``'s genuinely CV-based
+        ``cv_results.csv``/``cv_summary.csv``, which this deliberately does
+        not share a name with).
 
         Returns ``{"summary": rules_summary_dict, "rules_df": simplified_df}``
         or ``None`` if every run failed to fit.
@@ -433,29 +496,20 @@ class HoldoutMixin:
             return None
 
         results_df = pd.DataFrame(run_rows)
-        summary_rows = []
-        for col in metric_cols:
-            if col in results_df.columns and results_df[col].notnull().any():
-                summary_rows.append({
-                    "metric": col,
-                    "mean": float(results_df[col].mean()),
-                    "std": float(results_df[col].std()),
-                })
-        summary_df = pd.DataFrame(summary_rows)
+        summary_df = summarize_repeats(results_df, metric_cols)
 
         csv_cols = ["run", "seed"] + [c for c in metric_cols if c in results_df.columns]
-        results_df[csv_cols].to_csv(models_dir / "cv_results.csv", index=False)
-        summary_df.to_csv(models_dir / "cv_summary.csv", index=False)
+        results_df[csv_cols].to_csv(models_dir / "repeats.csv", index=False)
+        summary_df.to_csv(models_dir / "repeats_summary.csv", index=False)
 
         select_metric_eff = select_metric
         if select_metric_eff not in results_df.columns or results_df[select_metric_eff].isnull().all():
             report.warn(f"select_metric '{select_metric}' unavailable; falling back to 'f1_macro'.")
             select_metric_eff = "f1_macro"
 
-        best_pos = int(results_df[select_metric_eff].idxmax())
+        best_pos, best_seed = pick_best_run(results_df, select_metric_eff, "f1_macro")
         best_row = results_df.loc[best_pos].to_dict()
         best_model = fitted_models[best_pos]
-        best_seed = int(best_row["seed"])
 
         joblib.dump({"model": best_model, "scaler": scaler}, models_dir / "model_best.joblib")
 
@@ -551,6 +605,15 @@ class HoldoutMixin:
             save_rule_outputs(
                 simplified, summary, rules_dir, model_name, rules_cfg, class_labels
             )
+            # Added AFTER save_rule_outputs (which JSON-serializes `summary`)
+            # so these raw arrays never get written to rules_summary.json —
+            # only consumed in-memory by _wandb_log_holdout_model below.
+            summary["_y_test"] = y_test
+            summary["_y_pred_test"] = y_pred_test_best
+            summary["_per_class"] = {
+                "train": train_metrics_best["per_class"],
+                "test": test_metrics_best_full["per_class"],
+            }
 
             if not simplified.empty:
                 temp_df = pd.DataFrame({
@@ -592,61 +655,6 @@ class HoldoutMixin:
         except Exception as e:
             report.warn(f"Rule extraction (holdout) failed for {model_name}: {e}")
             return None
-
-    def _export_holdout_test_set(
-        self,
-        ds_root: Path,
-        feature_names: List[str],
-        sample_ids: List[str],
-        X: np.ndarray,
-        y: np.ndarray,
-        test_idx: np.ndarray,
-        class_labels: List[str],
-    ) -> None:
-        """
-        Export the held-out test set for later single-sample UI testing —
-        in the raw (pre-feature-selection) feature space, so any fs_method's
-        model can pick the columns it needs by name.
-
-        Writes ``test_set/test_set.csv`` (full CuMiDa-format table),
-        ``test_set/manifest.csv`` (sample_id, true_label, row_index), and
-        ``test_set/samples/{sample_id}.json`` (one file per sample:
-        sample_id, true_label, full feature dict).
-        """
-        test_dir = ds_root / "test_set"
-        samples_dir = test_dir / "samples"
-        samples_dir.mkdir(parents=True, exist_ok=True)
-
-        test_sample_ids = [str(sample_ids[i]) for i in test_idx]
-        test_labels = [
-            class_labels[c] if c < len(class_labels) else str(c) for c in y[test_idx]
-        ]
-        X_test = X[test_idx]
-
-        df = pd.DataFrame(X_test, columns=feature_names)
-        df.insert(0, "type", test_labels)
-        df.insert(0, "samples", test_sample_ids)
-        df.to_csv(test_dir / "test_set.csv", index=False)
-
-        manifest = pd.DataFrame({
-            "sample_id": test_sample_ids,
-            "true_label": test_labels,
-            "row_index": np.arange(len(test_sample_ids)),
-        })
-        manifest.to_csv(test_dir / "manifest.csv", index=False)
-
-        for row_i, (sid, label) in enumerate(zip(test_sample_ids, test_labels)):
-            safe_sid = sid.replace("/", "_").replace("\\", "_")
-            payload = {
-                "sample_id": sid,
-                "true_label": label,
-                "features": {fn: float(v) for fn, v in zip(feature_names, X_test[row_i])},
-            }
-            (samples_dir / f"{safe_sid}.json").write_text(
-                json.dumps(payload, indent=2), encoding="utf-8"
-            )
-
-        report.ok(f"Test set exported → {test_dir} ({len(test_sample_ids)} samples)")
 
     @staticmethod
     def _append_holdout_provenance(
@@ -722,9 +730,9 @@ class HoldoutMixin:
         )
 
         holdout_cfg = dict(self.config_loader.load_yaml("holdout.yaml").get("holdout", {}))
-        holdout_root = Path(holdout_cfg.get("output_root", "outputs_holdout"))
-        if not holdout_root.is_absolute():
-            holdout_root = self.config_loader.project_root / holdout_root
+        holdout_root = Path(resolve_path(
+            self.config_loader.project_root, holdout_cfg.get("output_root", "outputs_holdout")
+        ))
         k = k if k is not None else int(holdout_cfg.get("active_min_samples_per_class", 4))
         holdout_root = holdout_root / f"k{k}"
 

@@ -1,5 +1,5 @@
 """
-src/visualize.py
+src/visualize/plots.py
 
 Dataset visualization utilities for gene expression data (CuMiDa / GEO format).
 

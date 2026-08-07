@@ -108,8 +108,15 @@ outputs_baseline_full/k4/GEO-Breast-20711/                      ← run_benchmar
     └── shap/plots/shap_bar.png             ← explain (best combo / run_shap)
         └── shap/text/shap_feature_importance_matrix.csv
 
+outputs_baseline_split/k4/GEO-Breast-20711/                      ← run_baseline_split(k_values=[4,...])
+├── split_info.json             ← canonical train/test row indices (read by run_rule_extraction_holdout)
+├── feature_selection/mrmr_k50/selected_features/selected_features.json
+└── mrmr_k50/rf/                ← every enabled model, best of n_repeats
+    ├── metrics.json            ← train + test metrics, best_seed, n_repeats
+    └── models/{repeats.csv, repeats_summary.csv, rf.joblib, confusion_matrix_test.png}
+
 outputs_holdout/k4/GEO-Breast-20711/mrmr_k50/                    ← run_rule_extraction_holdout
-├── rf/models/{cv_results.csv, best_run.json, best_run_train.json}
+├── rf/models/{repeats.csv, best_run.json, best_run_train.json}  ← repeats.csv: all n_repeats (NOT k-fold)
 ├── rf/rules/rules.csv          ← IF-THEN rules (strength_score ↓)
 ├── dt/rules/rules.csv
 └── compare/crosscheck.json     ← rules confirmed by BOTH models
@@ -134,6 +141,8 @@ outputs/GEO-Breast-20711/rules/                                   ← run_rule_e
 | Boruta iterations / selection_mode | `configs/feature_selection.yaml` → `boruta.params.max_iter` / `.selection_mode` (`"auto"`, `"confirmed"`, `"confirmed_tentative"`, `"top_k"`) |
 | Rare-class k sweep (baseline) | `configs/feature_selection.yaml` → `rare_class_k_values` |
 | Rare-class k sweep (rule extraction) | `configs/holdout.yaml` → `holdout.batch.rare_class_k_values` |
+| Repeats per model / tie-break metric (`run_baseline_split`) | `configs/holdout.yaml` → `holdout.split_baseline.n_repeats` / `.select_metric` |
+| Repeats per rule model / tie-break metric (`run_rule_extraction_holdout`) | `configs/holdout.yaml` → `holdout.batch.n_repeats` / `.select_metric` |
 | Which k the API/UI serves | `configs/holdout.yaml` → `holdout.active_min_samples_per_class` (restart the API after changing) |
 | CV folds | `configs/models.yaml` → `cross_validation.n_splits` |
 | SHAP top-K / where it runs | `configs/interpretation.yaml` → `interpretation.shap.*` |

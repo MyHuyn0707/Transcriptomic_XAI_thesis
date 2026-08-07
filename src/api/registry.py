@@ -287,8 +287,7 @@ def compute_holdout_split(dataset: str, split_params: Optional[Dict[str, Any]] =
     Shared by the live "Huấn luyện" jobs (src/api/jobs.py) and the
     ``/split/preview`` endpoint so both read train/test rows identically.
     """
-    from src.helper.data_loader import load_dataset
-    from src.helper.split import train_test_split_indices
+    from src.helper.split import build_dataset_split
 
     loader = get_config_loader()
     holdout_cfg = dict(loader.load_yaml("holdout.yaml").get("holdout", {}))
@@ -300,32 +299,11 @@ def compute_holdout_split(dataset: str, split_params: Optional[Dict[str, Any]] =
     test_size = float(sp.get("test_size") or live_ui_defaults.get("test_size", 0.2))
     split_seed = int(live_ui_defaults.get("split_random_state", 42))
 
-    data = load_dataset(
-        dataset_path=Path(ds_cfg["path"]),
-        dataset_type=ds_cfg.get("type", "auto"),
-        min_samples_per_class=min_samples,
+    result = build_dataset_split(
+        ds_cfg, min_samples_per_class=min_samples, test_size=test_size, random_state=split_seed,
     )
-    X, y = data["X"], data["y"]
-    feature_names = data["feature_names"]
-    sample_ids = data["sample_ids"]
-
-    split = train_test_split_indices(y, test_size=test_size, random_state=split_seed)
-    train_idx, test_idx = split["train_idx"], split["test_idx"]
-
-    enc = data.get("label_encoder")
-    classes = getattr(enc, "classes_", None)
-    class_labels = [str(c) for c in classes] if classes is not None else []
-
-    return {
-        "ds_cfg": ds_cfg,
-        "X": X, "y": y,
-        "feature_names": feature_names,
-        "sample_ids": sample_ids,
-        "train_idx": train_idx, "test_idx": test_idx,
-        "class_labels": class_labels,
-        "min_samples_per_class": min_samples,
-        "test_size": test_size,
-    }
+    result["ds_cfg"] = ds_cfg
+    return result
 
 
 def build_split_summary(dataset: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
@@ -334,7 +312,6 @@ def build_split_summary(dataset: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
     ``outputs_holdout/{id}/split_info.json`` — lets ``/split/preview`` answer
     with a custom min_samples_per_class/test_size without any cache file.
     """
-    raw_counts = load_raw_class_counts(dataset)["raw_class_counts"]
     class_labels = ctx["class_labels"]
     y, train_idx, test_idx = ctx["y"], ctx["train_idx"], ctx["test_idx"]
     train_class_counts = {lbl: int((y[train_idx] == i).sum()) for i, lbl in enumerate(class_labels)}
@@ -344,8 +321,8 @@ def build_split_summary(dataset: str, ctx: Dict[str, Any]) -> Dict[str, Any]:
         "class_labels": class_labels,
         "train_class_counts": train_class_counts,
         "test_class_counts": test_class_counts,
-        "raw_class_counts": raw_counts,
-        "dropped_classes": [c for c in raw_counts if c not in class_labels],
+        "raw_class_counts": ctx["raw_class_counts"],
+        "dropped_classes": ctx["dropped_classes"],
         "n_samples_total": int(len(train_idx) + len(test_idx)),
         "n_train": int(len(train_idx)),
         "n_test": int(len(test_idx)),
@@ -415,7 +392,7 @@ def _raw_class_counts_cache_path(dataset_id: str) -> Path:
 def load_raw_class_counts(dataset_id: str) -> Dict[str, Any]:
     """``{"raw_class_counts": {...}, "dropped_classes": [...]}``.
 
-    Primary source: ``outputs_holdout/{dataset}/split_info.json`` — since
+    Primary source: ``outputs_holdout/k{k}/{dataset}/split_info.json`` — since
     ``run_baseline_split()`` now computes and embeds ``raw_class_counts``/
     ``dropped_classes`` directly into ``split_info.json`` (and
     ``run_rule_extraction_holdout()`` copies that file into this flow's own

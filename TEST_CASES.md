@@ -23,17 +23,25 @@ Manual cases are run against `uv run uvicorn src.api.main:app --reload` (port 80
 | 1.12 | `parse_uploaded_sample` — CuMiDa-wide CSV row with label column | test_inference_parsing.py | ✅ pass |
 | 1.13 | `parse_uploaded_sample` — long probe,value pairs, no header | test_inference_parsing.py | ✅ pass |
 | 1.14 | `parse_uploaded_sample` — invalid JSON / empty file / no numeric fields → `ValueError` | test_inference_parsing.py | ✅ pass |
-| 1.15 | `GET /api/datasets` includes a known cached dataset | test_api_smoke.py | ✅ pass |
-| 1.16 | `GET /api/datasets/{id}/overview` returns real split_info fields | test_api_smoke.py | ✅ pass |
+| 1.15 | `GET /api/datasets` includes a known cached dataset | test_api_smoke.py | ❌ fail (2026-08-07 run) |
+| 1.16 | `GET /api/datasets/{id}/overview` returns real split_info fields | test_api_smoke.py | ❌ fail (2026-08-07 run) |
 | 1.17 | `GET /api/datasets/{unknown}/overview` → 404 (not 500) | test_api_smoke.py | ✅ pass |
 | 1.18 | `GET /api/datasets/{id}/runs` returns a list | test_api_smoke.py | ✅ pass |
 | 1.19 | Path-traversal `run_id` in query string → 400 (not 500) | test_api_smoke.py | ✅ pass |
 | 1.20 | Path-traversal `run_id` in predict JSON body → 400 | test_api_smoke.py | ✅ pass |
 | 1.21 | Path-traversal `fs_method` in predict JSON body → 400 | test_api_smoke.py | ✅ pass |
 | 1.22 | `GET /api/datasets/{id}/model/{fs}/{model}` never 500s for a valid-but-uncached combo | test_api_smoke.py | ✅ pass |
-| 1.23 | `/static/holdout/...` mount serves a file regardless of directory existing at import time | test_api_smoke.py | ✅ pass |
+| 1.23 | `/static/holdout/...` mount serves a file regardless of directory existing at import time | test_api_smoke.py | ❌ fail (2026-08-07 run) |
+| 1.24 | `simplify_rules` default `max_rules_total` caps output at 100 | test_rules_filter.py | ✅ pass |
+| 1.25 | `simplify_rules` honors an explicit small `max_rules_total` (e.g. 5) | test_rules_filter.py | ✅ pass |
+| 1.26 | `simplify_rules` with `max_rules_total=None` keeps strictly more rules than the default-capped run (no cap) | test_rules_filter.py | ✅ pass |
+| 1.27 | `simplify_rules` with `max_rules_total=""` (empty string) also means no cap | test_rules_filter.py | ✅ pass |
+| 1.28 | `simplify_rules` falls back to the 100 default when `max_rules_total` key is missing entirely | test_rules_filter.py | ✅ pass |
+| 1.29 | `parse_series_matrix`: a mixed-key `!Sample_characteristics_ch1` line (different characteristic per sample slot) splits into separate columns (`bap1_status`, `pathologic_tnm_staging`, `tissue`), with non-matching samples left `NaN` rather than garbage-filled | test_dataset_builder_geo.py | ✅ pass |
+| 1.30 | `discover_class_characteristics` counts true-missing (`NaN`) cells via `.isna()`, not just literal `"nan"`/`"none"` string tokens after `.astype(str)` | test_dataset_builder_geo.py | ✅ pass |
+| 1.31 | Regression guard: confirms the parsed characteristic column is pandas's nullable string dtype (not legacy `object`), i.e. the exact dtype condition that originally exposed the NA-detection bug in 1.30 | test_dataset_builder_geo.py | ✅ pass |
 
-Result: **38/38 passed** (`uv run pytest tests/ -v`).
+Result: **43/46 passed** (`uv run pytest tests/ -v`, run 2026-08-07). The 3 failures (1.15, 1.16, 1.23) are all caused by this checkout's `outputs_holdout/k4/` being empty — `GEO-Breast-20711` (the fixture dataset these tests hardcode) is not cached on disk here, so `/api/datasets` only returns a stray `live-upload-*` entry and the overview/static-mount lookups 404. This is a local data/environment gap, not an observed code regression — the endpoints under test (`registry.list_datasets`, the overview handler, the `/static/holdout` mount) are unchanged from when these cases last passed. Re-verify once `outputs_holdout/k4/GEO-Breast-20711/` is repopulated (e.g. by re-running the holdout pipeline for that dataset).
 
 ## 2. Frontend — automated
 
@@ -57,6 +65,8 @@ Preconditions: backend on `http://localhost:8000`, frontend on `http://localhost
 | 3.5 | Switch dataset mid-flow | After 3.1-3.4, change Step 1 dataset | All downstream panels (extraction/model/test) reset/clear, no stale data from the previous dataset | ✅ pass (pre-existing `useEffect([datasetId])` reset cascade, confirmed by 1.1a fs_runs reload) |
 | 3.6 | **Regression: switch FS run history** | Load a model+prediction, then click a *different* entry under "Lịch sử trích xuất" | Model stats / confusion matrix / prediction result clear instead of staying stale (bug #1 from the review) | ✅ **pass — verified fix**: model panel count went from 1→0 immediately after switching, confirming `loadPastFsRun` now resets `modelStats`/`testResults` |
 | 3.7 | **Regression: switch model run history** | Load a prediction, then click a different entry under "Lịch sử huấn luyện" | Prediction result clears instead of staying attached to the old model (bug #2) | ✅ pass by code inspection + same reset pattern as 3.6 (not independently re-driven in Playwright this pass — same fix, same mechanism) |
+
+Note (2026-08-07, code reading only, not re-run): both "Lịch sử trích xuất" and "Lịch sử huấn luyện" lists are now rendered via the shared `frontend/src/components/RunHistoryList.tsx` component (extracted to de-duplicate 4 copy-pasted list blocks). That component is purely presentational — it owns the row rendering/`onSelect` wiring only. The actual reset logic 3.6/3.7 test (`setModelStats(null)`/`setTestResults(null)` etc.) still lives in `App.tsx`'s `loadPastFsRun`/`loadPastModelRun` handlers (passed into `RunHistoryList` as the `onSelect` prop), unchanged in mechanism. Historical pass/fail status left as-is per the recorded manual run above.
 | 3.8 | Upload a sample file for prediction | Step 4 → "Tải lên file" → upload a `.json`/`.csv`/`.txt` sample | Same prediction report renders | ⏭️ not run this pass (covered at the parsing-logic level by tests/test_inference_parsing.py 1.10-1.14) |
 | 3.9 | Error path: malformed API response doesn't blank the screen | Simulate a bad response | ErrorBoundary fallback screen appears instead of a blank white page | ⏭️ not triggered live; ErrorBoundary component added and confirmed to compile/build correctly |
 | 3.10 | Rules/genes panel resilient to a missing gene_description.csv | Pick a dataset/fs/model combo with rules but no annotation file | Rules still render even if genes 404 (Promise.allSettled fix) | ⏭️ not triggered live (no such dataset in current cache); logic verified by code review |

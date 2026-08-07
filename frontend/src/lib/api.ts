@@ -90,9 +90,6 @@ export const api = {
   getGenes: (datasetId: string, fsMethod: string, model: string, runId?: string | null) =>
     req(`/api/datasets/${enc(datasetId)}/genes/${enc(fsMethod)}/${enc(model)}${runId ? `?run_id=${enc(runId)}` : ''}`),
 
-  getTestSamples: (datasetId: string, fsMethod: string) =>
-    req(`/api/datasets/${enc(datasetId)}/test-samples/${enc(fsMethod)}`),
-
   predict: (
     datasetId: string,
     fsMethod: string,
@@ -141,6 +138,17 @@ export const api = {
     if (splitParams?.test_size != null) qs.set('test_size', String(splitParams.test_size));
     const query = qs.toString();
     return req(`/api/datasets/${enc(datasetId)}/test-samples/${enc(fsMethod)}${query ? `?${query}` : ''}`);
+  },
+
+  // Plain URL (not a fetch call) for an <a href download> link — works for
+  // both a cached dataset AND a fresh upload / custom "Thực hiện lại" split
+  // with no cache yet (backend recomputes live in that case).
+  getTestSetDownloadUrl: (datasetId: string, fsMethod: string, splitParams?: Record<string, unknown> | null) => {
+    const qs = new URLSearchParams();
+    if (splitParams?.min_samples_per_class != null) qs.set('min_samples_per_class', String(splitParams.min_samples_per_class));
+    if (splitParams?.test_size != null) qs.set('test_size', String(splitParams.test_size));
+    const query = qs.toString();
+    return `/api/datasets/${enc(datasetId)}/test-samples/${enc(fsMethod)}/download${query ? `?${query}` : ''}`;
   },
 
   uploadInspect: async (source: 'geo' | 'cumida', tissue: string, file1: File, file2?: File | null) => {

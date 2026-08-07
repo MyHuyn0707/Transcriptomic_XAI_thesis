@@ -27,14 +27,17 @@ import numpy as np
 import pandas as pd
 
 from src.helper import report
-from src.helper.data_loader import load_dataset
 from src.helper.metrics import compute_metrics
 from src.helper.scaling import apply_scaler, fit_scaler
-from src.helper.split import train_test_split_indices
+from src.helper.paths import resolve_path, safe_filename
+from src.helper.split import build_dataset_split, build_test_set_artifacts
+from src.helper.training import pick_best_run, summarize_repeats
+from src.helper.wandb_utils import wandb_log_per_class
 from src.feature_selection import run_feature_selection
 from src.models.factory import get_model
 from src.visualize import (
     plot_class_distribution,
+    plot_confusion_matrix,
     plot_train_test_split,
     update_dataset_description,
 )
@@ -68,15 +71,21 @@ class BaselineSplitMixin:
         """
         For each k in ``k_values`` (default feature_selection.yaml ->
         rare_class_k_values), for each dataset: drop rare classes at that k,
-        stratified train/test split, run FS (``boruta`` [auto mode],
-        ``mrmr_k50``, ``mrmr_k75``) on train only, then fit every enabled
-        model (configs/models.yaml) on the FS-reduced train set and evaluate
-        on both train and test.
+        stratified train/test split (one fixed split per k — see
+        src/helper/split.py::build_dataset_split), run FS (``boruta``
+        [auto mode], ``mrmr_k50``, ``mrmr_k75``) on train only, then train
+        every enabled model (configs/models.yaml) ``holdout.split_baseline.
+        n_repeats`` times (default 10, each with a different model
+        random_state — the split itself never changes) and keep the repeat
+        with the best ``select_metric`` on the test set — same pattern as
+        holdout.py's rule-extraction n_repeats, applied to every model here
+        rather than just rf/decisiontree.
 
         Writes ``outputs_baseline_split/k{k}/{dataset}/`` — split_info.json,
         visualizations/, feature_selection/<fs_method>/ (from
-        run_feature_selection), and <fs_method>/<model>/ (model+scaler
-        artifact, train+test metrics incl. per-class breakdown).
+        run_feature_selection), test_set/, and <fs_method>/<model>/models/
+        (best-repeat model+scaler artifact, repeats.csv of all n_repeats,
+        train+test metrics incl. per-class breakdown).
 
         Returns
         -------
@@ -96,13 +105,17 @@ class BaselineSplitMixin:
         split_baseline_cfg = dict(holdout_cfg.get("split_baseline", {}))
         batch_cfg = dict(holdout_cfg.get("batch", {}))
 
-        split_root = Path(split_baseline_cfg.get("baseline_split_root", "outputs_baseline_split"))
-        if not split_root.is_absolute():
-            split_root = self.config_loader.project_root / split_root
+        split_root = Path(resolve_path(
+            self.config_loader.project_root,
+            split_baseline_cfg.get("baseline_split_root", "outputs_baseline_split"),
+        ))
 
         fs_methods = list(batch_cfg.get("fs_methods", _DEFAULT_FS_METHODS))
         test_size = float(split_baseline_cfg.get("test_size", 0.15))
         split_seed = int(split_baseline_cfg.get("split_random_state", 42))
+        n_repeats = int(split_baseline_cfg.get("n_repeats", 10))
+        repeat_base_seed = int(split_baseline_cfg.get("repeat_base_seed", 0))
+        select_metric = split_baseline_cfg.get("select_metric", "f1_macro")
 
         enabled_models = self.config_loader.get_enabled_models()
         needs_scaling_map = self.config_loader.load_models_config().get("scaling")
@@ -128,20 +141,25 @@ class BaselineSplitMixin:
                     ds_root = k_root / ds_name
                     ds_root.mkdir(parents=True, exist_ok=True)
 
-                    data = load_dataset(
-                        dataset_path=Path(ds_cfg["path"]),
-                        dataset_type=ds_cfg.get("type", "auto"),
-                        min_samples_per_class=k,
+                    # Single shared implementation (src/helper/split.py) — also
+                    # used by the live UI's on-demand split
+                    # (src/api/registry.compute_holdout_split), so the batch
+                    # baseline and the live UI can never silently disagree on
+                    # what a given (k, test_size, seed) split looks like.
+                    split_result = build_dataset_split(
+                        ds_cfg, min_samples_per_class=k, test_size=test_size, random_state=split_seed,
                     )
-                    X, y = data["X"], data["y"]
-                    feature_names = data["feature_names"]
-                    sample_ids = data["sample_ids"]
-                    class_labels = self._resolve_class_labels(data, ds_cfg)
+                    data = split_result["data"]
+                    X, y = split_result["X"], split_result["y"]
+                    feature_names = split_result["feature_names"]
+                    sample_ids = split_result["sample_ids"]
+                    class_labels = split_result["class_labels"]
+                    raw_class_counts = split_result["raw_class_counts"]
+                    dropped_classes = split_result["dropped_classes"]
                     n_classes = len(np.unique(y))
                     data_by_dataset[ds_name] = data
 
-                    split = train_test_split_indices(y, test_size=test_size, random_state=split_seed)
-                    train_idx, test_idx = split["train_idx"], split["test_idx"]
+                    train_idx, test_idx = split_result["train_idx"], split_result["test_idx"]
                     report.info(
                         f"Split: {len(train_idx)} train / {len(test_idx)} test "
                         f"· {n_classes} classes survive (< {k} dropped)"
@@ -169,16 +187,6 @@ class BaselineSplitMixin:
                         min_samples=k, train_idx=train_idx, test_idx=test_idx,
                     )
 
-                    # Class distribution BEFORE rare-class removal, straight from the
-                    # already-loaded raw dataframe (data["dataframe"], see
-                    # load_dataset()'s docstring) — same source plot_class_distribution()
-                    # uses. Folding this into split_info.json means the API
-                    # (src/api/registry.load_raw_class_counts) no longer needs a
-                    # separate cache file or a manual export script to have this data.
-                    raw_counts_series = data["dataframe"].iloc[:, 1].astype(str).value_counts()
-                    raw_class_counts = {str(c): int(n) for c, n in raw_counts_series.items()}
-                    dropped_classes = [c for c in raw_class_counts if c not in class_labels]
-
                     split_info = {
                         "dataset": ds_name,
                         "min_samples_per_class": k,
@@ -203,6 +211,11 @@ class BaselineSplitMixin:
                     }
                     (ds_root / "split_info.json").write_text(
                         json.dumps(_serialize(split_info), indent=2), encoding="utf-8"
+                    )
+
+                    self._export_test_set(
+                        ds_root=ds_root, feature_names=feature_names, sample_ids=sample_ids,
+                        X=X, y=y, test_idx=test_idx, class_labels=class_labels,
                     )
 
                     X_train, y_train = X[train_idx], y[train_idx]
@@ -234,45 +247,72 @@ class BaselineSplitMixin:
                         model_summaries: Dict[str, Any] = {}
 
                         for model_name in enabled_models:
-                            report.step(f"Training {model_name.upper()} on {fs_method} (k={k})")
+                            report.step(
+                                f"Training {model_name.upper()} on {fs_method} "
+                                f"(k={k}, {n_repeats} repeats)"
+                            )
                             try:
                                 model_kwargs = self.config_loader.get_model_hyperparams(model_name)
+                                # Scaler has no randomness — fit once, reused by every repeat.
                                 scaler = fit_scaler(model_name, X_train_sel, needs_scaling_map)
                                 X_train_s = apply_scaler(scaler, X_train_sel)
                                 X_test_s = apply_scaler(scaler, X_test_sel)
 
-                                model = get_model(
-                                    model_name,
-                                    input_dim=X_train_s.shape[1],
-                                    num_classes=n_classes,
-                                    random_state=42,
-                                    **model_kwargs,
-                                )
-                                if model_name == "ann":
-                                    model.fit(X_train_s, y_train, X_val=X_test_s, y_val=y_test)
-                                else:
-                                    model.fit(X_train_s, y_train)
-
-                                def _predict(Xs):
-                                    pred = model.predict(Xs)
-                                    prob = model.predict_proba(Xs) if hasattr(model, "predict_proba") else None
+                                def _predict(m, Xs):
+                                    pred = m.predict(Xs)
+                                    prob = m.predict_proba(Xs) if hasattr(m, "predict_proba") else None
                                     return pred, prob
 
-                                y_train_pred, y_train_prob = _predict(X_train_s)
-                                y_test_pred, y_test_prob = _predict(X_test_s)
+                                # Same fixed train/test split for every repeat — only the
+                                # model's random_state changes (repeat_base_seed + i), same
+                                # pattern as holdout.py's rule-extraction n_repeats.
+                                run_rows: List[Dict[str, Any]] = []
+                                fitted: List[Any] = []
+                                for i in range(n_repeats):
+                                    seed_i = repeat_base_seed + i
+                                    model = get_model(
+                                        model_name,
+                                        input_dim=X_train_s.shape[1],
+                                        num_classes=n_classes,
+                                        random_state=seed_i,
+                                        **model_kwargs,
+                                    )
+                                    if model_name == "ann":
+                                        model.fit(X_train_s, y_train, X_val=X_test_s, y_val=y_test)
+                                    else:
+                                        model.fit(X_train_s, y_train)
 
-                                train_metrics = compute_metrics(
-                                    y_train, y_train_pred, y_train_prob,
-                                    labels=list(range(n_classes)), class_labels=class_labels,
+                                    y_train_pred, y_train_prob = _predict(model, X_train_s)
+                                    y_test_pred, y_test_prob = _predict(model, X_test_s)
+
+                                    train_m = compute_metrics(
+                                        y_train, y_train_pred, y_train_prob,
+                                        labels=list(range(n_classes)), class_labels=class_labels,
+                                    )
+                                    test_m = compute_metrics(
+                                        y_test, y_test_pred, y_test_prob,
+                                        labels=list(range(n_classes)), class_labels=class_labels,
+                                    )
+
+                                    row = {"seed": seed_i}
+                                    row.update({
+                                        f"test_{mk}": mv for mk, mv in test_m.items()
+                                        if mk not in ("confusion_matrix", "per_class")
+                                    })
+                                    run_rows.append(row)
+                                    fitted.append((model, train_m, test_m))
+
+                                results_df = pd.DataFrame(run_rows)
+                                best_pos, best_seed = pick_best_run(
+                                    results_df, f"test_{select_metric}", "test_f1_macro"
                                 )
-                                test_metrics = compute_metrics(
-                                    y_test, y_test_pred, y_test_prob,
-                                    labels=list(range(n_classes)), class_labels=class_labels,
-                                )
+                                model, train_metrics, test_metrics = fitted[best_pos]
+
                                 per_class = {
                                     "train": train_metrics.pop("per_class"),
                                     "test": test_metrics.pop("per_class"),
                                 }
+                                cm = test_metrics.pop("confusion_matrix")
 
                                 model_dir = fs_root / model_name / "models"
                                 model_dir.mkdir(parents=True, exist_ok=True)
@@ -280,9 +320,35 @@ class BaselineSplitMixin:
                                     {"model": model, "scaler": scaler},
                                     model_dir / f"{model_name}.joblib",
                                 )
+                                results_df.to_csv(model_dir / "repeats.csv", index=False)
+
+                                # Mean/std per metric across all n_repeats — same shape as
+                                # trainer.py's cv_summary.csv, named "repeats_summary" here
+                                # since this is NOT k-fold CV (see run_baseline_split docstring).
+                                metric_names = [
+                                    col[len("test_"):] for col in results_df.columns if col.startswith("test_")
+                                ]
+                                summarize_repeats(results_df, metric_names, prefix="test_").to_csv(
+                                    model_dir / "repeats_summary.csv", index=False
+                                )
+
+                                cm_fig = plot_confusion_matrix(
+                                    cm, class_labels=class_labels,
+                                    title=f"{model_name} — confusion matrix (test, seed={best_seed})",
+                                )
+                                cm_fig.savefig(model_dir / "confusion_matrix_test.png", dpi=150, bbox_inches="tight")
+                                plt.close(cm_fig)
+                                pd.DataFrame(
+                                    cm,
+                                    index=[f"true_{c}" for c in class_labels],
+                                    columns=[f"pred_{c}" for c in class_labels],
+                                ).to_csv(model_dir / "confusion_matrix_test.csv")
+
                                 (fs_root / model_name / "metrics.json").write_text(
                                     json.dumps(_serialize({
                                         "train": train_metrics, "test": test_metrics,
+                                        "n_repeats": n_repeats, "best_seed": best_seed,
+                                        "select_metric": select_metric,
                                     }), indent=2),
                                     encoding="utf-8",
                                 )
@@ -291,11 +357,14 @@ class BaselineSplitMixin:
                                 )
 
                                 model_summaries[model_name] = {"train": train_metrics, "test": test_metrics}
+                                y_test_pred_best = model.predict(X_test_s)
                                 self._wandb_log_baseline_split(
                                     ds_name, k, fs_method, model_name, train_metrics, test_metrics,
+                                    best_seed, n_repeats, y_test, y_test_pred_best, class_labels, per_class,
                                 )
                                 report.ok(
-                                    f"{model_name}: train f1_macro={train_metrics['f1_macro']:.4f} · "
+                                    f"{model_name}: best seed={best_seed} (of {n_repeats}) · "
+                                    f"train f1_macro={train_metrics['f1_macro']:.4f} · "
                                     f"test f1_macro={test_metrics['f1_macro']:.4f}"
                                 )
                             except Exception as e:
@@ -364,6 +433,48 @@ class BaselineSplitMixin:
         report.ok(f"Combined visualizations (k={k}) → {viz_dir}")
 
     @staticmethod
+    def _export_test_set(
+        ds_root: Path,
+        feature_names: List[str],
+        sample_ids: List[str],
+        X: np.ndarray,
+        y: np.ndarray,
+        test_idx: np.ndarray,
+        class_labels: List[str],
+    ) -> None:
+        """
+        Export the held-out test set for later single-sample UI testing — in
+        the raw (pre-feature-selection) feature space, so any fs_method's
+        model can pick the columns it needs by name. Generated once here (at
+        split time) and copied verbatim by run_rule_extraction_holdout()
+        rather than re-derived, so both flows always agree on the same rows.
+        Also downloadable as a ZIP from the live UI (src/api/inference.py's
+        test-set-download endpoint reads this same directory when a cached
+        one exists, or calls build_test_set_artifacts() directly otherwise).
+
+        Writes ``test_set/test_set.csv`` (full CuMiDa-format table),
+        ``test_set/manifest.csv`` (sample_id, true_label, row_index), and
+        ``test_set/samples/{sample_id}.json`` (one file per sample:
+        sample_id, true_label, full feature dict).
+        """
+        artifacts = build_test_set_artifacts(feature_names, sample_ids, X, y, test_idx, class_labels)
+
+        test_dir = ds_root / "test_set"
+        samples_dir = test_dir / "samples"
+        samples_dir.mkdir(parents=True, exist_ok=True)
+
+        artifacts["test_set_df"].to_csv(test_dir / "test_set.csv", index=False)
+        artifacts["manifest_df"].to_csv(test_dir / "manifest.csv", index=False)
+
+        for sid, payload in artifacts["samples"].items():
+            safe_sid = safe_filename(sid)
+            (samples_dir / f"{safe_sid}.json").write_text(
+                json.dumps(payload, indent=2), encoding="utf-8"
+            )
+
+        report.ok(f"Test set exported → {test_dir} ({len(artifacts['samples'])} samples)")
+
+    @staticmethod
     def _write_baseline_split_summary(
         ds_results: Dict[str, Any],
         ds_root: Path,
@@ -414,19 +525,43 @@ class BaselineSplitMixin:
         model_name: str,
         train_metrics: Dict[str, Any],
         test_metrics: Dict[str, Any],
+        best_seed: int,
+        n_repeats: int,
+        y_test: np.ndarray,
+        y_test_pred: np.ndarray,
+        class_labels: List[str],
+        per_class: Dict[str, Any],
     ) -> None:
-        """One W&B run per (dataset, k, fs_method, model) — train+test scalars."""
-        if not self.wandb_project:
+        """One W&B run per (dataset, k, fs_method, model) — train+test scalars,
+        an interactive confusion matrix, and per-class precision/recall/f1,
+        all for the winning (best-seed) repeat.
+
+        Logged to its own project (training.wandb_project_baseline_split),
+        separate from run_benchmark's and run_rule_extraction_holdout's.
+        ``config=`` carries dataset/k/fs_method/model/seed as real, filterable/
+        groupable columns in the W&B UI — the run ``name``/``group`` strings
+        are for human reading, not for W&B's own filter/group-by controls.
+        """
+        if not self.wandb_project_baseline_split:
             return
         try:
             import wandb
         except ImportError:
             return
         run = wandb.init(
-            project=self.wandb_project,
-            name=f"{dataset_name}_k{k}_{fs_method}_{model_name}_split",
+            project=self.wandb_project_baseline_split,
+            name=f"{dataset_name}_k{k}_{fs_method}_{model_name}_seed{best_seed}_split",
             group=f"{dataset_name}_k{k}_{fs_method}_{model_name}",
             job_type="baseline_split",
+            config={
+                "flow": "baseline_split",
+                "dataset": dataset_name,
+                "k": k,
+                "fs_method": fs_method,
+                "model": model_name,
+                "best_seed": best_seed,
+                "n_repeats": n_repeats,
+            },
             reinit=True,
         )
         try:
@@ -437,6 +572,15 @@ class BaselineSplitMixin:
                         log_data[f"{split_name}_{key}"] = val
             log_data["k"] = k
             run.log(log_data)
+
+            run.log({
+                "confusion_matrix": wandb.plot.confusion_matrix(
+                    probs=None, y_true=y_test.tolist(), preds=y_test_pred.tolist(),
+                    class_names=class_labels,
+                )
+            })
+
+            wandb_log_per_class(run, per_class, class_labels)
         finally:
             run.finish()
 
@@ -447,7 +591,7 @@ class BaselineSplitMixin:
     ) -> None:
         """One summary W&B run per k — a table of every (dataset, fs_method,
         model) test-set row, for cross-model/fs comparison at this k."""
-        if not self.wandb_project or not k_results:
+        if not self.wandb_project_baseline_split or not k_results:
             return
         try:
             import wandb
@@ -467,9 +611,10 @@ class BaselineSplitMixin:
         if not rows:
             return
         run = wandb.init(
-            project=self.wandb_project,
+            project=self.wandb_project_baseline_split,
             name=f"baseline_split_k{k}_comparison",
             job_type="k_comparison",
+            config={"flow": "baseline_split", "k": k},
             reinit=True,
         )
         try:

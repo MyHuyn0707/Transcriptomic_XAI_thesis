@@ -6,7 +6,7 @@ Boruta feature selection using BorutaPy + RandomForestClassifier.
 Exports
 -------
 - Confirmed features  → data_{dataset}_boruta_confirmed.csv
-- Confirmed+Tentative → data_{dataset}_boruta_tentative.csv
+- Confirmed+Tentative → data_{dataset}_boruta_confirmed_tentative.csv (only when non-empty)
 - ranking.csv         → Feature, Decision, Boruta_Rank, MI_Score
 - selected_features.json
 - support.csv         → raw BorutaPy output

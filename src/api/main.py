@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -381,6 +381,39 @@ def get_test_samples(
     return manifest
 
 
+@app.get("/api/datasets/{dataset_id}/test-samples/{fs_method}/download")
+def download_test_set(
+    dataset_id: str,
+    min_samples_per_class: Optional[int] = Query(None),
+    test_size: Optional[float] = Query(None),
+):
+    """ZIP of the held-out test set (test_set.csv, manifest.csv,
+    samples/*.json) — for transparency (audit exactly which rows were held
+    out) and for re-testing via the existing "Tải lên file" predict flow.
+    Works for both an existing cached dataset AND a brand-new upload/custom
+    split with no cache yet (see inference.build_test_set_zip).
+    """
+    dataset_id = _seg(dataset_id, "dataset_id")
+    from src.api.inference import build_test_set_zip
+
+    split_params: Dict[str, Any] = {}
+    if min_samples_per_class is not None:
+        split_params["min_samples_per_class"] = min_samples_per_class
+    if test_size is not None:
+        split_params["test_size"] = test_size
+
+    try:
+        zip_bytes = build_test_set_zip(dataset_id, split_params or None)
+    except (FileNotFoundError, ValueError) as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{dataset_id}_test_set.zip"'},
+    )
+
+
 @app.post("/api/datasets/{dataset_id}/predict")
 async def predict(dataset_id: str, req: PredictRequest):
     from src.api.inference import predict_sample
@@ -395,6 +428,8 @@ async def predict(dataset_id: str, req: PredictRequest):
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/api/datasets/{dataset_id}/predict-upload")

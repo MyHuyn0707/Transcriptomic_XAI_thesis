@@ -47,6 +47,17 @@ holdout:
     test_size: 0.15
     split_random_state: 42
 
+    # Repeated training of every enabled model (all of them, not just the
+    # rule models), same pattern as holdout.batch below: the train/test split
+    # itself is fixed (one stratified split per k, from build_dataset_split),
+    # only each repeat's model random_state changes (repeat_base_seed + i).
+    # The run with the best select_metric on the test set is kept; the other
+    # n_repeats-1 runs are discarded (not written to disk), only summarized
+    # in models/repeats.csv.
+    n_repeats: 10
+    repeat_base_seed: 0
+    select_metric: "f1_macro"
+
   batch:
     # Rare-class thresholds (min_samples_per_class) to reuse from the split
     # baseline. Must be a subset of feature_selection.yaml -> rare_class_k_values,

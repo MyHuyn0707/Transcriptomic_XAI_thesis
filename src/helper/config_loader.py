@@ -18,6 +18,8 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from src.helper.paths import resolve_path
+
 
 class ConfigLoader:
     """
@@ -183,8 +185,8 @@ class ConfigLoader:
         # regardless of the caller's working directory (e.g. notebooks/).
         for key in ("annotation_file", "series_matrix", "mapping_file"):
             val = cfg.get(key)
-            if val and not Path(val).is_absolute():
-                cfg[key] = str(self.project_root / val)
+            if val:
+                cfg[key] = resolve_path(self.project_root, val)
 
         return cfg
 
@@ -201,8 +203,8 @@ class ConfigLoader:
 
         for key in ("series_matrix", "annotation_file", "output_dir"):
             val = cfg.get(key)
-            if val and not Path(val).is_absolute():
-                cfg[key] = str(self.project_root / val)
+            if val:
+                cfg[key] = resolve_path(self.project_root, val)
 
         return cfg
 
@@ -220,8 +222,8 @@ class ConfigLoader:
 
         for key in ("probe_csv", "annotation_file", "output_dir"):
             val = cfg.get(key)
-            if val and not Path(val).is_absolute():
-                cfg[key] = str(self.project_root / val)
+            if val:
+                cfg[key] = resolve_path(self.project_root, val)
 
         return cfg
 
@@ -261,6 +263,22 @@ class ConfigLoader:
             return None
         return training.get("wandb_project", None)
 
+    def _get_wandb_project_for(self, flow_key: str) -> Optional[str]:
+        """W&B project for a specific flow (e.g. 'baseline_split', 'holdout')
+        — falls back to the main wandb_project when wandb_project_<flow_key>
+        isn't set."""
+        config = self.load_models_config()
+        training = config.get("training", {})
+        if not training.get("use_wandb", False):
+            return None
+        return training.get(f"wandb_project_{flow_key}") or training.get("wandb_project")
+
+    def get_wandb_project_baseline_split(self) -> Optional[str]:
+        return self._get_wandb_project_for("baseline_split")
+
+    def get_wandb_project_holdout(self) -> Optional[str]:
+        return self._get_wandb_project_for("holdout")
+
     # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------
@@ -298,7 +316,7 @@ class ConfigLoader:
             return True
 
         except Exception as e:
-            print(f"Config validation failed: {e}")
+            warnings.warn(f"Config validation failed: {e}", stacklevel=2)
             return False
 
     # ------------------------------------------------------------------

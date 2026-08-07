@@ -31,7 +31,7 @@ Complete reference for every file, function, parameter, input, and output in `sr
 11. [src/interpretation/shap\_utils.py](#11-srcinterpretationshap_utilspy)
 12. [src/interpretation/rules.py](#12-srcinterpretationrulespy)
 13. [src/interpretation/go\_enrichment.py](#13-srcinterpretationgo_enrichmentpy)
-14. [src/pipeline/pipeline.py](#14-srcpipelinepipelinepy)
+14. [src/pipeline/core.py](#14-srcpipelinecorepy)
 15. [configs/](#15-configs)
 16. [Output directory structure](#16-output-directory-structure)
 17. [How to run](#17-how-to-run)
@@ -46,15 +46,20 @@ LV_code/
 ├── src/                       All Python source code
 │   ├── __init__.py
 │   ├── pipeline/              Main orchestrator (GeneExpressionPipeline)
-│   │   ├── pipeline.py        Composes the mixins below
+│   │   ├── core.py            GeneExpressionPipeline class; composes the mixins below
 │   │   ├── benchmark.py       run_benchmark (CV sweep, optional k_values)
 │   │   ├── baseline_split.py  run_baseline_split (train/test split sweep, all models)
-│   │   └── holdout.py         run_rule_extraction_holdout (reuses baseline_split artifacts)
+│   │   ├── holdout.py         run_rule_extraction_holdout (reuses baseline_split artifacts)
+│   │   ├── rule_extraction.py run_rule_extraction (full-dataset rules, no split)
+│   │   └── interpretation.py  run_interpretation / run_interpretation_batch / select_best_model
 │   ├── helper/
 │   │   ├── config_loader.py   YAML configuration management
 │   │   ├── data_loader.py     Dataset I/O (GEO-D, CuMiDa)
 │   │   ├── metrics.py         Evaluation metrics
 │   │   ├── scaling.py         Conditional StandardScaler (per-model needs_scaling)
+│   │   ├── paths.py           resolve_path(), safe_filename() — shared path helpers
+│   │   ├── training.py        pick_best_run(), summarize_repeats() — repeated-training bookkeeping
+│   │   ├── wandb_utils.py     wandb_log_per_class() — shared W&B per-class logging
 │   │   └── report.py          Console / notebook output
 │   ├── feature_selection/
 │   │   ├── raw.py
@@ -308,9 +313,30 @@ Main entry point.
 
 ---
 
+### Also in src/helper/: paths.py, training.py, wandb\_utils.py
+
+Small shared helpers extracted out of duplicated code in `baseline_split.py` /
+`holdout.py` (and, for `paths.py`, `api/inference.py`) — not full modules in their
+own right, so no dedicated numbered section.
+
+| File | Function | Description |
+|------|----------|-------------|
+| `paths.py` | `resolve_path(project_root, value)` | Resolve `value` against `project_root` unless it's already absolute. |
+| `paths.py` | `safe_filename(sample_id)` | Replace path separators (`/`, `\`) in a sample id so it's safe as a filename. |
+| `training.py` | `pick_best_run(results_df, select_col, fallback_col)` | Returns `(best_pos, best_seed)` — row with the highest `select_col`, falling back to `fallback_col` if `select_col` is missing/all-null. Requires a `seed` column. |
+| `training.py` | `summarize_repeats(results_df, metric_names, prefix="")` | Mean/std per metric across repeated-training runs; returns a `DataFrame` with columns `metric, mean, std`. |
+| `wandb_utils.py` | `wandb_log_per_class(run, per_class, class_labels)` | Logs per-class precision/recall/f1 (test split) as both a `wandb.Table` and flat `test_per_class_{metric}/{class}` scalars. |
+
+---
+
 ## 6. src/feature\_selection/
 
-All three methods share the same output contract so the pipeline can call them uniformly:
+All three methods share the same output contract so the pipeline can call them uniformly.
+`dispatch.py`'s `run_feature_selection(fs_method, X, y, feature_names, sample_ids,
+dataset_name, output_root, params, allow_raw=True, source_path=None)` is the single place
+that maps an `fs_method` string to `run_raw_selection` / `run_mrmr_selection` /
+`run_boruta_selection` — both `src/pipeline/benchmark.py`'s `_run_feature_selection()`
+(§14) and `src/pipeline/baseline_split.py` call into it rather than dispatching themselves:
 
 ```python
 result = run_*_selection(X, y, feature_names, dataset_name, output_root, ...)
@@ -407,14 +433,14 @@ the output directory, so two K values coexist side by side:
 | `mrmr_mid` | MID | 50 | legacy entry, **disabled** |
 
 Any fs\_method whose name starts with `mrmr` dispatches to `run_mrmr_selection()`
-(see §14 `_run_feature_selection`), so adding another fixed-K variant is config-only.
+(see `dispatch.py` above, and §14 `_run_feature_selection`), so adding another
+fixed-K variant is config-only.
 
 **Internal functions:**
 
 | Function | Description |
 |----------|-------------|
 | `compute_mrmr_ranking(X, y, selected_features, feature_names, variant="MID", random_state)` | True incremental mRMR score per selected feature in subset context. relevance = ANOVA F-statistic; redundancy = mean \|Pearson corr\| with earlier-selected features; **MID** = rel − red, **MIQ** = rel / red. Returns `Rank, Feature, Relevance_F, Redundancy, mRMR_{MID\|MIQ}_Score` in selection order. |
-| `compute_mi_ranking(...)` | Deprecated alias → `compute_mrmr_ranking` (MID variant). |
 
 **Exports:**
 ```
@@ -818,12 +844,6 @@ Pass `X_val` / `y_val` to enable early stopping. Without them, trains for `max_e
 
 ---
 
-### 9.8 models/trainer.py (stub)
-
-Re-exports `BenchmarkTrainer` and `_compute_n_splits` from `src/trainer.py` for backward compatibility. Do not import from this file in new code — import from `src/trainer.py` directly.
-
----
-
 ## 10. src/dataset_builder/annotation.py
 
 **Purpose:** Map probe IDs (microarray feature names) to gene symbols.
@@ -1094,9 +1114,9 @@ Print top-N terms, optionally filtered to one source.
 
 ---
 
-## 14. src/pipeline/pipeline.py
+## 14. src/pipeline/core.py
 
-**Purpose:** End-to-end orchestrator. Ties together config loading, data loading, feature selection, model training, annotation, SHAP, rules, and GO enrichment.
+**Purpose:** End-to-end orchestrator. Ties together config loading, data loading, feature selection, model training, annotation, SHAP, rules, and GO enrichment. `core.py` itself defines only the `GeneExpressionPipeline` class shell (config/output-root/W&B setup, class-label resolution, probe→gene mapping) — the `run_*` methods live in the mixins it composes, in sibling modules.
 
 ### Class `GeneExpressionPipeline`
 
@@ -1108,15 +1128,17 @@ GeneExpressionPipeline(
 )
 ```
 
-Internally creates a `ConfigLoader`. W&B login is attempted at construction if `use_wandb=True` and the config enables it.
+Internally creates a `ConfigLoader`. W&B login is attempted at construction if `use_wandb=True` and the config enables it (resolves up to three separate W&B projects — `wandb_project`, `wandb_project_baseline_split`, `wandb_project_holdout` — one per pipeline stage, each falling back to the main `wandb_project` if unset).
 
 `GeneExpressionPipeline` composes mixins that live in sibling modules:
 
 | Module | Mixin | Public entry point |
 |--------|-------|--------------------|
-| `src/pipeline/benchmark.py` | `BenchmarkMixin` | `run_benchmark()` |
+| `src/pipeline/benchmark.py` | `BenchmarkMixin` | `run_benchmark()`, `run_shap()` |
 | `src/pipeline/baseline_split.py` | `BaselineSplitMixin` | `run_baseline_split()` |
 | `src/pipeline/holdout.py` | `HoldoutMixin` | `run_rule_extraction_holdout()` |
+| `src/pipeline/rule_extraction.py` | `RuleExtractionMixin` | `run_rule_extraction()` |
+| `src/pipeline/interpretation.py` | `InterpretationMixin` | `run_interpretation()`, `run_interpretation_batch()`, `select_best_model()` |
 
 Note `output_root` is honoured by `run_benchmark()` and the `outputs/`-based flows, but
 **not** by `run_baseline_split()` / `run_rule_extraction_holdout()`, which read their roots
@@ -1227,7 +1249,13 @@ generalise to unseen samples".
    `run_rule_extraction_holdout()` later reads back.
 4. Fit **every enabled model** (the full roster — `nb`, `knn`, `svm`, `rf`, `dt`,
    `xgboost`, `ann`), unlike `holdout.py` which only trains `rf` / `decisiontree`.
-5. Evaluate on **both** train and test sets.
+5. **Repeated training, same pattern as the holdout rule models:** each model is trained
+   `n_repeats` times (`configs/holdout.yaml -> holdout.split_baseline.n_repeats`, default
+   `10`), varying only the model's `random_state` (`repeat_base_seed + i`) — the
+   train/test split itself is fixed. The repeat with the best `select_metric`
+   (`holdout.split_baseline.select_metric`, default `f1_macro`) on the test set is kept
+   via `src/helper/training.py::pick_best_run()`; the rest are summarized but discarded.
+6. Evaluate the winning repeat on **both** train and test sets.
 
 **Output root:** this flow reads its own root from
 `configs/holdout.yaml -> holdout.split_baseline.baseline_split_root`
@@ -1244,6 +1272,12 @@ the pipeline object was built.
 |----------|----------|
 | `split_info.json` | Train / test **row indices** of the stratified split |
 | `feature_selection/<fs_method>/selected_features/selected_features.json` | Per-FS-method selected feature list |
+| `{fs_method}/{model}/models/{model}.joblib` | Winning repeat's `{"model", "scaler"}` |
+| `{fs_method}/{model}/models/repeats.csv` | One row per repeat (`seed` + `test_*` metrics) |
+| `{fs_method}/{model}/models/repeats_summary.csv` | Mean/std per metric across all `n_repeats` (`src/helper/training.py::summarize_repeats()`) |
+| `{fs_method}/{model}/models/confusion_matrix_test.{png,csv}` | Winning repeat's test confusion matrix |
+| `{fs_method}/{model}/metrics.json` | `{"train", "test", "n_repeats", "best_seed", "select_metric"}` for the winning repeat |
+| `{fs_method}/{model}/per_class_metrics.json` | `{"train": ..., "test": ...}` per-class P/R/F1 (§8 `per_class`) |
 
 **Cross-dataset visualizations** — auto-generated per `k` into
 `outputs_baseline_split/k{k}/visualizations/` (each dataset also gets its own
@@ -1351,32 +1385,28 @@ Delegates to `ConfigLoader.print_summary()`.
 
 #### `_run_feature_selection(X, y, feature_names, sample_ids, dataset_name, fs_method) → dict`
 
-Private dispatch method.
-
-| `fs_method` | Function called |
-|-------------|----------------|
-| `"raw"` | `run_raw_selection()` |
-| starts with `"mrmr"` | `run_mrmr_selection()` |
-| `"boruta"` | `run_boruta_selection()` |
-
-Params fetched from `ConfigLoader.get_fs_method_params(fs_method)`.
+`BenchmarkMixin` method (`src/pipeline/benchmark.py`). No longer dispatches itself —
+it's a thin wrapper that fetches `params = ConfigLoader.get_fs_method_params(fs_method)`
+and `source_path` (dataset config path, only for `fs_method == "raw"`), then delegates to
+`src/feature_selection/dispatch.py`'s `run_feature_selection()` (§6), which does the actual
+`raw` / `mrmr*` / `boruta` dispatch. `src/pipeline/baseline_split.py` calls the same
+`run_feature_selection()` directly (no per-mixin wrapper there).
 
 ---
 
 ### CLI entry point
 
-```bash
-# Benchmark — all enabled datasets
-python -m src.pipeline.pipeline benchmark
+There is no command-line entry point for the pipeline package — `main.py` at the
+repo root is an unused stub, and `src/pipeline/` has no `__main__` block or argparse
+CLI. Everything is driven from notebooks (see `notebooks/`) or the FastAPI backend
+(`src/api/`), e.g.:
 
-# Benchmark — specific dataset
-python -m src.pipeline.pipeline benchmark GEO-Breast-20711
+```python
+from src.pipeline import GeneExpressionPipeline
 
-# Benchmark — disable W&B
-python -m src.pipeline.pipeline benchmark GEO-Breast-20711 --no-wandb
-
-# Interpretation
-python -m src.pipeline.pipeline interpret GEO-Breast-20711 mrmr_k50 rf 1 --platform HG-U133_Plus_2 --no-go
+pipe = GeneExpressionPipeline()
+pipe.run_benchmark(['GEO-Breast-20711'])
+pipe.run_interpretation('GEO-Breast-20711', 'mrmr_k50', 'rf', 1, platform='HG-U133_Plus_2', run_go=False)
 ```
 
 ---
@@ -1504,6 +1534,11 @@ holdout:
     baseline_split_root: "outputs_baseline_split"
     test_size: 0.15
     split_random_state: 42
+    # Repeated training of every enabled model — same pattern as holdout.batch
+    # below, applied to the full model roster instead of just rf/decisiontree.
+    n_repeats: 10
+    repeat_base_seed: 0
+    select_metric: "f1_macro"
 
   # Read by run_rule_extraction_holdout() (and the live UI job in src/api/jobs.py).
   batch:
@@ -1548,7 +1583,7 @@ interpretation:
   shap:
     enabled: true
     top_k: 20
-    select_metric: balanced_accuracy   # picks the best (fs × model) to explain
+    select_metric: f1_macro            # picks the best (fs × model) to explain
     on_best_benchmark: true            # SHAP the winning combo after benchmarking
     on_rule_model: true                # SHAP the rule-extraction model
   rules:
@@ -1599,7 +1634,14 @@ outputs_baseline_split/
     │   │   ├── mrmr_k50/selected_features/selected_features.json
     │   │   └── mrmr_k75/selected_features/selected_features.json
     │   ├── {fs_method}/{model}/            every enabled model (nb, knn, svm, rf, dt,
-    │   │                                    xgboost, ann); train + test metrics
+    │   │                                    xgboost, ann); winning repeat of n_repeats
+    │   │   ├── metrics.json                train + test metrics, best_seed, n_repeats
+    │   │   ├── per_class_metrics.json      {"train":..., "test":...} per-class P/R/F1
+    │   │   └── models/
+    │   │       ├── {model}.joblib          winning repeat's {"model", "scaler"}
+    │   │       ├── repeats.csv             one row per repeat (seed + test_* metrics)
+    │   │       ├── repeats_summary.csv     mean ± std per metric across repeats
+    │   │       └── confusion_matrix_test.{png,csv}
     │   └── visualizations/                  per-dataset figures
     └── visualizations/                     ← combined cross-dataset figures for this k
         ├── all_datasets_class_distribution.png    (plot_all_class_distributions)
