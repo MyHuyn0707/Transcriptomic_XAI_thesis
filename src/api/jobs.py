@@ -280,6 +280,20 @@ def run_rule_model_job(
 
         ctx = _load_holdout_split(dataset, split_params)
         feat_sel = _selected_features_for(dataset, fs_method, fs_run_id)
+
+        # Mirror the resolved feature list into THIS job's own output tree
+        # (outputs_live/<job_id>/feature_selection/...), not just fs_run_id's.
+        # Prediction later resolves its artifact root from the MODEL run_id
+        # (see api/inference.py::_predict_from_features_sync), which is a
+        # different job than fs_run_id — without this copy, that lookup finds
+        # nothing here, falls back to outputs_holdout/ (empty for a
+        # newly-uploaded dataset), and ends up feeding the model's scaler the
+        # full raw feature vector instead of the ~50 selected features it was
+        # fit on (surfacing as a sklearn "X has N features, expecting M").
+        sel_out = LIVE_ROOT / job_id / "feature_selection" / dataset / fs_method / "selected_features" / "selected_features.json"
+        sel_out.parent.mkdir(parents=True, exist_ok=True)
+        sel_out.write_text(json.dumps({"selected_features": list(feat_sel)}, indent=2), encoding="utf-8")
+
         idx_map = {f: i for i, f in enumerate(ctx["feature_names"])}
         sel_idx = np.array([idx_map[f] for f in feat_sel if f in idx_map], dtype=np.int64)
 

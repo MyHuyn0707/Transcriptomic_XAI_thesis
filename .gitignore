@@ -15,7 +15,7 @@ cache/
 outputs_live/
 outputs_baseline_full/
 outputs_baseline_split/
-# output_holdout/
+outputs_holdout/
 outputs_baseline_old/
 outputs_holdout_old/
 

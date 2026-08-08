@@ -27,11 +27,22 @@ DEFAULT_NEEDS_SCALING: Dict[str, bool] = {
     "rf": False, "dt": False, "xgboost": False,
 }
 
+# src/interpretation/rule_mining.py::RULE_MODELS spells decision tree as
+# "decisiontree"; configs/models.yaml -> scaling and DEFAULT_NEEDS_SCALING
+# above key it as "dt". Without this alias, needs_scaling("decisiontree")
+# misses both lookups and falls back to the "unknown model" default of True
+# — silently standardizing a tree model's inputs during holdout rule
+# extraction, which distorts the native-feature-space thresholds rules are
+# supposed to report.
+_MODEL_NAME_ALIASES: Dict[str, str] = {"decisiontree": "dt"}
+
 
 def needs_scaling(model_name: str, needs_scaling_map: Optional[Dict[str, bool]] = None) -> bool:
     """Whether ``model_name`` should be scaled. Unknown models default to True (safe)."""
     m = needs_scaling_map if needs_scaling_map is not None else DEFAULT_NEEDS_SCALING
-    return bool(m.get(model_name.lower().strip(), True))
+    key = model_name.lower().strip()
+    key = _MODEL_NAME_ALIASES.get(key, key)
+    return bool(m.get(key, True))
 
 
 def fit_scaler(

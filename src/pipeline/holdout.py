@@ -467,7 +467,8 @@ class HoldoutMixin:
 
         # rf/decisiontree are both tree-based (NEEDS_SCALING=False) — see
         # src/helper/scaling.py; scaler will be None here.
-        scaler = fit_scaler(model_name, X_train)
+        needs_scaling_map = self.config_loader.load_models_config().get("scaling")
+        scaler = fit_scaler(model_name, X_train, needs_scaling_map)
         X_train_s = apply_scaler(scaler, X_train)
         X_test_s = apply_scaler(scaler, X_test)
 
