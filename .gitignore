@@ -27,6 +27,8 @@ outputs_LV/
 # Frontend (Node)
 frontend/node_modules/
 frontend/dist/
+frontend/.playwright-mcp/
+frontend/*.png
 
 notebooks/wandb
 
