@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
+import { TabContent, TabList, TabRoot, TabTrigger } from '../tailgrids/core/tabs';
 import { ListChecks } from 'lucide-react';
 import { FileText, UploadCloud, Reload, Play } from '@tailgrids/icons';
-import { cn } from '../../lib/utils';
 import { api, BuiltDatasetResult, pollJob, RunRecord } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
@@ -14,18 +13,6 @@ interface Props {
   state: WorkspaceState;
   dispatch: React.Dispatch<WorkspaceAction>;
 }
-
-const DATASET_TABS = ['existing', 'upload'] as const;
-
-// Shared styling for both tabs — data-[selected]/data-[disabled] are the
-// state attributes Headless UI's <Tab> sets on its own rendered element,
-// so this reads directly off Tailwind's data-attribute variants instead of
-// a manual selected ? ... : ... className branch.
-const TAB_CLASS = cn(
-  'flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors outline-none text-neutral-600',
-  'data-[selected]:bg-white data-[selected]:shadow-sm data-[selected]:text-brand-700 data-[selected]:font-medium',
-  'data-[disabled]:opacity-60 data-[disabled]:cursor-not-allowed',
-);
 
 /** Bước 1 "Chọn Dữ Liệu" — pick an already-processed dataset, or build a new
  * one from a fresh GEO/CuMiDa upload. The upload wizard's own fields
@@ -111,21 +98,25 @@ export default function Step1Dataset({ state, dispatch }: Props) {
         <p className="text-sm text-danger-600 mb-3">Không tải được danh sách dataset: {datasetsError}</p>
       )}
 
-      <TabGroup
-        selectedIndex={DATASET_TABS.indexOf(datasetTab)}
-        onChange={(index) => dispatch({ type: 'dataset_tab_changed', tab: DATASET_TABS[index] })}
+      <TabRoot
+        value={datasetTab}
+        onValueChange={(tab) => dispatch({ type: 'dataset_tab_changed', tab: tab as 'existing' | 'upload' })}
+        className="border-0 rounded-none max-w-full"
       >
-        <TabList className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm mb-4">
-          <Tab disabled={datasetLocked} className={TAB_CLASS}>
-            <ListChecks size={14} /> Chọn dataset có sẵn
-          </Tab>
-          <Tab disabled={datasetLocked} className={TAB_CLASS}>
-            <UploadCloud size={14} /> Tải lên dataset mới
-          </Tab>
+        {/* overflow-visible + flex-wrap replace Tabs' default horizontal-scroll
+            behavior (built for many tabs in a row) — with only 2 triggers we
+            want them sharing the row width evenly and wrapping their own
+            text onto a 2nd line on narrow screens, never scrolling/clipping. */}
+        <TabList className="!p-0 !border-0 mb-4 overflow-visible flex-wrap">
+          <TabTrigger value="existing" disabled={datasetLocked} icon={<ListChecks size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
+            Chọn dataset có sẵn
+          </TabTrigger>
+          <TabTrigger value="upload" disabled={datasetLocked} icon={<UploadCloud size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
+            Tải lên dataset mới
+          </TabTrigger>
         </TabList>
 
-        <TabPanels>
-          <TabPanel>
+          <TabContent value="existing" className="!p-0">
             <select
               value={datasetId}
               onChange={(e) => dispatch({ type: 'dataset_selected', datasetId: e.target.value })}
@@ -162,9 +153,9 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 </div>
               </div>
             )}
-          </TabPanel>
+          </TabContent>
 
-          <TabPanel>
+          <TabContent value="upload" className="!p-0">
             <fieldset disabled={datasetLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60 space-y-3">
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer group">
@@ -253,9 +244,8 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 renderStatus={run => `${run.summary?.n_samples ?? '?'} mẫu`}
               />
             </fieldset>
-          </TabPanel>
-        </TabPanels>
-      </TabGroup>
+          </TabContent>
+      </TabRoot>
     </>
   );
 }

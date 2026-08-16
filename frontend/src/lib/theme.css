@@ -159,6 +159,15 @@
   --color-badge-primary-background: var(--color-brand-100);
   --color-badge-primary-text: var(--color-brand-700);
   --color-badge-primary-icon-color: var(--color-brand-600);
+
+  /* Tabs bridge — only the default variant/"vertical" direction (top row of
+   * tabs, content below) is used anywhere in the app so far (see
+   * components/tailgrids/core/tabs.tsx). */
+  --color-base-200: var(--color-neutral-200);
+  --color-background-soft-100: var(--color-neutral-100);
+  --color-tab-active-background: var(--color-white-100);
+  --color-title-50: var(--color-neutral-900);
+  --color-text-100: var(--color-neutral-600);
 }
 
 /* Tailwind v4 reads @theme and turns each entry into a first-class utility
