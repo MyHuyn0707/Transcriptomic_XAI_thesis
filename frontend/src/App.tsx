@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { classColor } from './lib/palette';
+import { classificationReport, displayLabel } from './lib/metrics';
 import { api, pollJob, DatasetInfo, RunRecord } from './lib/api';
-import BioNetworkGraph from './components/BioNetworkGraph';
 import ConfusionMatrix from './components/ConfusionMatrix';
 
 import DatasetOverview from './components/DatasetOverview';
@@ -16,6 +16,11 @@ import DatasetSplit from './components/DatasetSplit';
 import FeatureExtractionOverview from './components/FeatureExtractionOverview';
 import RuleExtractionResults from './components/RuleExtractionResults';
 import RunHistoryList from './components/RunHistoryList';
+import VoteBar from './components/VoteBar';
+import GeneChipList from './components/GeneChipList';
+import Panel from './components/ui/Panel';
+import Button from './components/ui/Button';
+import Badge from './components/ui/Badge';
 
 interface TestSample {
   sample_id: string;
@@ -52,36 +57,17 @@ interface ModelStatsUI {
   } | null;
 }
 
-// A class's Vietnamese display name if the dataset description defines one
-// (same name shown in Dataset Overview), else just the raw label — avoids
-// showing only the raw internal class label in the prediction report.
-function displayLabel(raw: string, displayNames?: Record<string, string>) {
-  return displayNames?.[raw] || raw;
-}
-
-function classificationReport(cm: number[][]) {
-  return cm.map((row, i) => {
-    const support = row.reduce((a, b) => a + b, 0);
-    const colSum = cm.reduce((acc, r) => acc + r[i], 0);
-    const tp = cm[i][i];
-    const precision = colSum > 0 ? tp / colSum : 0;
-    const recall = support > 0 ? tp / support : 0;
-    const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
-    return { precision, recall, f1, support };
-  });
-}
-
 // Right column's fallback for whichever step is active but hasn't produced
 // anything yet (e.g. Bước 3 opened before feature selection has run) — same
 // dashed-box treatment the old single "Không gian Phân tích Trống" state used,
 // just scoped per-step instead of one blanket message for the whole app.
 function EmptyStepPlaceholder({ text }: { text: string }) {
   return (
-    <div className="h-full min-h-[400px] bg-white border border-slate-200 border-dashed rounded-3xl flex flex-col items-center justify-center text-slate-400 p-8 text-center shadow-sm">
-      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-        <Microscope size={28} className="text-slate-300" />
+    <div className="h-full min-h-[400px] bg-white border border-neutral-200 border-dashed rounded-3xl flex flex-col items-center justify-center text-neutral-500 p-8 text-center shadow-sm">
+      <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
+        <Microscope size={28} className="text-neutral-400" />
       </div>
-      <p className="text-sm max-w-md leading-relaxed text-slate-500">{text}</p>
+      <p className="text-sm max-w-md leading-relaxed text-neutral-600">{text}</p>
     </div>
   );
 }
@@ -180,7 +166,6 @@ export default function App() {
     max_rules_per_class: 20,
     max_rules_total: 100
   });
-  const [graphType, setGraphType] = useState('go_bp');
   const [isModelOverviewCollapsed, setIsModelOverviewCollapsed] = useState(false);
   const [isModelConfigCollapsed, setIsModelConfigCollapsed] = useState(false);
   const [isConfusionMatrixCollapsed, setIsConfusionMatrixCollapsed] = useState(false);
@@ -570,6 +555,17 @@ export default function App() {
     }
   };
 
+  // "Tổng Quan Mô Hình" (which contains the gene list a chip jumps to) auto-
+  // collapses — and unmounts — once a prediction result shows, so it must be
+  // re-expanded and given a tick to remount before the jump-to-gene listener
+  // can catch this.
+  const jumpToGene = (gene: string) => {
+    setIsModelOverviewCollapsed(false);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('jump-to-gene', { detail: { gene } }));
+    }, 60);
+  };
+
   const report = modelStats ? classificationReport(modelStats.cm) : [];
 
   // UX guard: while a later step is running, freeze every earlier step's
@@ -599,29 +595,29 @@ export default function App() {
   const openStep = (n: number) => { if (stepReady[n]) setActiveStep(n); };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-200 pb-12">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-brand-200 pb-12">
       {/* Header */}
-      <header className="bg-white border-b border-emerald-100/80 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
+      <header className="bg-white border-b border-success-100/80 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
+            <div className="w-10 h-10 bg-success-50 border border-success-200 rounded-xl flex items-center justify-center text-success-600 shadow-sm">
               <Dna size={22} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800 tracking-tight">GE-RuGO Workspace</h1>
-              <p className="text-[11px] font-semibold tracking-wider uppercase text-emerald-600">Phân lớp dữ liệu Biểu hiện Gene có giải thích</p>
+              <h1 className="text-xl font-bold text-neutral-900 tracking-tight">GE-RuGO Workspace</h1>
+              <p className="text-[11px] font-semibold tracking-wider uppercase text-success-600">Phân lớp dữ liệu Biểu hiện Gene có giải thích</p>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-4 text-sm text-slate-500 font-medium">
-            <span className={cn("flex items-center gap-1.5 transition-colors", datasetId ? "text-emerald-600" : "")}><Database size={16}/> Dữ liệu</span>
-            <span className="text-slate-300">/</span>
-            <span className={cn("flex items-center gap-1.5 transition-colors", splitStats ? "text-emerald-600" : "")}><GitMerge size={16}/> Chia dữ liệu</span>
-            <span className="text-slate-300">/</span>
-            <span className={cn("flex items-center gap-1.5 transition-colors", fsLog ? "text-emerald-600" : "")}><Settings2 size={16}/> Trích xuất</span>
-            <span className="text-slate-300">/</span>
-            <span className={cn("flex items-center gap-1.5 transition-colors", modelStats ? "text-emerald-600" : "")}><GitMerge size={16}/> Mô hình</span>
-            <span className="text-slate-300">/</span>
-            <span className={cn("flex items-center gap-1.5 transition-colors", testResults ? "text-emerald-600" : "")}><Activity size={16}/> Thực nghiệm</span>
+          <div className="hidden md:flex items-center gap-4 text-sm text-neutral-600 font-medium">
+            <span className={cn("flex items-center gap-1.5 transition-colors", datasetId ? "text-success-600" : "")}><Database size={16}/> Dữ liệu</span>
+            <span className="text-neutral-400">/</span>
+            <span className={cn("flex items-center gap-1.5 transition-colors", splitStats ? "text-success-600" : "")}><GitMerge size={16}/> Chia dữ liệu</span>
+            <span className="text-neutral-400">/</span>
+            <span className={cn("flex items-center gap-1.5 transition-colors", fsLog ? "text-success-600" : "")}><Settings2 size={16}/> Trích xuất</span>
+            <span className="text-neutral-400">/</span>
+            <span className={cn("flex items-center gap-1.5 transition-colors", modelStats ? "text-success-600" : "")}><GitMerge size={16}/> Mô hình</span>
+            <span className="text-neutral-400">/</span>
+            <span className={cn("flex items-center gap-1.5 transition-colors", testResults ? "text-success-600" : "")}><Activity size={16}/> Thực nghiệm</span>
           </div>
         </div>
       </header>
@@ -631,14 +627,14 @@ export default function App() {
         {/* Cột Trái: Cấu hình */}
         <div className="lg:col-span-4 space-y-8 relative">
 
-          <div className="absolute left-[23px] top-12 bottom-12 w-0.5 bg-slate-100 -z-10 hidden lg:block"></div>
+          <div className="absolute left-[23px] top-12 bottom-12 w-0.5 bg-neutral-100 -z-10 hidden lg:block"></div>
 
           {/* Bước 1: Dataset */}
           <section className="relative">
             <div className="flex items-start gap-4 mb-4">
               <button
                 onClick={() => openStep(1)}
-                className="w-12 h-12 shrink-0 bg-white border-2 border-teal-500 rounded-full flex items-center justify-center text-teal-600 shadow-sm z-10 hover:bg-teal-50 transition-colors"
+                className="w-12 h-12 shrink-0 bg-white border-2 border-brand-500 rounded-full flex items-center justify-center text-brand-600 shadow-sm z-10 hover:bg-brand-50 transition-colors"
               >
                 <span className="font-bold text-lg">1</span>
               </button>
@@ -647,28 +643,28 @@ export default function App() {
                   className="flex items-center justify-between cursor-pointer group mb-4"
                   onClick={() => openStep(1)}
                 >
-                  <h2 className="text-lg font-semibold text-slate-800 group-hover:text-teal-700 transition-colors">Chọn Dữ Liệu</h2>
-                  <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
+                  <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">Chọn Dữ Liệu</h2>
+                  <span className="text-neutral-500 group-hover:text-brand-600 transition-colors">
                     {activeStep === 1 ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </span>
                 </div>
-                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-slate-200", activeStep !== 1 && "hidden")}>
+                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-neutral-200", activeStep !== 1 && "hidden")}>
                   {datasetsError && (
-                    <p className="text-sm text-rose-600 mb-3">Không tải được danh sách dataset: {datasetsError}</p>
+                    <p className="text-sm text-danger-600 mb-3">Không tải được danh sách dataset: {datasetsError}</p>
                   )}
 
-                  <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-sm mb-4">
+                  <div className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm mb-4">
                     <button
                       onClick={() => setDatasetTab('existing')}
                       disabled={datasetLocked}
-                      className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", datasetTab === 'existing' ? "bg-white shadow-sm text-teal-700 font-medium" : "text-slate-500")}
+                      className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", datasetTab === 'existing' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                     >
                       <ListChecks size={14} /> Chọn dataset có sẵn
                     </button>
                     <button
                       onClick={() => setDatasetTab('upload')}
                       disabled={datasetLocked}
-                      className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", datasetTab === 'upload' ? "bg-white shadow-sm text-teal-700 font-medium" : "text-slate-500")}
+                      className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", datasetTab === 'upload' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                     >
                       <UploadCloud size={14} /> Tải lên dataset mới
                     </button>
@@ -680,7 +676,7 @@ export default function App() {
                         value={datasetId}
                         onChange={(e) => setDatasetId(e.target.value)}
                         disabled={datasetLocked}
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="">-- Chọn Dữ liệu --</option>
                         {datasets.map(d => (
@@ -689,15 +685,15 @@ export default function App() {
                       </select>
 
                       {selectedDataset && (
-                        <div className="mt-4 p-4 bg-teal-50/50 rounded-xl border border-teal-100/50 space-y-2 text-sm">
+                        <div className="mt-4 p-4 bg-brand-50/50 rounded-xl border border-brand-100/50 space-y-2 text-sm">
                           <div className="flex justify-between items-center">
-                            <span className="text-slate-500">Mã dataset</span>
-                            <span className="font-mono text-xs text-teal-700 bg-teal-100/60 px-2 py-0.5 rounded" title={selectedDataset.id}>{selectedDataset.id}</span>
+                            <span className="text-neutral-600">Mã dataset</span>
+                            <span className="font-mono text-xs text-brand-700 bg-brand-100/60 px-2 py-0.5 rounded" title={selectedDataset.id}>{selectedDataset.id}</span>
                           </div>
-                          <div className="flex justify-between"><span className="text-slate-500">Nền tảng vi mảng</span> <span className="font-medium text-slate-700">{selectedDataset.platform}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-500">Mẫu bệnh phẩm</span> <span className="font-medium text-slate-700">{selectedDataset.n_samples}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-500">Đặc trưng</span> <span className="font-medium text-slate-700">{selectedDataset.n_features?.toLocaleString()}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-500">Số lớp</span> <span className="font-medium text-teal-700">{selectedDataset.n_classes}</span></div>
+                          <div className="flex justify-between"><span className="text-neutral-600">Nền tảng vi mảng</span> <span className="font-medium text-neutral-800">{selectedDataset.platform}</span></div>
+                          <div className="flex justify-between"><span className="text-neutral-600">Mẫu bệnh phẩm</span> <span className="font-medium text-neutral-800">{selectedDataset.n_samples}</span></div>
+                          <div className="flex justify-between"><span className="text-neutral-600">Đặc trưng</span> <span className="font-medium text-neutral-800">{selectedDataset.n_features?.toLocaleString()}</span></div>
+                          <div className="flex justify-between"><span className="text-neutral-600">Số lớp</span> <span className="font-medium text-brand-700">{selectedDataset.n_classes}</span></div>
                         </div>
                       )}
                     </>
@@ -705,74 +701,75 @@ export default function App() {
                     <fieldset disabled={datasetLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60 space-y-3">
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" name="uploadSource" checked={uploadSource === 'geo'} onChange={() => { setUploadSource('geo'); setUploadId(null); setUploadCharacteristics([]); }} className="w-4 h-4 shrink-0 accent-teal-600" />
-                          <span className="font-medium text-slate-700 group-hover:text-teal-700 transition-colors">Từ NCBI GEO</span>
+                          <input type="radio" name="uploadSource" checked={uploadSource === 'geo'} onChange={() => { setUploadSource('geo'); setUploadId(null); setUploadCharacteristics([]); }} className="w-4 h-4 shrink-0 accent-brand-600" />
+                          <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Từ NCBI GEO</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" name="uploadSource" checked={uploadSource === 'cumida'} onChange={() => { setUploadSource('cumida'); setUploadId(null); setUploadCharacteristics([]); }} className="w-4 h-4 shrink-0 accent-teal-600" />
-                          <span className="font-medium text-slate-700 group-hover:text-teal-700 transition-colors">Từ CuMiDa</span>
+                          <input type="radio" name="uploadSource" checked={uploadSource === 'cumida'} onChange={() => { setUploadSource('cumida'); setUploadId(null); setUploadCharacteristics([]); }} className="w-4 h-4 shrink-0 accent-brand-600" />
+                          <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Từ CuMiDa</span>
                         </label>
                       </div>
 
                       <div>
-                        <label className="text-xs text-slate-500 font-medium block mb-1">Tên thư mục lưu trữ</label>
-                        <input type="text" value={uploadTissue} onChange={e => setUploadTissue(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500" />
+                        <label className="text-xs text-neutral-600 font-medium block mb-1">Tên thư mục lưu trữ</label>
+                        <input type="text" value={uploadTissue} onChange={e => setUploadTissue(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
                       </div>
 
                       <div>
-                        <label className="text-xs text-slate-500 font-medium block mb-1">
+                        <label className="text-xs text-neutral-600 font-medium block mb-1">
                           {uploadSource === 'geo' ? 'File series matrix (.txt.gz)' : 'File probe CuMiDa (.csv)'}
                         </label>
                         <input
                           type="file"
                           accept={uploadSource === 'geo' ? '.gz,.txt' : '.csv'}
                           onChange={e => setUploadFile1(e.target.files?.[0] || null)}
-                          className="w-full text-sm text-slate-600"
+                          className="w-full text-sm text-neutral-700"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-500 font-medium block mb-1">
+                        <label className="text-xs text-neutral-600 font-medium block mb-1">
                           File annotation {uploadSource === 'geo' ? 'GPL (tùy chọn)' : 'CuMiDa (tùy chọn)'}
                         </label>
                         <input
                           type="file"
                           onChange={e => setUploadFile2(e.target.files?.[0] || null)}
-                          className="w-full text-sm text-slate-600"
+                          className="w-full text-sm text-neutral-700"
                         />
                       </div>
 
-                      <button
+                      <Button
+                        variant="secondary"
                         onClick={handleUploadInspect}
                         disabled={!uploadFile1 || isUploadInspecting || isUploadBuilding}
-                        className="w-full bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors border border-slate-200 disabled:opacity-70 shadow-sm text-sm"
+                        className="w-full"
                       >
-                        {isUploadInspecting ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} className="text-slate-400" />}
+                        {isUploadInspecting ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} className="text-neutral-500" />}
                         Phân tích file
-                      </button>
+                      </Button>
 
                       {uploadCharacteristics.length > 0 && (
                         <div className="animate-in fade-in slide-in-from-top-2">
-                          <label className="text-xs text-slate-500 font-medium block mb-1">Cột đặc trưng dùng làm nhãn lớp</label>
+                          <label className="text-xs text-neutral-600 font-medium block mb-1">Cột đặc trưng dùng làm nhãn lớp</label>
                           <select
                             value={uploadClassChar}
                             onChange={e => setUploadClassChar(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 mb-3"
+                            className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 mb-3"
                           >
                             {uploadCharacteristics.map(c => <option key={c} value={c}>{c}</option>)}
                           </select>
-                          <button
+                          <Button
                             onClick={handleUploadBuild}
                             disabled={!uploadClassChar || isUploadBuilding}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-70 shadow-sm text-sm"
+                            className="w-full"
                           >
                             {isUploadBuilding ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
                             Xây dựng dataset
-                          </button>
+                          </Button>
                         </div>
                       )}
 
                       {uploadLog && (
-                        <div className="bg-slate-900 rounded-xl p-4 text-xs font-mono text-teal-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 max-h-64 overflow-y-auto">
+                        <div className="bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
                           {uploadLog}
                         </div>
                       )}
@@ -805,7 +802,7 @@ export default function App() {
               <button
                 onClick={() => openStep(2)}
                 disabled={!datasetId}
-                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", datasetId ? "border-teal-500 text-teal-600 hover:bg-teal-50" : "border-slate-200 text-slate-400 cursor-not-allowed")}
+                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", datasetId ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-500 cursor-not-allowed")}
               >
                 <span className="font-bold text-lg">2</span>
               </button>
@@ -814,59 +811,60 @@ export default function App() {
                   className="flex items-center justify-between cursor-pointer group mb-4"
                   onClick={() => openStep(2)}
                 >
-                  <h2 className="text-lg font-semibold text-slate-800 group-hover:text-teal-700 transition-colors">Xử lý &amp; Chia Dữ liệu</h2>
-                  <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
+                  <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">Xử lý &amp; Chia Dữ liệu</h2>
+                  <span className="text-neutral-500 group-hover:text-brand-600 transition-colors">
                     {activeStep === 2 ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </span>
                 </div>
-                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden", activeStep !== 2 && "hidden")}>
-                  {!datasetId && <div className="absolute inset-0 z-20 bg-slate-50/50"></div>}
+                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-neutral-200 relative overflow-hidden", activeStep !== 2 && "hidden")}>
+                  {!datasetId && <div className="absolute inset-0 z-20 bg-neutral-50/50"></div>}
 
                   <fieldset disabled={splitSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5 text-sm">
+                    <Panel className="mb-5 text-sm">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-slate-700">Cấu hình chia dữ liệu</span>
-                        <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Tùy chỉnh</span>
+                        <span className="font-semibold text-neutral-800">Cấu hình chia dữ liệu</span>
+                        <Badge tone="brand">Tùy chỉnh</Badge>
                       </div>
                       <div className="grid grid-cols-1 gap-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-500">min_samples_per_class</span>
-                          <input type="number" min={2} value={splitInputs.min_samples_per_class} onChange={e => setSplitInputs({ ...splitInputs, min_samples_per_class: Number(e.target.value) })} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                          <span className="text-neutral-600">min_samples_per_class</span>
+                          <input type="number" min={2} value={splitInputs.min_samples_per_class} onChange={e => setSplitInputs({ ...splitInputs, min_samples_per_class: Number(e.target.value) })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-500">test_size</span>
-                          <input type="number" step="0.01" min={0.05} max={0.5} value={splitInputs.test_size} onChange={e => setSplitInputs({ ...splitInputs, test_size: Number(e.target.value) })} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                          <span className="text-neutral-600">test_size</span>
+                          <input type="number" step="0.01" min={0.05} max={0.5} value={splitInputs.test_size} onChange={e => setSplitInputs({ ...splitInputs, test_size: Number(e.target.value) })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                         </div>
                       </div>
-                    </div>
+                    </Panel>
 
                     <div className="flex gap-3">
-                      <button
+                      <Button
                         onClick={() => handleSplitAction('retrain')}
                         disabled={isSplitLoading || !datasetId}
-                        className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-70 shadow-sm text-sm"
+                        className="flex-1"
                       >
                         {isSplitLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
                         Thực hiện lại
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="secondary"
                         onClick={() => handleSplitAction('load')}
                         disabled={isSplitLoading || !datasetId || selectedDataset?.is_temp}
                         title={selectedDataset?.is_temp ? 'Dataset tải lên chưa từng qua xử lý offline nên không có số liệu chia dữ liệu cache — dùng "Thực hiện lại".' : undefined}
-                        className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors border border-slate-200 disabled:opacity-70 shadow-sm text-sm"
+                        className="flex-1"
                       >
-                        <FileText size={16} className="text-slate-400" />
+                        <FileText size={16} className="text-neutral-500" />
                         Tải dữ liệu có sẵn
-                      </button>
+                      </Button>
                     </div>
                     {selectedDataset?.is_temp && (
-                      <p className="text-xs text-amber-600 mt-2">
+                      <p className="text-xs text-warning-600 mt-2">
                         Dataset tải lên chưa có số liệu chia dữ liệu cache — chỉ dùng được "Thực hiện lại".
                       </p>
                     )}
 
                     {splitLog && (
-                      <div className="mt-4 bg-slate-900 rounded-xl p-4 text-xs font-mono text-teal-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 max-h-64 overflow-y-auto">
+                      <div className="mt-4 bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
                         {splitLog}
                       </div>
                     )}
@@ -891,7 +889,7 @@ export default function App() {
               <button
                 onClick={() => openStep(3)}
                 disabled={!splitStats}
-                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", splitStats ? "border-teal-500 text-teal-600 hover:bg-teal-50" : "border-slate-200 text-slate-400 cursor-not-allowed")}
+                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", splitStats ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-500 cursor-not-allowed")}
               >
                 <span className="font-bold text-lg">3</span>
               </button>
@@ -900,79 +898,79 @@ export default function App() {
                   className="flex items-center justify-between cursor-pointer group mb-4"
                   onClick={() => openStep(3)}
                 >
-                  <h2 className="text-lg font-semibold text-slate-800 group-hover:text-teal-700 transition-colors">Trích xuất đặc trưng</h2>
-                  <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
+                  <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">Trích xuất đặc trưng</h2>
+                  <span className="text-neutral-500 group-hover:text-brand-600 transition-colors">
                     {activeStep === 3 ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </span>
                 </div>
-                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden", activeStep !== 3 && "hidden")}>
-                  {!splitStats && <div className="absolute inset-0 z-20 bg-slate-50/50"></div>}
+                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-neutral-200 relative overflow-hidden", activeStep !== 3 && "hidden")}>
+                  {!splitStats && <div className="absolute inset-0 z-20 bg-neutral-50/50"></div>}
 
                   <fieldset disabled={fsSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
                   <div className="flex gap-4 mb-5">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="fsMethod" checked={fsMethod === 'boruta'} onChange={() => setFsMethod('boruta')} className="w-4 h-4 shrink-0 accent-teal-600 focus:ring-teal-500" />
-                      <span className="font-medium text-slate-700 group-hover:text-teal-700 transition-colors">Boruta</span>
+                      <input type="radio" name="fsMethod" checked={fsMethod === 'boruta'} onChange={() => setFsMethod('boruta')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Boruta</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="fsMethod" checked={fsMethod === 'mrmr'} onChange={() => setFsMethod('mrmr')} className="w-4 h-4 shrink-0 accent-teal-600 focus:ring-teal-500" />
-                      <span className="font-medium text-slate-700 group-hover:text-teal-700 transition-colors">mRMR</span>
+                      <input type="radio" name="fsMethod" checked={fsMethod === 'mrmr'} onChange={() => setFsMethod('mrmr')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">mRMR</span>
                     </label>
                   </div>
 
                   {selectedDataset && !selectedDataset.fs_models[fsMethodKey] && (
-                    <p className="text-xs text-amber-600 mb-3">Dataset này chưa có kết quả cache cho {fsMethodKey} — chỉ có thể dùng "Huấn luyện".</p>
+                    <p className="text-xs text-warning-600 mb-3">Dataset này chưa có kết quả cache cho {fsMethodKey} — chỉ có thể dùng "Huấn luyện".</p>
                   )}
 
                   {fsMethod === 'boruta' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5 text-sm animate-in fade-in slide-in-from-top-2">
+                    <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-slate-700">Cấu hình Boruta</span>
-                        <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Tùy chỉnh</span>
+                        <span className="font-semibold text-neutral-800">Cấu hình Boruta</span>
+                        <Badge tone="brand">Tùy chỉnh</Badge>
                       </div>
                       <div className="grid grid-cols-1 gap-y-3">
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">n_estimators</span>
-                           <input type="text" value={borutaConfig.n_estimators} onChange={e => setBorutaConfig({...borutaConfig, n_estimators: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">n_estimators</span>
+                           <input type="text" value={borutaConfig.n_estimators} onChange={e => setBorutaConfig({...borutaConfig, n_estimators: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">rf_n_estimators</span>
-                           <input type="number" value={borutaConfig.rf_n_estimators} onChange={e => setBorutaConfig({...borutaConfig, rf_n_estimators: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">rf_n_estimators</span>
+                           <input type="number" value={borutaConfig.rf_n_estimators} onChange={e => setBorutaConfig({...borutaConfig, rf_n_estimators: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">max_depth</span>
-                           <input type="text" placeholder="null" value={borutaConfig.max_depth} onChange={e => setBorutaConfig({...borutaConfig, max_depth: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">max_depth</span>
+                           <input type="text" placeholder="null" value={borutaConfig.max_depth} onChange={e => setBorutaConfig({...borutaConfig, max_depth: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">max_iter</span>
-                           <input type="number" value={borutaConfig.max_iter} onChange={e => setBorutaConfig({...borutaConfig, max_iter: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">max_iter</span>
+                           <input type="number" value={borutaConfig.max_iter} onChange={e => setBorutaConfig({...borutaConfig, max_iter: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">perc</span>
-                           <input type="number" value={borutaConfig.perc} onChange={e => setBorutaConfig({...borutaConfig, perc: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">perc</span>
+                           <input type="number" value={borutaConfig.perc} onChange={e => setBorutaConfig({...borutaConfig, perc: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">alpha</span>
-                           <input type="number" step="0.01" value={borutaConfig.alpha} onChange={e => setBorutaConfig({...borutaConfig, alpha: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">alpha</span>
+                           <input type="number" step="0.01" value={borutaConfig.alpha} onChange={e => setBorutaConfig({...borutaConfig, alpha: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">class_weight</span>
-                           <select value={borutaConfig.class_weight} onChange={e => setBorutaConfig({...borutaConfig, class_weight: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500">
+                           <span className="text-neutral-600">class_weight</span>
+                           <select value={borutaConfig.class_weight} onChange={e => setBorutaConfig({...borutaConfig, class_weight: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
                              <option value="balanced">balanced</option>
                              <option value="balanced_subsample">balanced_subsample</option>
                              <option value="none">none</option>
                            </select>
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">random_state</span>
-                           <input type="number" value={borutaConfig.random_state} onChange={e => setBorutaConfig({...borutaConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">random_state</span>
+                           <input type="number" value={borutaConfig.random_state} onChange={e => setBorutaConfig({...borutaConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">Chế độ chọn đặc trưng</span>
+                           <span className="text-neutral-600">Chế độ chọn đặc trưng</span>
                            <select
                              value={borutaConfig.selection_mode}
                              onChange={e => setBorutaConfig({...borutaConfig, selection_mode: e.target.value as typeof borutaConfig.selection_mode})}
-                             className="w-40 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+                             className="w-40 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                            >
                              <option value="confirmed">confirmed</option>
                              <option value="confirmed_tentative">confirmed_tentative</option>
@@ -981,34 +979,34 @@ export default function App() {
                          </div>
                          {borutaConfig.selection_mode === 'top_k' && (
                            <div className="flex justify-between items-center">
-                             <span className="text-slate-500">k</span>
+                             <span className="text-neutral-600">k</span>
                              <input
                                type="number"
                                min={1}
                                placeholder="số đặc trưng"
                                value={borutaConfig.k}
                                onChange={e => setBorutaConfig({...borutaConfig, k: e.target.value === '' ? '' : Number(e.target.value)})}
-                               className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+                               className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                              />
                            </div>
                          )}
                       </div>
-                    </div>
+                    </Panel>
                   )}
 
                   {isMrmr && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5 text-sm animate-in fade-in slide-in-from-top-2">
+                    <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
                       <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-slate-700">Cấu hình mRMR</span>
-                        <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Tùy chỉnh</span>
+                        <span className="font-semibold text-neutral-800">Cấu hình mRMR</span>
+                        <Badge tone="brand">Tùy chỉnh</Badge>
                       </div>
                       <div className="grid grid-cols-1 gap-y-3">
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">criterion</span>
-                           <input type="text" value={mrmrConfig.criterion} readOnly className="w-24 px-2 py-1 text-right font-mono text-slate-500 font-semibold bg-slate-100 border border-slate-200 rounded text-sm focus:outline-none cursor-not-allowed" />
+                           <span className="text-neutral-600">criterion</span>
+                           <input type="text" value={mrmrConfig.criterion} readOnly className="w-24 px-2 py-1 text-right font-mono text-neutral-600 font-semibold bg-neutral-100 border border-neutral-200 rounded text-sm focus:outline-none cursor-not-allowed" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">K (features)</span>
+                           <span className="text-neutral-600">K (features)</span>
                            <select
                              value={mrmrKMode}
                              onChange={e => {
@@ -1018,7 +1016,7 @@ export default function App() {
                                  setMrmrConfig({ ...mrmrConfig, K: Number(mode) });
                                }
                              }}
-                             className="w-24 px-2 py-1 font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+                             className="w-24 px-2 py-1 font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                            >
                              <option value="50">50</option>
                              <option value="75">75</option>
@@ -1027,58 +1025,59 @@ export default function App() {
                          </div>
                          {mrmrKMode === 'custom' && (
                            <div className="flex justify-between items-center">
-                             <span className="text-slate-500">Giá trị K</span>
+                             <span className="text-neutral-600">Giá trị K</span>
                              <input
                                type="number"
                                min={1}
                                value={mrmrConfig.K}
                                onChange={e => setMrmrConfig({ ...mrmrConfig, K: Math.max(1, Number(e.target.value) || 1) })}
-                               className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+                               className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                                aria-label="Giá trị K mới"
                              />
                            </div>
                          )}
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">n_bins</span>
-                           <input type="number" value={mrmrConfig.n_bins} onChange={e => setMrmrConfig({...mrmrConfig, n_bins: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">n_bins</span>
+                           <input type="number" value={mrmrConfig.n_bins} onChange={e => setMrmrConfig({...mrmrConfig, n_bins: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
-                           <span className="text-slate-500">random_state</span>
-                           <input type="number" value={mrmrConfig.random_state} onChange={e => setMrmrConfig({...mrmrConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <span className="text-neutral-600">random_state</span>
+                           <input type="number" value={mrmrConfig.random_state} onChange={e => setMrmrConfig({...mrmrConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                       </div>
-                    </div>
+                    </Panel>
                   )}
 
                   <div className="flex gap-3">
-                    <button
+                    <Button
                       onClick={() => handleFsAction('retrain')}
                       disabled={isFsLoading || !splitStats}
-                      className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-70 shadow-sm text-sm"
+                      className="flex-1"
                     >
                       {isFsLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
                       Trích xuất lại
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
                       onClick={() => handleFsAction('load')}
                       disabled={isFsLoading || !splitStats || !selectedDataset?.fs_models[fsMethodKey]}
-                      className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors border border-slate-200 disabled:opacity-70 shadow-sm text-sm"
+                      className="flex-1"
                     >
-                      <FileText size={16} className="text-slate-400" />
+                      <FileText size={16} className="text-neutral-500" />
                       Tải kết quả có sẵn
-                    </button>
+                    </Button>
                   </div>
 
                   {fsLog && (
-                    <div className="mt-4 bg-slate-900 rounded-xl p-4 text-xs font-mono text-teal-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 max-h-64 overflow-y-auto">
+                    <div className="mt-4 bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
                       {fsLog}
                     </div>
                   )}
 
                   {fsMethod === 'boruta' && (extractionStats?.selection_mode ?? borutaConfig.selection_mode) === 'confirmed' &&
                     extractionStats && (extractionStats.confirmed ?? extractionStats.n_selected_features) < 5 && (
-                    <div className="mt-4 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-amber-800">
-                      <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                    <div className="mt-4 flex items-start gap-2 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2.5 text-warning-800">
+                      <AlertTriangle size={14} className="text-warning-500 shrink-0 mt-0.5" />
                       <p className="text-xs leading-relaxed">
                         Số đặc trưng "confirmed" quá ít ({extractionStats.confirmed ?? extractionStats.n_selected_features}) —
                         có thể không đủ để huấn luyện mô hình rule tốt. Thử "confirmed_tentative" hoặc "top_k".
@@ -1107,7 +1106,7 @@ export default function App() {
               <button
                 onClick={() => openStep(4)}
                 disabled={!extractionStats}
-                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", extractionStats ? "border-teal-500 text-teal-600 hover:bg-teal-50" : "border-slate-200 text-slate-400 cursor-not-allowed")}
+                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", extractionStats ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-500 cursor-not-allowed")}
               >
                 <span className="font-bold text-lg">4</span>
               </button>
@@ -1116,142 +1115,143 @@ export default function App() {
                   className="flex items-center justify-between cursor-pointer group mb-4"
                   onClick={() => openStep(4)}
                 >
-                  <h2 className="text-lg font-semibold text-slate-800 group-hover:text-teal-700 transition-colors">Mô Hình</h2>
-                  <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
+                  <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">Mô Hình</h2>
+                  <span className="text-neutral-500 group-hover:text-brand-600 transition-colors">
                     {activeStep === 4 ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </span>
                 </div>
-                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden", activeStep !== 4 && "hidden")}>
-                  {!extractionStats && <div className="absolute inset-0 z-20 bg-slate-50/50"></div>}
+                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-neutral-200 relative overflow-hidden", activeStep !== 4 && "hidden")}>
+                  {!extractionStats && <div className="absolute inset-0 z-20 bg-neutral-50/50"></div>}
 
                   <fieldset disabled={modelSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
                   <div className="flex gap-4 mb-5">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="modelType" checked={modelType === 'rf'} onChange={() => setModelType('rf')} className="w-4 h-4 shrink-0 accent-teal-600 focus:ring-teal-500" />
-                      <span className="font-medium text-slate-700 group-hover:text-teal-700 transition-colors">Random Forest</span>
+                      <input type="radio" name="modelType" checked={modelType === 'rf'} onChange={() => setModelType('rf')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Random Forest</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="modelType" checked={modelType === 'dt'} onChange={() => setModelType('dt')} className="w-4 h-4 shrink-0 accent-teal-600 focus:ring-teal-500" />
-                      <span className="font-medium text-slate-700 group-hover:text-teal-700 transition-colors">Decision Tree</span>
+                      <input type="radio" name="modelType" checked={modelType === 'dt'} onChange={() => setModelType('dt')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Decision Tree</span>
                     </label>
                   </div>
 
                   {fsRunId && (
-                    <p className="text-xs text-amber-600 mb-3">
+                    <p className="text-xs text-warning-600 mb-3">
                       Đặc trưng hiện tại đến từ một lần chạy live (run {fsRunId}) — không thể "Tải mô hình cũ" (được huấn luyện trên đặc trưng cache khác), chỉ có thể "Huấn luyện" lại trên tập đặc trưng này.
                     </p>
                   )}
 
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5 text-sm animate-in fade-in slide-in-from-top-2">
+                  <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
                     <div className="flex justify-between items-center mb-3">
-                      <span className="font-semibold text-slate-700">Cấu hình huấn luyện</span>
-                      <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Tùy chỉnh</span>
+                      <span className="font-semibold text-neutral-800">Cấu hình huấn luyện</span>
+                      <Badge tone="brand">Tùy chỉnh</Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-y-3">
                       {modelType === 'rf' && (
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-500">n_estimators</span>
-                          <input type="number" value={modelConfig.n_estimators} onChange={e => setModelConfig({...modelConfig, n_estimators: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                          <span className="text-neutral-600">n_estimators</span>
+                          <input type="number" value={modelConfig.n_estimators} onChange={e => setModelConfig({...modelConfig, n_estimators: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                         </div>
                       )}
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">max_depth</span>
-                        <input type="number" value={modelConfig.max_depth} onChange={e => setModelConfig({...modelConfig, max_depth: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">max_depth</span>
+                        <input type="number" value={modelConfig.max_depth} onChange={e => setModelConfig({...modelConfig, max_depth: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">min_samples_leaf</span>
-                        <input type="number" value={modelConfig.min_samples_leaf} onChange={e => setModelConfig({...modelConfig, min_samples_leaf: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">min_samples_leaf</span>
+                        <input type="number" value={modelConfig.min_samples_leaf} onChange={e => setModelConfig({...modelConfig, min_samples_leaf: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">class_weight</span>
-                        <select value={modelConfig.class_weight} onChange={e => setModelConfig({...modelConfig, class_weight: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500">
+                        <span className="text-neutral-600">class_weight</span>
+                        <select value={modelConfig.class_weight} onChange={e => setModelConfig({...modelConfig, class_weight: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
                           <option value="balanced">balanced</option>
                           <option value="balanced_subsample">balanced_subsample</option>
                           <option value="none">none</option>
                         </select>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">random_state</span>
-                        <input type="number" value={modelConfig.random_state} onChange={e => setModelConfig({...modelConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">random_state</span>
+                        <input type="number" value={modelConfig.random_state} onChange={e => setModelConfig({...modelConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                     </div>
-                  </div>
+                  </Panel>
 
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5 text-sm animate-in fade-in slide-in-from-top-2">
+                  <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
                     <div className="flex justify-between items-center mb-3">
-                      <span className="font-semibold text-slate-700">Cấu hình Lọc Luật</span>
-                      <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Tùy chỉnh</span>
+                      <span className="font-semibold text-neutral-800">Cấu hình Lọc Luật</span>
+                      <Badge tone="brand">Tùy chỉnh</Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">min_confidence</span>
-                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_confidence} onChange={e => setModelConfig({...modelConfig, min_confidence: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">min_confidence</span>
+                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_confidence} onChange={e => setModelConfig({...modelConfig, min_confidence: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">min_fidelity</span>
-                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_fidelity} onChange={e => setModelConfig({...modelConfig, min_fidelity: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">min_fidelity</span>
+                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_fidelity} onChange={e => setModelConfig({...modelConfig, min_fidelity: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">min_support</span>
-                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_support} onChange={e => setModelConfig({...modelConfig, min_support: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">min_support</span>
+                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_support} onChange={e => setModelConfig({...modelConfig, min_support: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">min_abs_support</span>
-                        <input type="number" value={modelConfig.min_abs_support} onChange={e => setModelConfig({...modelConfig, min_abs_support: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">min_abs_support</span>
+                        <input type="number" value={modelConfig.min_abs_support} onChange={e => setModelConfig({...modelConfig, min_abs_support: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">max_conditions</span>
-                        <input type="number" value={modelConfig.max_conditions} onChange={e => setModelConfig({...modelConfig, max_conditions: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">max_conditions</span>
+                        <input type="number" value={modelConfig.max_conditions} onChange={e => setModelConfig({...modelConfig, max_conditions: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">max_rules_per_class</span>
-                        <input type="number" value={modelConfig.max_rules_per_class} onChange={e => setModelConfig({...modelConfig, max_rules_per_class: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">max_rules_per_class</span>
+                        <input type="number" value={modelConfig.max_rules_per_class} onChange={e => setModelConfig({...modelConfig, max_rules_per_class: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">max_rules_total</span>
-                        <input type="number" value={modelConfig.max_rules_total} onChange={e => setModelConfig({...modelConfig, max_rules_total: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">max_rules_total</span>
+                        <input type="number" value={modelConfig.max_rules_total} onChange={e => setModelConfig({...modelConfig, max_rules_total: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">merge_same_gene</span>
-                        <input type="checkbox" checked={modelConfig.merge_same_gene} onChange={e => setModelConfig({...modelConfig, merge_same_gene: e.target.checked})} className="w-4 h-4 accent-teal-600" />
+                        <span className="text-neutral-600">merge_same_gene</span>
+                        <input type="checkbox" checked={modelConfig.merge_same_gene} onChange={e => setModelConfig({...modelConfig, merge_same_gene: e.target.checked})} className="w-4 h-4 accent-brand-600" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">dedup</span>
-                        <input type="checkbox" checked={modelConfig.dedup} onChange={e => setModelConfig({...modelConfig, dedup: e.target.checked})} className="w-4 h-4 accent-teal-600" />
+                        <span className="text-neutral-600">dedup</span>
+                        <input type="checkbox" checked={modelConfig.dedup} onChange={e => setModelConfig({...modelConfig, dedup: e.target.checked})} className="w-4 h-4 accent-brand-600" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">dedup_sig_figs</span>
-                        <input type="number" min={1} max={6} value={modelConfig.dedup_sig_figs} onChange={e => setModelConfig({...modelConfig, dedup_sig_figs: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                        <span className="text-neutral-600">dedup_sig_figs</span>
+                        <input type="number" min={1} max={6} value={modelConfig.dedup_sig_figs} onChange={e => setModelConfig({...modelConfig, dedup_sig_figs: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500" title="Loại bỏ luật bị luật khác (cùng bộ gene, cùng lớp) bao trùm hoàn toàn — xem giải thích ở khung chat.">merge_generalization</span>
-                        <input type="checkbox" checked={modelConfig.merge_generalization} onChange={e => setModelConfig({...modelConfig, merge_generalization: e.target.checked})} className="w-4 h-4 accent-teal-600" />
+                        <span className="text-neutral-600" title="Loại bỏ luật bị luật khác (cùng bộ gene, cùng lớp) bao trùm hoàn toàn — xem giải thích ở khung chat.">merge_generalization</span>
+                        <input type="checkbox" checked={modelConfig.merge_generalization} onChange={e => setModelConfig({...modelConfig, merge_generalization: e.target.checked})} className="w-4 h-4 accent-brand-600" />
                       </div>
                     </div>
-                  </div>
+                  </Panel>
 
                   <div className="flex gap-3">
-                    <button
+                    <Button
                       onClick={() => handleModelAction('retrain')}
                       disabled={isModelLoading || !extractionStats}
-                      className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-70 shadow-sm text-sm"
+                      className="flex-1"
                     >
                       {isModelLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
                       Huấn luyện lại
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
                       onClick={() => handleModelAction('load')}
                       disabled={modelLoadDisabled}
                       title={fsRunId ? 'Không khả dụng khi đặc trưng hiện tại đến từ một lần chạy live' : undefined}
-                      className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors border border-slate-200 disabled:opacity-70 shadow-sm text-sm"
+                      className="flex-1"
                     >
-                      <FileText size={16} className="text-slate-400" />
+                      <FileText size={16} className="text-neutral-500" />
                       Tải mô hình có sẵn
-                    </button>
+                    </Button>
                   </div>
 
                   {modelLog && (
-                    <div className="mt-4 bg-slate-900 rounded-xl p-4 text-xs font-mono text-teal-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-slate-800 max-h-64 overflow-y-auto">
+                    <div className="mt-4 bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
                       {modelLog}
                     </div>
                   )}
@@ -1277,7 +1277,7 @@ export default function App() {
               <button
                 onClick={() => openStep(5)}
                 disabled={!modelStats}
-                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", modelStats ? "border-teal-500 text-teal-600 hover:bg-teal-50" : "border-slate-200 text-slate-400 cursor-not-allowed")}
+                className={cn("w-12 h-12 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors", modelStats ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-500 cursor-not-allowed")}
               >
                 <span className="font-bold text-lg">5</span>
               </button>
@@ -1286,26 +1286,26 @@ export default function App() {
                   className="flex items-center justify-between cursor-pointer group mb-4"
                   onClick={() => openStep(5)}
                 >
-                  <h2 className="text-lg font-semibold text-slate-800 group-hover:text-teal-700 transition-colors">Kiểm Thử (Thực Nghiệm)</h2>
-                  <span className="text-slate-400 group-hover:text-teal-600 transition-colors">
+                  <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">Kiểm Thử (Thực Nghiệm)</h2>
+                  <span className="text-neutral-500 group-hover:text-brand-600 transition-colors">
                     {activeStep === 5 ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </span>
                 </div>
-                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden", activeStep !== 5 && "hidden")}>
-                  {!modelStats && <div className="absolute inset-0 z-20 bg-slate-50/50"></div>}
+                <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-neutral-200 relative overflow-hidden", activeStep !== 5 && "hidden")}>
+                  {!modelStats && <div className="absolute inset-0 z-20 bg-neutral-50/50"></div>}
 
                   <fieldset disabled={testSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
                   <div className="flex flex-col gap-4">
-                     <div className="flex gap-2 p-1 bg-slate-100 rounded-lg text-sm">
+                     <div className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm">
                        <button
                          onClick={() => setTestMode('sample')}
-                         className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'sample' ? "bg-white shadow-sm text-teal-700 font-medium" : "text-slate-500")}
+                         className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'sample' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                        >
                          <ListChecks size={14} /> Chọn mẫu có sẵn
                        </button>
                        <button
                          onClick={() => setTestMode('upload')}
-                         className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'upload' ? "bg-white shadow-sm text-teal-700 font-medium" : "text-slate-500")}
+                         className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'upload' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                        >
                          <UploadCloud size={14} /> Tải lên file
                        </button>
@@ -1322,7 +1322,7 @@ export default function App() {
                        <a
                          href={api.getTestSetDownloadUrl(datasetId, fsMethodKey, splitParams)}
                          download
-                         className="w-full py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"
+                         className="w-full py-2 border border-neutral-200 hover:bg-neutral-50 text-neutral-700 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"
                        >
                          <Download size={14} /> Tải xuống test set (ZIP) — minh bạch dữ liệu đánh giá
                        </a>
@@ -1332,7 +1332,7 @@ export default function App() {
                        <select
                          value={testSampleId}
                          onChange={(e) => setTestSampleId(e.target.value)}
-                         className="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors shadow-sm"
+                         className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-sm"
                        >
                          <option value="">-- Chọn mẫu bệnh phẩm (test set thật) --</option>
                          {testSamples.map(s => (
@@ -1340,10 +1340,10 @@ export default function App() {
                          ))}
                        </select>
                      ) : (
-                       <label className="w-full border-2 border-dashed border-teal-200 bg-teal-50/30 hover:bg-teal-50/80 text-teal-700 rounded-xl px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
-                         <UploadCloud size={24} className="mb-2 text-teal-500" />
+                       <label className="w-full border-2 border-dashed border-brand-200 bg-brand-50/30 hover:bg-brand-50/80 text-brand-700 rounded-xl px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
+                         <UploadCloud size={24} className="mb-2 text-brand-500" />
                          <span className="font-medium text-sm">{uploadFile ? uploadFile.name : 'Tải lên mẫu bệnh phẩm'}</span>
-                         <span className="text-xs text-slate-400 mt-1">
+                         <span className="text-xs text-neutral-500 mt-1">
                            Định dạng <span className="font-mono">.json</span> (giống mẫu test_set — chỉ cần giữ lại dữ liệu microarray, các trường khác có thể lược bỏ),
                            {' '}<span className="font-mono">.csv</span> (cột "samples,type,{'{probe}'}...") hoặc <span className="font-mono">.txt</span> (2 cột probe,giá trị)
                          </span>
@@ -1351,14 +1351,15 @@ export default function App() {
                        </label>
                      )}
 
-                      <button
+                      <Button
                         onClick={handleTestSample}
                         disabled={(testMode === 'sample' ? !testSampleId : !uploadFile) || isTesting}
-                        className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
+                        size="lg"
+                        className="w-full"
                       >
                         {isTesting ? <Loader2 size={18} className="animate-spin" /> : <Activity size={18} />}
                         Dự Đoán Kết Quả
-                      </button>
+                      </Button>
                   </div>
                   </fieldset>
                 </div>
@@ -1408,18 +1409,18 @@ export default function App() {
               {/* Tổng Quan Mô Hình — parent card; Confusion Matrix, Chi tiết Phân Loại,
                   Rule Extraction and Bio Graph are all sub-sections of this one card,
                   collapsible together so the testing result below isn't buried under them. */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
                 <div
                   className="flex items-center justify-between gap-4 cursor-pointer group"
                   onClick={() => setIsModelOverviewCollapsed(c => !c)}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 border border-teal-100">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
                       <GitMerge size={20} />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight group-hover:text-teal-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
+                    <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
                   </div>
-                  <button className="p-2 rounded-full hover:bg-teal-50 text-slate-500 hover:text-teal-600 transition-colors shrink-0">
+                  <button className="p-2 rounded-full hover:bg-brand-50 text-neutral-600 hover:text-brand-600 transition-colors shrink-0">
                     {isModelOverviewCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
                   </button>
                 </div>
@@ -1427,17 +1428,17 @@ export default function App() {
                 {/* Stat badges on their own row below the title — keeping them beside
                     the title squeezed the heading on narrower widths. */}
                 <div className="flex flex-wrap gap-3 mt-4">
-                  <div className="bg-white px-5 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Accuracy</span>
-                    <span className="text-xl font-bold text-teal-600">{modelStats.acc}%</span>
+                  <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Accuracy</span>
+                    <span className="text-xl font-bold text-brand-600">{modelStats.acc}%</span>
                   </div>
-                  <div className="bg-white px-5 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">F1</span>
-                    <span className="text-xl font-bold text-teal-600">{modelStats.f1}%</span>
+                  <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">F1</span>
+                    <span className="text-xl font-bold text-brand-600">{modelStats.f1}%</span>
                   </div>
-                  <div className="bg-white px-5 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Rules</span>
-                    <span className="text-xl font-bold text-teal-600">{modelStats.rules}</span>
+                  <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Rules</span>
+                    <span className="text-xl font-bold text-brand-600">{modelStats.rules}</span>
                   </div>
                 </div>
 
@@ -1469,47 +1470,47 @@ export default function App() {
                           max_rules_total: modelConfig.max_rules_total,
                         };
                         return (
-                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                             <div
                               className="flex items-center justify-between cursor-pointer group/cfg"
                               onClick={() => setIsModelConfigCollapsed(c => !c)}
                             >
                               <div className="flex items-center gap-2">
-                                <Settings2 className="text-teal-600" size={20} />
-                                <h3 className="text-base font-semibold text-slate-800 group-hover/cfg:text-teal-700 transition-colors">Tham số cấu hình</h3>
+                                <Settings2 className="text-brand-600" size={20} />
+                                <h3 className="text-base font-semibold text-neutral-900 group-hover/cfg:text-brand-700 transition-colors">Tham số cấu hình</h3>
                               </div>
-                              <button className="p-1.5 rounded-full hover:bg-teal-50 text-slate-400 transition-colors shrink-0">
+                              <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
                                 {isModelConfigCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                               </button>
                             </div>
                             {!isModelConfigCollapsed && (
                               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
-                                  <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <span className="w-1.5 h-4 bg-teal-500 rounded-full inline-block"></span>
+                                <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200">
+                                  <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                                    <span className="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
                                     Siêu tham số mô hình ({modelType === 'rf' ? 'Random Forest' : 'Decision Tree'})
                                   </h4>
                                   <div className="grid grid-cols-1 gap-y-3">
                                     {modelStats.hyperparams ? Object.entries(modelStats.hyperparams).map(([k, v]) => (
-                                      <div key={k} className="flex justify-between py-2 border-b border-slate-200 border-dashed">
-                                        <span className="text-slate-500 text-sm font-mono">{k}</span>
-                                        <span className="text-slate-800 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
+                                      <div key={k} className="flex justify-between py-2 border-b border-neutral-200 border-dashed">
+                                        <span className="text-neutral-600 text-sm font-mono">{k}</span>
+                                        <span className="text-neutral-900 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
                                       </div>
                                     )) : (
-                                      <p className="text-sm text-slate-400 italic">Không có dữ liệu.</p>
+                                      <p className="text-sm text-neutral-500 italic">Không có dữ liệu.</p>
                                     )}
                                   </div>
                                 </div>
-                                <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
-                                  <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <span className="w-1.5 h-4 bg-blue-500 rounded-full inline-block"></span>
+                                <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200">
+                                  <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                                    <span className="w-1.5 h-4 bg-info-500 rounded-full inline-block"></span>
                                     Cấu hình Lọc Luật
                                   </h4>
                                   <div className="grid grid-cols-1 gap-y-3">
                                     {Object.entries(filterDisplay).map(([k, v]) => (
-                                      <div key={k} className="flex justify-between py-2 border-b border-slate-200 border-dashed">
-                                        <span className="text-slate-500 text-sm font-mono">{k}</span>
-                                        <span className="text-slate-800 font-medium text-sm font-mono">{v == null ? '—' : String(v)}</span>
+                                      <div key={k} className="flex justify-between py-2 border-b border-neutral-200 border-dashed">
+                                        <span className="text-neutral-600 text-sm font-mono">{k}</span>
+                                        <span className="text-neutral-900 font-medium text-sm font-mono">{v == null ? '—' : String(v)}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -1522,16 +1523,16 @@ export default function App() {
 
                       {/* Confusion Matrix — own card + collapse, stacked (not side-by-side with
                           the report) so neither gets clipped/overlapped on narrower screens. */}
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                         <div
                           className="flex items-center justify-between cursor-pointer group/cm"
                           onClick={() => setIsConfusionMatrixCollapsed(c => !c)}
                         >
                           <div className="flex items-center gap-2">
-                            <Table2 className="text-teal-600" size={20} />
-                            <h3 className="text-base font-semibold text-slate-800 group-hover/cm:text-teal-700 transition-colors">Ma trận nhầm lẫn</h3>
+                            <Table2 className="text-brand-600" size={20} />
+                            <h3 className="text-base font-semibold text-neutral-900 group-hover/cm:text-brand-700 transition-colors">Ma trận nhầm lẫn</h3>
                           </div>
-                          <button className="p-1.5 rounded-full hover:bg-teal-50 text-slate-400 transition-colors shrink-0">
+                          <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
                             {isConfusionMatrixCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                           </button>
                         </div>
@@ -1543,23 +1544,23 @@ export default function App() {
                       </div>
 
                       {/* Detailed Classification Report */}
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                         <div
                           className="flex items-center justify-between cursor-pointer group/cr"
                           onClick={() => setIsClassificationReportCollapsed(c => !c)}
                         >
                           <div className="flex items-center gap-2">
-                            <FileText className="text-teal-600" size={20} />
-                            <h3 className="text-base font-semibold text-slate-800 group-hover/cr:text-teal-700 transition-colors">Chi tiết Phân Loại</h3>
+                            <FileText className="text-brand-600" size={20} />
+                            <h3 className="text-base font-semibold text-neutral-900 group-hover/cr:text-brand-700 transition-colors">Chi tiết Phân Loại</h3>
                           </div>
-                          <button className="p-1.5 rounded-full hover:bg-teal-50 text-slate-400 transition-colors shrink-0">
+                          <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
                             {isClassificationReportCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                           </button>
                         </div>
                         {!isClassificationReportCollapsed && (
                           <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-200">
                             <table className="w-full text-sm text-left table-fixed">
-                              <thead className="text-xs text-slate-400 uppercase bg-slate-50/80 rounded-t-lg">
+                              <thead className="text-xs text-neutral-500 uppercase bg-neutral-50/80 rounded-t-lg">
                                 <tr>
                                   <th className="px-3 py-3 font-semibold rounded-tl-lg w-2/5">Lớp (Class)</th>
                                   <th className="px-3 py-3 font-semibold">Precision</th>
@@ -1568,14 +1569,14 @@ export default function App() {
                                   <th className="px-3 py-3 font-semibold rounded-tr-lg">Support</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-100">
+                              <tbody className="divide-y divide-neutral-100">
                                 {modelStats.labels.map((label, idx) => (
-                                  <tr key={label} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-3 py-4 font-medium text-slate-700 truncate" title={label}>{label}</td>
-                                    <td className="px-3 py-4 text-slate-600 font-mono">{report[idx]?.precision.toFixed(2)}</td>
-                                    <td className="px-3 py-4 text-slate-600 font-mono">{report[idx]?.recall.toFixed(2)}</td>
-                                    <td className="px-3 py-4 text-slate-600 font-mono">{report[idx]?.f1.toFixed(2)}</td>
-                                    <td className="px-3 py-4 text-slate-600 font-mono">{report[idx]?.support}</td>
+                                  <tr key={label} className="hover:bg-neutral-50/50 transition-colors">
+                                    <td className="px-3 py-4 font-medium text-neutral-800 truncate" title={label}>{label}</td>
+                                    <td className="px-3 py-4 text-neutral-700 font-mono">{report[idx]?.precision.toFixed(2)}</td>
+                                    <td className="px-3 py-4 text-neutral-700 font-mono">{report[idx]?.recall.toFixed(2)}</td>
+                                    <td className="px-3 py-4 text-neutral-700 font-mono">{report[idx]?.f1.toFixed(2)}</td>
+                                    <td className="px-3 py-4 text-neutral-700 font-mono">{report[idx]?.support}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1594,29 +1595,6 @@ export default function App() {
                       rulesSummary={modelStats.rulesSummary}
                       labels={modelStats.labels}
                     />
-
-                    {/* Bio Graph */}
-                    {/* <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                        <div className="flex items-center gap-2">
-                          <Microscope className="text-teal-600" size={20} />
-                          <h3 className="text-base font-semibold text-slate-800">Mạng Lưới Tương Tác Gen (Biology Graph)</h3>
-                        </div>
-                        <select
-                          value={graphType}
-                          onChange={(e) => setGraphType(e.target.value)}
-                          className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors shadow-sm"
-                        >
-                          <option value="go_bp">GO Biological Process</option>
-                          <option value="go_cc">GO Cellular Component</option>
-                          <option value="go_mf">GO Molecular Function</option>
-                          <option value="kegg">KEGG Pathways</option>
-                        </select>
-                      </div>
-                      <div className="bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100">
-                        <BioNetworkGraph graphType={graphType} />
-                      </div>
-                    </div> */}
                   </div>
                 )}
               </div>
@@ -1631,12 +1609,12 @@ export default function App() {
                   onClick={() => setIsTestResultsCollapsed(c => !c)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 shrink-0 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
                       <Activity size={20} />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">Kết quả Thực nghiệm</h2>
+                    <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">Kết quả Thực nghiệm</h2>
                   </div>
-                  <button className="p-2 rounded-full hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-colors shrink-0">
+                  <button className="p-2 rounded-full hover:bg-success-50 text-neutral-600 hover:text-success-600 transition-colors shrink-0">
                     {isTestResultsCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
                   </button>
                 </div>
@@ -1645,36 +1623,36 @@ export default function App() {
                 <div className="w-full">
                   {testResults ? (
                     testResults.classification === 'Loi' ? (
-                    <div className="experimental-report bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-right-4 duration-500 border border-red-800/40 h-full">
-                      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-800">
-                        <AlertTriangle className="text-red-400" size={24} />
-                        <h3 className="text-lg font-bold">Lỗi khi thực nghiệm</h3>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 border border-danger-200 h-full">
+                      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-neutral-200">
+                        <AlertTriangle className="text-danger-500" size={24} />
+                        <h3 className="text-lg font-bold text-neutral-800">Lỗi khi thực nghiệm</h3>
                       </div>
-                      <p className="text-sm text-red-300 bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2">
+                      <p className="text-sm text-danger-700 bg-danger-50 border border-danger-200 rounded-lg px-3 py-2">
                         {testResults.explanation || 'Đã có lỗi xảy ra, vui lòng thử lại.'}
                       </p>
                     </div>
                     ) : (
-                    <div className="experimental-report bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-right-4 duration-500 border border-slate-800 h-full">
-                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
-                        <CheckCircle2 className="text-teal-400" size={24} />
-                        <h3 className="text-lg font-bold">Báo cáo Phân loại</h3>
-                        <span className="ml-auto bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs py-1 px-3 rounded-full font-medium">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 border border-neutral-200 h-full">
+                      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200">
+                        <CheckCircle2 className="text-brand-600" size={24} />
+                        <h3 className="text-lg font-bold text-neutral-800">Báo cáo Phân loại</h3>
+                        <span className="ml-auto bg-brand-100 text-brand-700 border border-brand-200 text-xs py-1 px-3 rounded-full font-medium">
                           Khớp {testResults.matchedCount} rules
                         </span>
                       </div>
 
                       {testResults.trueLabel ? (
-                        <p className="text-sm text-slate-400 mb-4">
-                          Nhãn thật: <span className="font-semibold text-slate-200">
+                        <p className="text-sm text-neutral-500 mb-4">
+                          Nhãn thật: <span className="font-semibold text-neutral-700">
                             {displayLabel(testResults.trueLabel, testResults.classDisplayNames)}
                           </span>
                           {testResults.classDisplayNames?.[testResults.trueLabel] && (
-                            <span className="text-slate-500 font-mono text-xs ml-1.5">({testResults.trueLabel})</span>
+                            <span className="text-neutral-500 font-mono text-xs ml-1.5">({testResults.trueLabel})</span>
                           )}
                         </p>
                       ) : (
-                        <p className="text-sm text-slate-500 mb-4 italic">Dữ liệu upload không có nhãn</p>
+                        <p className="text-sm text-neutral-500 mb-4 italic">Dữ liệu upload không có nhãn</p>
                       )}
 
                       {/* Two independent predictions shown side by side: the model's
@@ -1686,35 +1664,35 @@ export default function App() {
                           backgroundColor: classColor(testResults.classification, modelStats?.labels || []) + '14',
                           borderColor: classColor(testResults.classification, modelStats?.labels || []) + '55',
                         }}>
-                          <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Mô hình (RF/DT)</span>
+                          <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Mô hình (RF/DT)</span>
                           <span className="font-bold text-xl" style={{ color: classColor(testResults.classification, modelStats?.labels || []) }}>
                             {testResults.classDisplayName || testResults.classification}
                           </span>
                           {testResults.classDisplayName && (
-                            <span className="text-slate-500 font-mono text-xs block mt-0.5">{testResults.classification}</span>
+                            <span className="text-neutral-500 font-mono text-xs block mt-0.5">{testResults.classification}</span>
                           )}
                         </div>
                         <div className="rounded-xl p-4 border" style={{
                           backgroundColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, modelStats?.labels || []) + '14' : 'rgba(100,116,139,0.1)',
                           borderColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, modelStats?.labels || []) + '55' : 'rgba(100,116,139,0.3)',
                         }}>
-                          <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Tập luật (rule-based)</span>
+                          <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Tập luật (rule-based)</span>
                           {testResults.rulePrediction ? (
                             <>
                               <span className="font-bold text-xl" style={{ color: classColor(testResults.rulePrediction, modelStats?.labels || []) }}>
                                 {testResults.rulePredictionDisplayName || testResults.rulePrediction}
                               </span>
                               {testResults.rulePredictionDisplayName && (
-                                <span className="text-slate-500 font-mono text-xs block mt-0.5">{testResults.rulePrediction}</span>
+                                <span className="text-neutral-500 font-mono text-xs block mt-0.5">{testResults.rulePrediction}</span>
                               )}
                             </>
                           ) : (
-                            <span className="font-bold text-xl text-slate-500">Không có luật khớp</span>
+                            <span className="font-bold text-xl text-neutral-400">Không có luật khớp</span>
                           )}
                         </div>
                       </div>
                       {testResults.rulePrediction && testResults.rulePrediction !== testResults.classification && (
-                        <p className="text-xs text-amber-400/90 bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2 mb-6">
+                        <p className="text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2 mb-6">
                           Hai dự đoán không trùng nhau — mô hình quyết định dựa trên toàn bộ đặc trưng, còn tập luật chỉ phản ánh các luật đơn giản tình cờ khớp với mẫu này (xem "Tỷ lệ Luật Khớp theo Lớp" bên dưới).
                         </p>
                       )}
@@ -1722,15 +1700,15 @@ export default function App() {
                       {/* Matched-rules list — same bordered-box level as the vote breakdown
                           and biomedical assessment below it (previously this list floated
                           without its own box, unlike its siblings). */}
-                      <div className="bg-white rounded-xl p-5 border border-slate-200 mb-6">
+                      <div className="bg-white rounded-xl p-5 border border-neutral-200 mb-6">
                         <div
                           className="flex items-center justify-between mb-4 cursor-pointer group/rules"
                           onClick={() => setIsMatchedRulesCollapsed(c => !c)}
                         >
-                          <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 group-hover/rules:text-teal-300 transition-colors">
+                          <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 group-hover/rules:text-brand-800 transition-colors">
                             Danh sách Luật Khớp ({testResults.rules.length})
                           </h4>
-                          <button className="text-slate-500 hover:text-teal-300 transition-colors">
+                          <button className="text-neutral-400 hover:text-brand-600 transition-colors">
                             {isMatchedRulesCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                           </button>
                         </div>
@@ -1739,7 +1717,7 @@ export default function App() {
                           {testResults.rules.map((rule: { id: number, text: string, matched: boolean, desc: string, sampleValues: Record<string, number>, class: string }) => {
                             const ruleColor = classColor(rule.class, modelStats?.labels || []);
                             return (
-                            <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-teal-50 border border-teal-200" : "bg-white border border-slate-200 opacity-60")}>
+                            <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-brand-50 border border-brand-200" : "bg-white border border-neutral-200 opacity-60")}>
                               <div className="px-4 py-3 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <span
@@ -1748,23 +1726,23 @@ export default function App() {
                                   >
                                     {displayLabel(rule.class, testResults.classDisplayNames)}
                                   </span>
-                                  <code className="font-mono text-xs md:text-sm text-teal-800">{rule.text}</code>
+                                  <code className="font-mono text-xs md:text-sm text-brand-800">{rule.text}</code>
                                 </div>
                                 <button
                                   onClick={() => setExpandedRule(expandedRule === rule.id ? null : rule.id)}
-                                  className="text-teal-700 hover:text-teal-900 transition-colors shrink-0 ml-4"
+                                  className="text-brand-700 hover:text-brand-900 transition-colors shrink-0 ml-4"
                                   title="Giải thích Y sinh"
                                 >
                                   <Info size={16} />
                                 </button>
                               </div>
                               {expandedRule === rule.id && (
-                                <div className="px-4 py-3 bg-slate-50 text-sm text-slate-700 border-t border-slate-200 leading-relaxed">
+                                <div className="px-4 py-3 bg-neutral-50 text-sm text-neutral-800 border-t border-neutral-200 leading-relaxed">
                                   <p className="mb-3">{rule.desc || 'Chưa có mô tả sinh học cho luật này (chạy scripts/generate_bio_descriptions.py để sinh).'}</p>
                                   <div className="flex flex-wrap gap-2">
                                     {Object.entries(rule.sampleValues).map(([gene, val]) => (
-                                      <span key={gene} className="bg-white px-2 py-1 rounded-md text-xs font-mono border border-slate-200">
-                                        <span className="text-teal-700">{gene}</span> = {val}
+                                      <span key={gene} className="bg-white px-2 py-1 rounded-md text-xs font-mono border border-neutral-200">
+                                        <span className="text-brand-700">{gene}</span> = {val}
                                       </span>
                                     ))}
                                   </div>
@@ -1784,32 +1762,13 @@ export default function App() {
                         const matchedGenes = Array.from(new Set(
                           testResults.rules.flatMap((rule: { sampleValues: Record<string, number> }) => Object.keys(rule.sampleValues)),
                         )) as string[];
-                        if (matchedGenes.length === 0) return null;
                         return (
-                          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
-                            <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 mb-4">Danh sách Gene trong Luật Khớp</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {matchedGenes.map(gene => (
-                                <button
-                                  key={gene}
-                                  onClick={() => {
-                                    // "Tổng Quan Mô Hình" (which contains the gene list target)
-                                    // auto-collapses — and unmounts — once a prediction result
-                                    // shows, so it must be re-expanded and given a tick to
-                                    // remount before the jump-to-gene listener can catch this.
-                                    setIsModelOverviewCollapsed(false);
-                                    setTimeout(() => {
-                                      window.dispatchEvent(new CustomEvent('jump-to-gene', { detail: { gene } }));
-                                    }, 60);
-                                  }}
-                                  className="px-2.5 py-1 rounded-md text-xs font-mono bg-slate-900/60 border border-slate-700 text-teal-300 hover:bg-teal-900/40 hover:border-teal-700 hover:text-teal-200 transition-colors"
-                                  title="Xem chi tiết gene này ở danh sách Gene phía trên"
-                                >
-                                  {gene}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          <GeneChipList
+                            className="mb-6"
+                            title="Danh sách Gene trong Luật Khớp"
+                            genes={matchedGenes}
+                            onJumpToGene={jumpToGene}
+                          />
                         );
                       })()}
 
@@ -1821,15 +1780,15 @@ export default function App() {
                           the whole chip); the ratio badge sits on its own header row so it never
                           crowds out the rule text like it did when squeezed inline before. */}
                       {testResults.partialMatches && testResults.partialMatches.length > 0 && (
-                        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
+                        <Panel padding="lg" className="mb-6">
                           <div
                             className="flex items-center justify-between mb-4 cursor-pointer group/partial"
                             onClick={() => setIsPartialMatchesCollapsed(c => !c)}
                           >
-                            <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 group-hover/partial:text-teal-300 transition-colors">
+                            <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 group-hover/partial:text-brand-800 transition-colors">
                               Luật Khớp Một Phần ({testResults.partialMatches.length})
                             </h4>
-                            <button className="text-slate-500 hover:text-teal-300 transition-colors">
+                            <button className="text-neutral-400 hover:text-brand-600 transition-colors">
                               {isPartialMatchesCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                             </button>
                           </div>
@@ -1838,7 +1797,7 @@ export default function App() {
                             {testResults.partialMatches.map((p: { ruleId: number, text: string, class: string, satisfied: number, total: number, ratio: number, conditions: Array<{ gene: string, probe: string, op: string, threshold: number, actual: number, ok: boolean }> }) => {
                               const ruleColor = classColor(p.class, modelStats?.labels || []);
                               return (
-                                <div key={p.ruleId} className="rounded-xl overflow-hidden bg-slate-800/30 border border-slate-700/50 p-4">
+                                <div key={p.ruleId} className="rounded-xl overflow-hidden bg-white border border-neutral-200 p-4">
                                   <div className="flex items-center justify-between gap-3 mb-2">
                                     <span
                                       className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shrink-0"
@@ -1846,16 +1805,16 @@ export default function App() {
                                     >
                                       {displayLabel(p.class, testResults.classDisplayNames)}
                                     </span>
-                                    <span className="shrink-0 bg-amber-500/10 text-amber-300 border border-amber-500/30 text-[11px] py-1 px-2.5 rounded-full font-semibold">
+                                    <span className="shrink-0 bg-warning-100 text-warning-700 border border-warning-200 text-[11px] py-1 px-2.5 rounded-full font-semibold">
                                       {p.satisfied}/{p.total} điều kiện — {Math.round(p.ratio * 100)}%
                                     </span>
                                   </div>
-                                  <code className="font-mono text-xs md:text-sm text-teal-100/90 block break-words">{p.text}</code>
+                                  <code className="font-mono text-xs md:text-sm text-neutral-700 block break-words">{p.text}</code>
                                   <div className="mt-3 flex flex-wrap gap-2">
                                     {p.conditions.map((c, ci) => (
                                       <span
                                         key={ci}
-                                        className="px-2 py-1 rounded-md text-xs font-mono border border-slate-700 bg-slate-900/40 text-slate-300"
+                                        className="px-2 py-1 rounded-md text-xs font-mono border border-neutral-200 bg-neutral-50 text-neutral-600"
                                       >
                                         {c.gene}={c.actual} {c.ok ? '✓' : '✗'}
                                       </span>
@@ -1866,7 +1825,7 @@ export default function App() {
                             })}
                           </div>
                           )}
-                        </div>
+                        </Panel>
                       )}
 
                       {/* Genes that actually SATISFIED a condition in a partial-match rule —
@@ -1880,28 +1839,13 @@ export default function App() {
                               p.conditions.filter(c => c.ok).map(c => c.gene),
                           ),
                         )) as string[];
-                        if (partialMatchedGenes.length === 0) return null;
                         return (
-                          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
-                            <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 mb-4">Danh sách Gene trong Luật Khớp Một Phần</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {partialMatchedGenes.map(gene => (
-                                <button
-                                  key={gene}
-                                  onClick={() => {
-                                    setIsModelOverviewCollapsed(false);
-                                    setTimeout(() => {
-                                      window.dispatchEvent(new CustomEvent('jump-to-gene', { detail: { gene } }));
-                                    }, 60);
-                                  }}
-                                  className="px-2.5 py-1 rounded-md text-xs font-mono bg-slate-900/60 border border-slate-700 text-teal-300 hover:bg-teal-900/40 hover:border-teal-700 hover:text-teal-200 transition-colors"
-                                  title="Xem chi tiết gene này ở danh sách Gene phía trên"
-                                >
-                                  {gene}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          <GeneChipList
+                            className="mb-6"
+                            title="Danh sách Gene trong Luật Khớp Một Phần"
+                            genes={partialMatchedGenes}
+                            onJumpToGene={jumpToGene}
+                          />
                         );
                       })()}
 
@@ -1909,27 +1853,17 @@ export default function App() {
                           matched rules point to each class, independent of the model's
                           own predict() call (a transparency/sanity-check signal). */}
                       {Object.keys(testResults.classVotes || {}).length > 0 && (
-                        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
-                          <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 mb-4">Tỷ lệ Luật Khớp hoàn toàn theo Lớp</h4>
-                          <div className="space-y-3">
-                            {Object.entries(testResults.classVotes as Record<string, { count: number, percentage: number }>).map(([label, v]) => {
-                              const color = classColor(label, modelStats?.labels || []);
-                              return (
-                                <div key={label} className="space-y-1">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="text-sm font-semibold leading-snug" style={{ color }}>
-                                      {displayLabel(label, testResults.classDisplayNames)}
-                                    </span>
-                                    <span className="shrink-0 text-right text-slate-400 font-mono text-xs">{v.count} luật ({v.percentage}%)</span>
-                                  </div>
-                                  <div className="h-2.5 rounded-full bg-slate-700/50 overflow-hidden">
-                                    <div className="h-full rounded-full transition-all" style={{ width: `${v.percentage}%`, backgroundColor: color }} />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
+                        <VoteBar
+                          className="mb-6"
+                          title="Tỷ lệ Luật Khớp hoàn toàn theo Lớp"
+                          rows={Object.entries(testResults.classVotes as Record<string, { count: number, percentage: number }>).map(([label, v]) => ({
+                            key: label,
+                            label: displayLabel(label, testResults.classDisplayNames),
+                            caption: `${v.count} luật (${v.percentage}%)`,
+                            percentage: v.percentage,
+                            color: classColor(label, modelStats?.labels || []),
+                          }))}
+                        />
                       )}
 
                       {/* Per-class breakdown of PARTIAL matches only (>=50% but <100% of
@@ -1937,118 +1871,90 @@ export default function App() {
                           complementing "Tỷ lệ Luật Khớp theo Lớp" above (full matches only)
                           instead of duplicating it with matched rules mixed back in. */}
                       {Object.keys(testResults.classVotesOver50 || {}).length > 0 && (
-                        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
-                          <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 mb-4">Tỷ lệ Luật Khớp một phần theo Lớp</h4>
-                          <div className="space-y-3">
-                            {Object.entries(testResults.classVotesOver50 as Record<string, { count: number, percentage: number }>).map(([label, v]) => {
-                              const color = classColor(label, modelStats?.labels || []);
-                              return (
-                                <div key={label} className="space-y-1">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <span className="text-sm font-semibold leading-snug" style={{ color }}>
-                                      {displayLabel(label, testResults.classDisplayNames)}
-                                    </span>
-                                    <span className="shrink-0 text-right text-slate-400 font-mono text-xs">{v.count} luật ({v.percentage}%)</span>
-                                  </div>
-                                  <div className="h-2.5 rounded-full bg-slate-700/50 overflow-hidden">
-                                    <div className="h-full rounded-full transition-all" style={{ width: `${v.percentage}%`, backgroundColor: color }} />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Comparison of match TIERS (đủ 100% vs một phần >=50%) out of every
-                          rule this model has — same row-per-category bar layout as "Tỷ lệ
-                          Luật Khớp theo Lớp" below, just comparing match tiers instead of
-                          classes. Uses the aggregate count returned by the API. */}
-                      {!!testResults.nRulesTotal && (
-                        <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
-                          <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 mb-4">Tỷ lệ Luật Khớp Trên 50%</h4>
-                          {(() => {
-                            const total = testResults.nRulesTotal;
-                            const tiers = [
-                              { label: 'Khớp đủ (100%)', count: testResults.matchedCount, color: '#2dd4bf' },
-                              { label: 'Khớp một phần (≥50%)', count: testResults.nPartialMatchesTotal || 0, color: '#fbbf24' },
-                            ];
-                            return (
-                              <div className="space-y-3">
-                                {tiers.map(t => {
-                                  const pct = Math.round((t.count / total) * 1000) / 10;
-                                  return (
-                                    <div key={t.label} className="space-y-1">
-                                      <div className="flex items-center justify-between gap-3">
-                                        <span className="text-sm font-semibold leading-snug" style={{ color: t.color }}>
-                                          {t.label}
-                                        </span>
-                                        <span className="shrink-0 text-right text-slate-400 font-mono text-xs">{t.count}/{total} ({pct}%)</span>
-                                      </div>
-                                      <div className="h-2.5 rounded-full bg-slate-700/50 overflow-hidden">
-                                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: t.color }} />
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                        <VoteBar
+                          className="mb-6"
+                          title="Tỷ lệ Luật Khớp một phần theo Lớp"
+                          rows={Object.entries(testResults.classVotesOver50 as Record<string, { count: number, percentage: number }>).map(([label, v]) => ({
+                            key: label,
+                            label: displayLabel(label, testResults.classDisplayNames),
+                            caption: `${v.count} luật (${v.percentage}%)`,
+                            percentage: v.percentage,
+                            color: classColor(label, modelStats?.labels || []),
+                          }))}
+                        />
                       )}
 
-                      <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-                        <div className="flex items-center gap-2 mb-4 text-teal-400">
+                      {/* Comparison of match TIERS (đủ 100% vs một phần >=50%) out of every
+                          rule this model has — same row-per-category bar layout as "Tỷ lệ
+                          Luật Khớp theo Lớp" above, just comparing match tiers instead of
+                          classes. Uses the aggregate count returned by the API. */}
+                      {!!testResults.nRulesTotal && (() => {
+                        const total = testResults.nRulesTotal;
+                        const tiers = [
+                          { key: 'full', label: 'Khớp đủ (100%)', count: testResults.matchedCount, color: '#2dd4bf' },
+                          { key: 'partial', label: 'Khớp một phần (≥50%)', count: testResults.nPartialMatchesTotal || 0, color: '#fbbf24' },
+                        ];
+                        return (
+                          <VoteBar
+                            className="mb-6"
+                            title="Tỷ lệ Luật Khớp Trên 50%"
+                            rows={tiers.map(t => {
+                              const pct = Math.round((t.count / total) * 1000) / 10;
+                              return { key: t.key, label: t.label, color: t.color, percentage: pct, caption: `${t.count}/${total} (${pct}%)` };
+                            })}
+                          />
+                        );
+                      })()}
+
+                      <Panel padding="lg">
+                        <div className="flex items-center gap-2 mb-4 text-brand-700">
                           <Brain size={18} />
                           <h4 className="font-semibold tracking-wide text-xs uppercase">
-                            Đánh Giá Y Sinh {testResults.llmUsed === false && <span className="text-slate-500 normal-case">(template — Gemini không khả dụng)</span>}
+                            Đánh Giá Y Sinh {testResults.llmUsed === false && <span className="text-neutral-500 normal-case">(template — Gemini không khả dụng)</span>}
                           </h4>
                         </div>
                         <div className="space-y-5">
                           {testResults.biomedicalSummary && (
                             <div>
-                              <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1.5">Tóm tắt</span>
-                              <p className="text-slate-100 leading-relaxed text-base font-medium">{testResults.biomedicalSummary}</p>
+                              <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Tóm tắt</span>
+                              <p className="text-neutral-800 leading-relaxed text-base font-medium">{testResults.biomedicalSummary}</p>
                             </div>
                           )}
                           {testResults.biomedicalRationale && (
                             <div>
-                              <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1.5">Cơ sở Sinh học</span>
-                              <p className="text-slate-300 leading-relaxed text-base">{testResults.biomedicalRationale}</p>
+                              <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Cơ sở Sinh học</span>
+                              <p className="text-neutral-600 leading-relaxed text-base">{testResults.biomedicalRationale}</p>
                             </div>
                           )}
                           {testResults.biomedicalModelVsRule && (
-                            <div className={cn(
-                              "rounded-lg p-4 border",
-                              testResults.rulePrediction && testResults.rulePrediction !== testResults.classification
-                                ? "bg-amber-950/30 border-amber-800/40"
-                                : "bg-teal-950/30 border-teal-800/40"
-                            )}>
+                            <Panel
+                              surface={testResults.rulePrediction && testResults.rulePrediction !== testResults.classification ? 'warning' : 'brand'}
+                            >
                               <span className={cn(
                                 "text-xs uppercase tracking-wider font-semibold block mb-1.5",
-                                testResults.rulePrediction && testResults.rulePrediction !== testResults.classification ? "text-amber-400" : "text-teal-400"
+                                testResults.rulePrediction && testResults.rulePrediction !== testResults.classification ? "text-warning-700" : "text-brand-700"
                               )}>
                                 So sánh Mô hình &harr; Tập luật
                               </span>
-                              <p className="text-slate-200 leading-relaxed text-base">{testResults.biomedicalModelVsRule}</p>
-                            </div>
+                              <p className="text-neutral-700 leading-relaxed text-base">{testResults.biomedicalModelVsRule}</p>
+                            </Panel>
                           )}
                           {testResults.biomedicalDisclaimer && (
-                            <div className="flex items-start gap-2 bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2.5 mt-1">
-                              <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-                              <p className="text-amber-400/90 text-xs leading-relaxed">{testResults.biomedicalDisclaimer}</p>
+                            <div className="flex items-start gap-2 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2.5 mt-1">
+                              <AlertTriangle size={14} className="text-warning-500 shrink-0 mt-0.5" />
+                              <p className="text-warning-800 text-xs leading-relaxed">{testResults.biomedicalDisclaimer}</p>
                             </div>
                           )}
                         </div>
-                      </div>
+                      </Panel>
                     </div>
                     )
                   ) : (
-                    <div className="h-full bg-slate-100/50 border border-slate-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-slate-400 p-8 text-center min-h-[300px]">
-                       <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-slate-200 shadow-sm">
-                         <Activity size={24} className="text-slate-300" />
+                    <div className="h-full bg-neutral-100/50 border border-neutral-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-neutral-500 p-8 text-center min-h-[300px]">
+                       <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-neutral-200 shadow-sm">
+                         <Activity size={24} className="text-neutral-400" />
                        </div>
-                       <p className="text-sm max-w-sm font-medium text-slate-500">
+                       <p className="text-sm max-w-sm font-medium text-neutral-600">
                          Chọn một mẫu bệnh phẩm và nhấn "Dự Đoán Kết Quả" ở Bước 5 để bắt đầu.
                        </p>
                     </div>

@@ -84,20 +84,20 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 transition-all duration-300">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100 transition-all duration-300">
         <div
           className="flex items-center justify-between cursor-pointer group"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+            <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <GitMerge size={20} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">
+            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">
               Chia Dữ liệu (Train/Test)
             </h2>
           </div>
-          <button className="p-2 rounded-full hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-colors">
+          <button className="p-2 rounded-full hover:bg-success-50 text-neutral-600 hover:text-success-600 transition-colors">
             {isCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
           </button>
         </div>
@@ -105,41 +105,41 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
         {!isCollapsed && (
           <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Tổng số mẫu ban đầu</span>
-                  <span className="text-slate-800 font-bold font-mono">
+              <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Tổng số mẫu ban đầu</span>
+                  <span className="text-neutral-900 font-bold font-mono">
                     {Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Số mẫu sau khi loại lớp hiếm</span>
-                  <span className="text-slate-800 font-bold font-mono">{stats.n_samples_total}</span>
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Số mẫu sau khi loại lớp hiếm</span>
+                  <span className="text-neutral-900 font-bold font-mono">{stats.n_samples_total}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Tổng số lớp ban đầu</span>
-                  <span className="text-slate-800 font-bold font-mono">{allLabels.length}</span>
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Tổng số lớp ban đầu</span>
+                  <span className="text-neutral-900 font-bold font-mono">{allLabels.length}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Số lớp sau khi loại lớp hiếm</span>
-                  <span className="text-slate-800 font-bold font-mono">{stats.class_labels.length}</span>
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Số lớp sau khi loại lớp hiếm</span>
+                  <span className="text-neutral-900 font-bold font-mono">{stats.class_labels.length}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Ngưỡng loại lớp hiếm</span>
-                  <span className="text-slate-800 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Ngưỡng loại lớp hiếm</span>
+                  <span className="text-neutral-900 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
                 </div>
               </div>
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Huấn luyện / Kiểm thử</span>
-                  <span className="text-slate-800 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
+              <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Huấn luyện / Kiểm thử</span>
+                  <span className="text-neutral-900 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium">Tỷ lệ test_size</span>
-                  <span className="text-slate-800 font-bold font-mono">{stats.test_size}</span>
+                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium">Tỷ lệ test_size</span>
+                  <span className="text-neutral-900 font-bold font-mono">{stats.test_size}</span>
                 </div>
-                <div className="flex flex-col py-2 border-b border-slate-200/60">
-                  <span className="text-slate-500 font-medium mb-1.5">Số lớp ({allLabels.length})</span>
+                <div className="flex flex-col py-2 border-b border-neutral-200/60">
+                  <span className="text-neutral-600 font-medium mb-1.5">Số lớp ({allLabels.length})</span>
                   <div className="flex flex-wrap gap-1.5">
                     {allLabels.map((label, idx) => {
                       const dropped = droppedSet.has(label);
@@ -156,7 +156,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                             {vieName(label) || label}
                           </span>
                           {vieName(label) && (
-                            <span className="text-[10px] text-slate-400 font-mono">{label}</span>
+                            <span className="text-[10px] text-neutral-500 font-mono">{label}</span>
                           )}
                         </div>
                       );
@@ -167,8 +167,8 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-              <div className="h-72 border border-slate-100 rounded-xl p-4 pt-6 relative">
-                <h3 className="absolute -top-3 left-4 bg-white px-2 text-sm font-semibold text-slate-600">Phân phối các lớp</h3>
+              <div className="h-72 border border-neutral-100 rounded-xl p-4 pt-6 relative">
+                <h3 className="absolute -top-3 left-4 bg-white px-2 text-sm font-semibold text-neutral-700">Phân phối các lớp</h3>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={classDistributionData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -184,16 +184,16 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                 </ResponsiveContainer>
               </div>
 
-              <div className="h-72 border border-slate-100 rounded-xl p-4 pt-6 relative">
+              <div className="h-72 border border-neutral-100 rounded-xl p-4 pt-6 relative">
                 <div className="absolute -top-3 left-4 right-4 flex items-center justify-between">
-                  <h3 className="bg-white px-2 text-sm font-semibold text-slate-600">Tỷ lệ Train / Test</h3>
-                  <div className="flex items-center gap-3 bg-white px-2 text-[11px] font-medium text-slate-500">
+                  <h3 className="bg-white px-2 text-sm font-semibold text-neutral-700">Tỷ lệ Train / Test</h3>
+                  <div className="flex items-center gap-3 bg-white px-2 text-[11px] font-medium text-neutral-600">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-sm bg-slate-400 inline-block" /> Train
+                      <span className="w-3 h-3 rounded-sm bg-neutral-400 inline-block" /> Train
                     </span>
                     <span className="flex items-center gap-1.5">
                       <span
-                        className="w-3 h-3 rounded-sm inline-block border border-slate-400"
+                        className="w-3 h-3 rounded-sm inline-block border border-neutral-400"
                         style={{ backgroundImage: 'repeating-linear-gradient(45deg, #94a3b8 0 2px, transparent 2px 4px)' }}
                       />
                       Test
