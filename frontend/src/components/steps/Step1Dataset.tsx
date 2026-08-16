@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectIndicator, SelectItem, SelectTrigger, Sele
 import { RadioInput } from '../tailgrids/core/radio-input';
 import { Input } from '../tailgrids/core/input';
 import StatusLine from '../ui/StatusLine';
+import FilePicker from '../ui/FilePicker';
 import RunHistoryList from '../RunHistoryList';
 
 interface Props {
@@ -197,21 +198,19 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 <label className="text-xs text-neutral-600 font-medium block mb-1">
                   {uploadSource === 'geo' ? 'File series matrix (.txt.gz)' : 'File probe CuMiDa (.csv)'}
                 </label>
-                <input
-                  type="file"
+                <FilePicker
+                  value={uploadFile1}
+                  onChange={setUploadFile1}
                   accept={uploadSource === 'geo' ? '.gz,.txt' : '.csv'}
-                  onChange={e => setUploadFile1(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-neutral-700"
                 />
               </div>
               <div>
                 <label className="text-xs text-neutral-600 font-medium block mb-1">
                   File annotation {uploadSource === 'geo' ? 'GPL (tùy chọn)' : 'CuMiDa (tùy chọn)'}
                 </label>
-                <input
-                  type="file"
-                  onChange={e => setUploadFile2(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-neutral-700"
+                <FilePicker
+                  value={uploadFile2}
+                  onChange={setUploadFile2}
                 />
               </div>
 
