@@ -186,6 +186,20 @@
   --color-input-label-text: var(--color-neutral-700);
   --color-input-error-focus-border: var(--color-danger-500);
   --color-input-error: var(--color-danger-600);
+
+  /* Radio + text Input bridge — components/tailgrids/core/radio-input.tsx
+   * and input.tsx (upload-source radios + tissue-name text field in
+   * Step1Dataset.tsx's upload tab). */
+  --color-checkbox-background: var(--color-white-100);
+  --color-checkbox-checked-border: var(--color-brand-600);
+  --color-checkbox-checked-background: var(--color-brand-600);
+  --color-checkbox-checked-icon-color: var(--color-white-100);
+  --color-primary-300: var(--color-brand-300);
+  --color-base-300: var(--color-neutral-300);
+  --border-color-base-300: var(--color-neutral-300);
+  --color-input-background: var(--color-white-100);
+  --color-input-primary-focus-border: var(--color-brand-500);
+  --color-input-success-focus-border: var(--color-success-500);
 }
 
 /* Tailwind v4 reads @theme and turns each entry into a first-class utility
@@ -322,6 +336,15 @@
   --color-input-label-text: var(--color-input-label-text);
   --color-input-error-focus-border: var(--color-input-error-focus-border);
   --color-input-error: var(--color-input-error);
+  --color-checkbox-background: var(--color-checkbox-background);
+  --color-checkbox-checked-border: var(--color-checkbox-checked-border);
+  --color-checkbox-checked-background: var(--color-checkbox-checked-background);
+  --color-checkbox-checked-icon-color: var(--color-checkbox-checked-icon-color);
+  --color-primary-300: var(--color-primary-300);
+  --color-base-300: var(--color-base-300);
+  --color-input-background: var(--color-input-background);
+  --color-input-primary-focus-border: var(--color-input-primary-focus-border);
+  --color-input-success-focus-border: var(--color-input-success-focus-border);
 
   /* Override Tailwind's default text scale so existing text-xs/text-sm/etc.
      classes inherit the size adjustments above. */

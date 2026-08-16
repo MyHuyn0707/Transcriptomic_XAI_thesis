@@ -7,6 +7,8 @@ import { WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
 import { Button } from '../tailgrids/core/button';
 import { Select, SelectContent, SelectIndicator, SelectItem, SelectTrigger, SelectValue } from '../tailgrids/core/select';
+import { RadioInput } from '../tailgrids/core/radio-input';
+import { Input } from '../tailgrids/core/input';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
@@ -140,25 +142,25 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             {selectedDataset && (
               <div className="mt-4 space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Mã dataset</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Mã dataset</span>
                   <span className="font-mono text-xs text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Nền tảng vi mảng</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Nền tảng vi mảng</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5 truncate">{selectedDataset.platform}</p>
                   </div>
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Mẫu bệnh phẩm</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Mẫu bệnh phẩm</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_samples}</p>
                   </div>
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Đặc trưng</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Đặc trưng</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_features?.toLocaleString()}</p>
                   </div>
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Số lớp</p>
-                    <p className="text-lg font-bold text-brand-700 mt-0.5">{selectedDataset.n_classes}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Số lớp</p>
+                    <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_classes}</p>
                   </div>
                 </div>
               </div>
@@ -169,18 +171,26 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             <fieldset disabled={datasetLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60 space-y-3">
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="radio" name="uploadSource" checked={uploadSource === 'geo'} onChange={() => { setUploadSource('geo'); setUploadId(null); setUploadCharacteristics([]); }} className="w-4 h-4 shrink-0 accent-brand-600" />
+                  <RadioInput
+                    name="uploadSource"
+                    checked={uploadSource === 'geo'}
+                    onChange={() => { setUploadSource('geo'); setUploadId(null); setUploadCharacteristics([]); }}
+                  />
                   <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Từ NCBI GEO</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="radio" name="uploadSource" checked={uploadSource === 'cumida'} onChange={() => { setUploadSource('cumida'); setUploadId(null); setUploadCharacteristics([]); }} className="w-4 h-4 shrink-0 accent-brand-600" />
+                  <RadioInput
+                    name="uploadSource"
+                    checked={uploadSource === 'cumida'}
+                    onChange={() => { setUploadSource('cumida'); setUploadId(null); setUploadCharacteristics([]); }}
+                  />
                   <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Từ CuMiDa</span>
                 </label>
               </div>
 
               <div>
                 <label className="text-xs text-neutral-600 font-medium block mb-1">Tên thư mục lưu trữ</label>
-                <input type="text" value={uploadTissue} onChange={e => setUploadTissue(e.target.value)} className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+                <Input value={uploadTissue} onChange={e => setUploadTissue(e.target.value)} className="w-full text-sm" />
               </div>
 
               <div>
@@ -218,13 +228,22 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               {uploadCharacteristics.length > 0 && (
                 <div className="animate-in fade-in slide-in-from-top-2">
                   <label className="text-xs text-neutral-600 font-medium block mb-1">Cột đặc trưng dùng làm nhãn lớp</label>
-                  <select
+                  <Select
+                    aria-label="Cột đặc trưng dùng làm nhãn lớp"
                     value={uploadClassChar}
-                    onChange={e => setUploadClassChar(e.target.value)}
-                    className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 mb-3"
+                    onChange={(key) => setUploadClassChar(String(key))}
+                    className="w-full mb-3"
                   >
-                    {uploadCharacteristics.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                      <SelectIndicator />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uploadCharacteristics.map(c => (
+                        <SelectItem key={c} id={c} textValue={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     onClick={handleUploadBuild}
                     disabled={!uploadClassChar || isUploadBuilding}
