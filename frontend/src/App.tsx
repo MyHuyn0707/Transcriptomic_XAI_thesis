@@ -125,6 +125,8 @@ export default function App() {
   const [splitRuns, setSplitRuns] = useState<RunRecord[]>([]);
 
   // State: Feature Selection
+  // The API artifact key for mRMR is derived from its K below (mrmr_k50,
+  // mrmr_k75, ...).  Keep mRMR itself as one configurable method in the UI.
   const [fsMethod, setFsMethod] = useState<'boruta' | 'mrmr'>('boruta');
   const [fsLog, setFsLog] = useState('');
   const [isFsLoading, setIsFsLoading] = useState(false);
@@ -151,6 +153,7 @@ export default function App() {
     n_bins: 3,
     random_state: 42
   });
+  const [mrmrKMode, setMrmrKMode] = useState<'50' | '75' | 'custom'>('50');
 
   // State: Model Selection
   const [modelType, setModelType] = useState<'dt' | 'rf'>('rf');
@@ -195,7 +198,10 @@ export default function App() {
   const [isMatchedRulesCollapsed, setIsMatchedRulesCollapsed] = useState(false);
   const [isPartialMatchesCollapsed, setIsPartialMatchesCollapsed] = useState(false);
 
-  const fsMethodKey = fsMethod === 'mrmr' ? 'mrmr_miq' : 'boruta';
+  const isMrmr = fsMethod === 'mrmr';
+  // K is part of the artifact identifier.  This is why cached K=50 and K=75
+  // are loaded through mrmr_k50/mrmr_k75 rather than the obsolete mrmr_miq.
+  const fsMethodKey = isMrmr ? `mrmr_k${mrmrConfig.K}` : fsMethod;
   const selectedDataset = datasets.find(d => d.id === datasetId);
 
   useEffect(() => {
@@ -400,7 +406,8 @@ export default function App() {
         setFsRunId(null);
         setFsLog(prev => prev + '\n[CACHE] Đã nạp thành công.');
       } else {
-        const params = fsMethod === 'mrmr' ? mrmrConfig : borutaConfig;
+        // Keep the requested K and the artifact key (mrmr_k{K}) aligned.
+        const params = isMrmr ? mrmrConfig : borutaConfig;
         setFsLog(`[HỆ THỐNG] Bắt đầu chạy thuật toán ${fsMethodKey.toUpperCase()} (chạy thật, có thể mất vài phút)...`);
         const { job_id } = await api.trainFeatureSelection(datasetId, fsMethodKey, params, splitParams);
         const job = await pollJob(job_id, j => setFsLog(j.log.join('\n')));
@@ -989,7 +996,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {fsMethod === 'mrmr' && (
+                  {isMrmr && (
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-5 text-sm animate-in fade-in slide-in-from-top-2">
                       <div className="flex justify-between items-center mb-3">
                         <span className="font-semibold text-slate-700">Cấu hình mRMR</span>
@@ -1002,8 +1009,35 @@ export default function App() {
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-slate-500">K (features)</span>
-                           <input type="number" value={mrmrConfig.K} onChange={e => setMrmrConfig({...mrmrConfig, K: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                           <select
+                             value={mrmrKMode}
+                             onChange={e => {
+                               const mode = e.target.value as typeof mrmrKMode;
+                               setMrmrKMode(mode);
+                               if (mode !== 'custom') {
+                                 setMrmrConfig({ ...mrmrConfig, K: Number(mode) });
+                               }
+                             }}
+                             className="w-24 px-2 py-1 font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+                           >
+                             <option value="50">50</option>
+                             <option value="75">75</option>
+                             <option value="custom">K mới</option>
+                           </select>
                          </div>
+                         {mrmrKMode === 'custom' && (
+                           <div className="flex justify-between items-center">
+                             <span className="text-slate-500">Giá trị K</span>
+                             <input
+                               type="number"
+                               min={1}
+                               value={mrmrConfig.K}
+                               onChange={e => setMrmrConfig({ ...mrmrConfig, K: Math.max(1, Number(e.target.value) || 1) })}
+                               className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
+                               aria-label="Giá trị K mới"
+                             />
+                           </div>
+                         )}
                          <div className="flex justify-between items-center">
                            <span className="text-slate-500">n_bins</span>
                            <input type="number" value={mrmrConfig.n_bins} onChange={e => setMrmrConfig({...mrmrConfig, n_bins: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-teal-700 font-semibold bg-white border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-teal-500" />
@@ -1562,7 +1596,7 @@ export default function App() {
                     />
 
                     {/* Bio Graph */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    {/* <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                         <div className="flex items-center gap-2">
                           <Microscope className="text-teal-600" size={20} />
@@ -1582,7 +1616,7 @@ export default function App() {
                       <div className="bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100">
                         <BioNetworkGraph graphType={graphType} />
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 )}
               </div>
@@ -1611,7 +1645,7 @@ export default function App() {
                 <div className="w-full">
                   {testResults ? (
                     testResults.classification === 'Loi' ? (
-                    <div className="bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-right-4 duration-500 border border-red-800/40 h-full">
+                    <div className="experimental-report bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-right-4 duration-500 border border-red-800/40 h-full">
                       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-800">
                         <AlertTriangle className="text-red-400" size={24} />
                         <h3 className="text-lg font-bold">Lỗi khi thực nghiệm</h3>
@@ -1621,7 +1655,7 @@ export default function App() {
                       </p>
                     </div>
                     ) : (
-                    <div className="bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-right-4 duration-500 border border-slate-800 h-full">
+                    <div className="experimental-report bg-slate-900 text-slate-50 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-right-4 duration-500 border border-slate-800 h-full">
                       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
                         <CheckCircle2 className="text-teal-400" size={24} />
                         <h3 className="text-lg font-bold">Báo cáo Phân loại</h3>
@@ -1688,7 +1722,7 @@ export default function App() {
                       {/* Matched-rules list — same bordered-box level as the vote breakdown
                           and biomedical assessment below it (previously this list floated
                           without its own box, unlike its siblings). */}
-                      <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
+                      <div className="bg-white rounded-xl p-5 border border-slate-200 mb-6">
                         <div
                           className="flex items-center justify-between mb-4 cursor-pointer group/rules"
                           onClick={() => setIsMatchedRulesCollapsed(c => !c)}
@@ -1705,7 +1739,7 @@ export default function App() {
                           {testResults.rules.map((rule: { id: number, text: string, matched: boolean, desc: string, sampleValues: Record<string, number>, class: string }) => {
                             const ruleColor = classColor(rule.class, modelStats?.labels || []);
                             return (
-                            <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-teal-900/30 border border-teal-700/50" : "bg-slate-800/30 border border-slate-700/50 opacity-60")}>
+                            <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-teal-50 border border-teal-200" : "bg-white border border-slate-200 opacity-60")}>
                               <div className="px-4 py-3 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <span
@@ -1714,23 +1748,23 @@ export default function App() {
                                   >
                                     {displayLabel(rule.class, testResults.classDisplayNames)}
                                   </span>
-                                  <code className="font-mono text-xs md:text-sm text-teal-100/90">{rule.text}</code>
+                                  <code className="font-mono text-xs md:text-sm text-teal-800">{rule.text}</code>
                                 </div>
                                 <button
                                   onClick={() => setExpandedRule(expandedRule === rule.id ? null : rule.id)}
-                                  className="text-teal-300 hover:text-white transition-colors shrink-0 ml-4"
+                                  className="text-teal-700 hover:text-teal-900 transition-colors shrink-0 ml-4"
                                   title="Giải thích Y sinh"
                                 >
                                   <Info size={16} />
                                 </button>
                               </div>
                               {expandedRule === rule.id && (
-                                <div className="px-4 py-3 bg-slate-950/50 text-sm text-slate-300 border-t border-slate-800/80 leading-relaxed">
+                                <div className="px-4 py-3 bg-slate-50 text-sm text-slate-700 border-t border-slate-200 leading-relaxed">
                                   <p className="mb-3">{rule.desc || 'Chưa có mô tả sinh học cho luật này (chạy scripts/generate_bio_descriptions.py để sinh).'}</p>
                                   <div className="flex flex-wrap gap-2">
                                     {Object.entries(rule.sampleValues).map(([gene, val]) => (
-                                      <span key={gene} className="bg-slate-800 px-2 py-1 rounded-md text-xs font-mono border border-slate-700">
-                                        <span className="text-teal-300">{gene}</span> = {val}
+                                      <span key={gene} className="bg-white px-2 py-1 rounded-md text-xs font-mono border border-slate-200">
+                                        <span className="text-teal-700">{gene}</span> = {val}
                                       </span>
                                     ))}
                                   </div>
@@ -1780,7 +1814,7 @@ export default function App() {
                       })()}
 
                       {/* Rules that satisfy >=50% of their conditions but didn't fully match —
-                          transparency into "near misses", sorted by match ratio, top 10.
+                          transparency into "near misses", sorted by match ratio.
                           Monochrome styling matches "Danh sách Luật Khớp" above (colored class
                           badge only — rule text and condition chips stay a single neutral tone,
                           the ✓/✗ mark is just appended after the value instead of color-coding
@@ -1838,8 +1872,7 @@ export default function App() {
                       {/* Genes that actually SATISFIED a condition in a partial-match rule —
                           not every gene referenced (a failed condition's gene isn't "in" the
                           rule the way a matched one is), mirroring "Danh sách Gene trong Luật
-                          Khớp" above but scoped to partialMatches (capped at 10, same as the
-                          list itself — can't list genes from rules that aren't shown). */}
+                          Khớp" above but scoped to every visible partial match. */}
                       {(() => {
                         const partialMatchedGenes = Array.from(new Set(
                           (testResults.partialMatches || []).flatMap(
@@ -1900,8 +1933,7 @@ export default function App() {
                       )}
 
                       {/* Per-class breakdown of PARTIAL matches only (>=50% but <100% of
-                          conditions, unbounded — not just the capped top-10 partialMatches
-                          list) — the per-class counterpart of "Danh sách Luật Khớp một Phần",
+                          conditions) — the per-class counterpart of "Danh sách Luật Khớp một Phần",
                           complementing "Tỷ lệ Luật Khớp theo Lớp" above (full matches only)
                           instead of duplicating it with matched rules mixed back in. */}
                       {Object.keys(testResults.classVotesOver50 || {}).length > 0 && (
@@ -1931,9 +1963,7 @@ export default function App() {
                       {/* Comparison of match TIERS (đủ 100% vs một phần >=50%) out of every
                           rule this model has — same row-per-category bar layout as "Tỷ lệ
                           Luật Khớp theo Lớp" below, just comparing match tiers instead of
-                          classes. Uses nPartialMatchesTotal (unbounded), not
-                          partialMatches.length (capped at 10 for display), so the % doesn't
-                          undercount. */}
+                          classes. Uses the aggregate count returned by the API. */}
                       {!!testResults.nRulesTotal && (
                         <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 mb-6">
                           <h4 className="font-semibold tracking-wide text-xs uppercase text-teal-400 mb-4">Tỷ lệ Luật Khớp Trên 50%</h4>

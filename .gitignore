@@ -18,6 +18,7 @@ outputs_baseline_split/
 outputs_holdout/
 outputs_baseline_old/
 outputs_holdout_old/
+outputs_LV/
 
 
 # API backend secrets
@@ -35,3 +36,4 @@ Dataset_Description/
 Platform_Annotations/
 
 tests/
+CT552_TraMy_Nguyen/

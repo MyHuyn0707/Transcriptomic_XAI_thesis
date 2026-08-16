@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./lib/theme.css";
 
 /* Hide native number-input spinner arrows everywhere. Browsers reserve
    ~16-20px on the right edge of <input type="number"> for the up/down
