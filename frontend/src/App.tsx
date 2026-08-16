@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import {
   Dna, Microscope, Activity, Database, GitMerge,
   CheckCircle2, Info, FileText, Settings2, PlayCircle, Loader2, Table2,
@@ -8,7 +8,9 @@ import {
 import { cn } from './lib/utils';
 import { classColor } from './lib/palette';
 import { classificationReport, displayLabel } from './lib/metrics';
-import { api, pollJob, DatasetInfo, RunRecord } from './lib/api';
+import { api, pollJob, RunRecord } from './lib/api';
+import { workspaceReducer } from './state/workspaceReducer';
+import { initialWorkspaceState, ModelStatsUI } from './state/types';
 import ConfusionMatrix from './components/ConfusionMatrix';
 
 import DatasetOverview from './components/DatasetOverview';
@@ -21,41 +23,6 @@ import GeneChipList from './components/GeneChipList';
 import Panel from './components/ui/Panel';
 import Button from './components/ui/Button';
 import Badge from './components/ui/Badge';
-
-interface TestSample {
-  sample_id: string;
-  true_label: string;
-  row_index: number;
-}
-
-interface ModelStatsUI {
-  acc: number;
-  f1: number;
-  rules: number;
-  cm: number[][];
-  labels: string[];
-  hyperparams?: Record<string, unknown> | null;
-  rulesSummary?: {
-    n_rules_raw?: number;
-    n_rules_passed_filter?: number;
-    n_rules_kept?: number;
-    n_dropped_by_filter?: number;
-    n_dropped_by_cap?: number;
-    filter_config?: {
-      min_confidence?: number | null;
-      min_fidelity?: number | null;
-      min_support?: number | null;
-      min_abs_support?: number | null;
-      max_conditions?: number | null;
-      merge_same_gene?: boolean | null;
-      dedup?: boolean | null;
-      dedup_sig_figs?: number | null;
-      merge_generalization?: boolean | null;
-      max_rules_per_class?: number | null;
-      max_rules_total?: number | null;
-    } | null;
-  } | null;
-}
 
 // Right column's fallback for whichever step is active but hasn't produced
 // anything yet (e.g. Bước 3 opened before feature selection has run) — same
@@ -78,16 +45,26 @@ export default function App() {
   // "everything stacked, scroll forever" layout. Clicking a step's header
   // (or its number) opens it; a step can only open once its prerequisite
   // step has produced something (see stepReady below).
-  const [activeStep, setActiveStep] = useState(1);
-
-  // State: Datasets (loaded from the real pipeline outputs)
-  const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
-  const [datasetId, setDatasetId] = useState('');
-  const [datasetsError, setDatasetsError] = useState('');
+  //
+  // Every dataset/split/fs/model/test field below (and the cascade that
+  // clears a step's downstream results once an upstream choice changes)
+  // lives in one reducer instead of ~40 separate useState hooks — see
+  // state/workspaceReducer.ts for the reset rules.
+  const [state, dispatch] = useReducer(workspaceReducer, initialWorkspaceState);
+  const {
+    activeStep,
+    datasets, datasetId, datasetsError, datasetTab,
+    splitParams, splitInputs, splitStats, isSplitLoading, splitLog, splitRuns,
+    fsMethod, fsLog, isFsLoading, extractionStats, fsRunId, fsRuns, borutaConfig, mrmrConfig, mrmrKMode,
+    modelType, modelStats, isModelLoading, modelRunId, modelLog, modelRuns, modelConfig,
+    isModelOverviewCollapsed, isModelConfigCollapsed, isConfusionMatrixCollapsed, isClassificationReportCollapsed,
+    testMode, testSamples, testSampleId, testUploadFile, isTesting, testResults, isTestResultsCollapsed,
+    expandedRule, isMatchedRulesCollapsed, isPartialMatchesCollapsed,
+  } = state;
 
   // State: Dataset upload (Bước 1, tab "Tải lên dataset mới") — session-only,
-  // built via /api/datasets/upload/{inspect,build}.
-  const [datasetTab, setDatasetTab] = useState<'existing' | 'upload'>('existing');
+  // built via /api/datasets/upload/{inspect,build}. Never read outside Step 1,
+  // so it stays local rather than joining the shared reducer above.
   const [uploadSource, setUploadSource] = useState<'geo' | 'cumida'>('geo');
   const [uploadTissue, setUploadTissue] = useState('Dataset');
   const [uploadFile1, setUploadFile1] = useState<File | null>(null);
@@ -100,89 +77,6 @@ export default function App() {
   const [uploadLog, setUploadLog] = useState('');
   const [uploadRuns, setUploadRuns] = useState<RunRecord[]>([]);
 
-  // State: Bước 2 "Xử lý & Chia Dữ liệu" — splitParams=null means "dùng mặc
-  // định của holdout.yaml"; non-null (từ "Thực hiện lại") flows down into
-  // every FS/model/predict call below so they all read the SAME split.
-  const [splitParams, setSplitParams] = useState<{ min_samples_per_class: number, test_size: number } | null>(null);
-  const [splitInputs, setSplitInputs] = useState({ min_samples_per_class: 5, test_size: 0.2 });
-  const [splitStats, setSplitStats] = useState<any>(null);
-  const [isSplitLoading, setIsSplitLoading] = useState(false);
-  const [splitLog, setSplitLog] = useState('');
-  const [splitRuns, setSplitRuns] = useState<RunRecord[]>([]);
-
-  // State: Feature Selection
-  // The API artifact key for mRMR is derived from its K below (mrmr_k50,
-  // mrmr_k75, ...).  Keep mRMR itself as one configurable method in the UI.
-  const [fsMethod, setFsMethod] = useState<'boruta' | 'mrmr'>('boruta');
-  const [fsLog, setFsLog] = useState('');
-  const [isFsLoading, setIsFsLoading] = useState(false);
-  const [extractionStats, setExtractionStats] = useState<any>(null);
-  const [fsRunId, setFsRunId] = useState<string | null>(null);
-  const [fsRuns, setFsRuns] = useState<RunRecord[]>([]);
-
-  const [borutaConfig, setBorutaConfig] = useState({
-    n_estimators: 'auto',
-    rf_n_estimators: 500,
-    max_depth: '',
-    max_iter: 100,
-    perc: 100,
-    alpha: 0.05,
-    class_weight: 'balanced',
-    random_state: 42,
-    selection_mode: 'confirmed' as 'confirmed' | 'confirmed_tentative' | 'top_k',
-    k: '' as number | string
-  });
-
-  const [mrmrConfig, setMrmrConfig] = useState({
-    criterion: 'MIQ',
-    K: 50,
-    n_bins: 3,
-    random_state: 42
-  });
-  const [mrmrKMode, setMrmrKMode] = useState<'50' | '75' | 'custom'>('50');
-
-  // State: Model Selection
-  const [modelType, setModelType] = useState<'dt' | 'rf'>('rf');
-  const [modelStats, setModelStats] = useState<ModelStatsUI | null>(null);
-  const [isModelLoading, setIsModelLoading] = useState(false);
-  const [modelRunId, setModelRunId] = useState<string | null>(null);
-  const [modelLog, setModelLog] = useState('');
-  const [modelRuns, setModelRuns] = useState<RunRecord[]>([]);
-  const [modelConfig, setModelConfig] = useState({
-    n_estimators: 200,
-    max_depth: 5,
-    min_samples_leaf: 2,
-    class_weight: 'balanced_subsample',
-    random_state: 42,
-    min_confidence: 0.8,
-    min_fidelity: 0.0,
-    min_support: 0.05,
-    min_abs_support: 3,
-    max_conditions: 5,
-    merge_same_gene: true,
-    dedup: true,
-    dedup_sig_figs: 2,
-    merge_generalization: true,
-    max_rules_per_class: 20,
-    max_rules_total: 100
-  });
-  const [isModelOverviewCollapsed, setIsModelOverviewCollapsed] = useState(false);
-  const [isModelConfigCollapsed, setIsModelConfigCollapsed] = useState(false);
-  const [isConfusionMatrixCollapsed, setIsConfusionMatrixCollapsed] = useState(false);
-  const [isClassificationReportCollapsed, setIsClassificationReportCollapsed] = useState(false);
-  const [isTestResultsCollapsed, setIsTestResultsCollapsed] = useState(false);
-
-  // State: Testing
-  const [testMode, setTestMode] = useState<'sample' | 'upload'>('sample');
-  const [testSamples, setTestSamples] = useState<TestSample[]>([]);
-  const [testSampleId, setTestSampleId] = useState('');
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
-  const [expandedRule, setExpandedRule] = useState<number | null>(null);
-  const [isMatchedRulesCollapsed, setIsMatchedRulesCollapsed] = useState(false);
-  const [isPartialMatchesCollapsed, setIsPartialMatchesCollapsed] = useState(false);
-
   const isMrmr = fsMethod === 'mrmr';
   // K is part of the artifact identifier.  This is why cached K=50 and K=75
   // are loaded through mrmr_k50/mrmr_k75 rather than the obsolete mrmr_miq.
@@ -191,24 +85,23 @@ export default function App() {
 
   useEffect(() => {
     api.getDatasets()
-      .then(setDatasets)
-      .catch(e => setDatasetsError(e.message));
+      .then(loaded => dispatch({ type: 'datasets_loaded', datasets: loaded }))
+      .catch(e => dispatch({ type: 'datasets_load_failed', message: e.message }));
   }, []);
 
-  // Reset downstream state whenever the dataset changes (Bước 1 re-select ->
-  // ignore steps 2-4).
+  // Refetch this dataset's run history whenever it changes — clearing the
+  // now-stale steps 2-5 results happens inside the dataset_selected action
+  // itself (wherever it's dispatched from), not here.
   useEffect(() => {
     let ignore = false;
-    setSplitStats(null); setSplitParams(null); setSplitLog('');
-    setFsLog(''); setExtractionStats(null); setFsRunId(null);
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
     if (datasetId) {
-      api.getRuns(datasetId, 'feature_selection').then(r => { if (!ignore) setFsRuns(r); }).catch(() => { if (!ignore) setFsRuns([]); });
-      api.getRuns(datasetId, 'model').then(r => { if (!ignore) setModelRuns(r); }).catch(() => { if (!ignore) setModelRuns([]); });
-      api.getRuns(datasetId, 'split').then(r => { if (!ignore) setSplitRuns(r); }).catch(() => { if (!ignore) setSplitRuns([]); });
+      api.getRuns(datasetId, 'feature_selection').then(runs => { if (!ignore) dispatch({ type: 'fs_runs_loaded', runs }); }).catch(() => { if (!ignore) dispatch({ type: 'fs_runs_loaded', runs: [] }); });
+      api.getRuns(datasetId, 'model').then(runs => { if (!ignore) dispatch({ type: 'model_runs_loaded', runs }); }).catch(() => { if (!ignore) dispatch({ type: 'model_runs_loaded', runs: [] }); });
+      api.getRuns(datasetId, 'split').then(runs => { if (!ignore) dispatch({ type: 'split_runs_loaded', runs }); }).catch(() => { if (!ignore) dispatch({ type: 'split_runs_loaded', runs: [] }); });
     } else {
-      setFsRuns([]); setModelRuns([]); setSplitRuns([]);
+      dispatch({ type: 'fs_runs_loaded', runs: [] });
+      dispatch({ type: 'model_runs_loaded', runs: [] });
+      dispatch({ type: 'split_runs_loaded', runs: [] });
     }
     return () => { ignore = true; };
   }, [datasetId]);
@@ -220,58 +113,24 @@ export default function App() {
     api.getUploadHistory().then(setUploadRuns).catch(() => {});
   }, []);
 
-  // Re-computing the split (step 2, "Thực hiện lại" with custom params) ->
-  // every downstream FS/model/test result was computed against the OLD
-  // split, same reasoning as the fsMethod/modelType resets below.
-  useEffect(() => {
-    setExtractionStats(null); setFsRunId(null); setFsLog('');
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
-  }, [splitParams]);
-
-  // Re-selecting the fs method (Bước 3) -> the currently-shown extraction
-  // stats belong to the PREVIOUS method, so clear them too (not just steps
-  // 3-4 downstream) rather than leaving a stale panel that doesn't match the
-  // radio now selected; don't wait for a new "Huan luyen"/"Tai log cu" click.
-  useEffect(() => {
-    setExtractionStats(null); setFsRunId(null); setFsLog('');
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
-  }, [fsMethod]);
-
-  // Re-selecting the model type (Bước 4) -> same reasoning: the shown model
-  // stats belong to the previous model type, clear them too, plus step 4.
-  useEffect(() => {
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
-  }, [modelType]);
-
-  // Right-column panels for Bước 4/5 stay mounted once their data exists —
-  // only their COLLAPSE state follows the active step (same collapseSignal
-  // pattern DatasetOverview/DatasetSplit/FeatureExtractionOverview already
-  // use), so switching steps never deletes another step's result, just
-  // folds it down to its header.
-  useEffect(() => { setIsModelOverviewCollapsed(activeStep !== 4); }, [activeStep]);
-  useEffect(() => { setIsTestResultsCollapsed(activeStep !== 5); }, [activeStep]);
-
   // Load the real held-out test samples once a model is trained/loaded.
   useEffect(() => {
     if (!datasetId || !modelStats) return;
     let ignore = false;
     api.getTestSamplesWithSplit(datasetId, fsMethodKey, splitParams)
-      .then(r => { if (!ignore) setTestSamples(r); })
-      .catch(() => { if (!ignore) setTestSamples([]); });
+      .then(samples => { if (!ignore) dispatch({ type: 'test_samples_loaded', samples }); })
+      .catch(() => { if (!ignore) dispatch({ type: 'test_samples_loaded', samples: [] }); });
     return () => { ignore = true; };
   }, [datasetId, modelStats, fsMethodKey, splitParams]);
 
   const refreshRuns = () => {
     if (!datasetId) return;
-    api.getRuns(datasetId, 'feature_selection').then(setFsRuns).catch(() => {});
-    api.getRuns(datasetId, 'model').then(setModelRuns).catch(() => {});
+    api.getRuns(datasetId, 'feature_selection').then(runs => dispatch({ type: 'fs_runs_loaded', runs })).catch(() => {});
+    api.getRuns(datasetId, 'model').then(runs => dispatch({ type: 'model_runs_loaded', runs })).catch(() => {});
   };
 
   const refreshSplitRuns = (id: string) => {
-    api.getRuns(id, 'split').then(setSplitRuns).catch(() => {});
+    api.getRuns(id, 'split').then(runs => dispatch({ type: 'split_runs_loaded', runs })).catch(() => {});
   };
 
   const handleUploadInspect = async () => {
@@ -303,14 +162,17 @@ export default function App() {
         throw new Error(job.error || 'Xây dựng dataset thất bại (xem log server).');
       }
       const built = job.result as any;
-      setDatasets(prev => [...prev, {
-        id: built.dataset_id, name: built.name, platform: built.platform,
-        n_samples: built.n_samples, n_features: built.n_features, n_classes: built.n_classes,
-        class_labels: built.class_labels, description: built.description, fs_models: {},
-        is_temp: true,
-      }]);
-      setDatasetId(built.dataset_id);
-      setDatasetTab('existing');
+      dispatch({
+        type: 'dataset_added',
+        dataset: {
+          id: built.dataset_id, name: built.name, platform: built.platform,
+          n_samples: built.n_samples, n_features: built.n_features, n_classes: built.n_classes,
+          class_labels: built.class_labels, description: built.description, fs_models: {},
+          is_temp: true,
+        },
+      });
+      dispatch({ type: 'dataset_selected', datasetId: built.dataset_id });
+      dispatch({ type: 'dataset_tab_changed', tab: 'existing' });
       setUploadLog(prev => prev + `\n[THÀNH CÔNG] Dataset '${built.dataset_id}' đã sẵn sàng sử dụng.`);
       api.getUploadHistory().then(setUploadRuns).catch(() => {});
     } catch (e: any) {
@@ -323,36 +185,31 @@ export default function App() {
 
   const handleSplitAction = async (action: 'retrain' | 'load') => {
     if (!datasetId) return;
-    setIsSplitLoading(true);
-    setSplitLog('');
-    setExtractionStats(null); setFsRunId(null); setFsLog('');
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
     try {
       if (action === 'load') {
-        setSplitLog('[HỆ THỐNG] Đang tải số liệu chia dữ liệu (mặc định)...');
+        dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tải số liệu chia dữ liệu (mặc định)...' });
         let stats: any;
         try {
           stats = await api.getOverview(datasetId);
         } catch {
           stats = await api.splitPreview(datasetId, {});
         }
-        setSplitStats(stats);
-        setSplitParams(null);
-        setSplitInputs({ min_samples_per_class: stats.min_samples_per_class, test_size: stats.test_size });
-        setSplitLog(prev => prev + '\n[CACHE] Đã nạp thành công.');
+        dispatch({
+          type: 'split_computed',
+          stats,
+          params: null,
+          inputs: { min_samples_per_class: stats.min_samples_per_class, test_size: stats.test_size },
+        });
+        dispatch({ type: 'split_log_appended', line: '[CACHE] Đã nạp thành công.' });
       } else {
-        setSplitLog('[HỆ THỐNG] Đang tính lại chia dữ liệu (train/test)...');
+        dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tính lại chia dữ liệu (train/test)...' });
         const stats = await api.splitPreview(datasetId, splitInputs);
-        setSplitStats(stats);
-        setSplitParams({ ...splitInputs });
-        setSplitLog(prev => prev + '\n[OK] Đã tính lại thành công.');
+        dispatch({ type: 'split_computed', stats, params: { ...splitInputs }, inputs: splitInputs });
+        dispatch({ type: 'split_log_appended', line: '[OK] Đã tính lại thành công.' });
       }
       refreshSplitRuns(datasetId);
     } catch (e: any) {
-      setSplitLog(prev => prev + `\n[LỖI] ${e.message}`);
-    } finally {
-      setIsSplitLoading(false);
+      dispatch({ type: 'split_failed', line: `[LỖI] ${e.message}` });
     }
   };
 
@@ -362,82 +219,69 @@ export default function App() {
   // /split/preview call already saved into runs_index.json).
   const loadPastSplitRun = (run: RunRecord) => {
     if (!datasetId) return;
-    setSplitLog(`[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...`);
-    setExtractionStats(null); setFsRunId(null); setFsLog('');
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
     const params = {
       min_samples_per_class: run.summary.min_samples_per_class as number,
       test_size: run.summary.test_size as number,
     };
-    setSplitStats(run.summary);
-    setSplitParams(params);
-    setSplitInputs(params);
-    setSplitLog(prev => prev + '\n[OK] Đã nạp lại kết quả chạy trước.');
+    dispatch({
+      type: 'split_run_loaded',
+      stats: run.summary,
+      params,
+      log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...\n[OK] Đã nạp lại kết quả chạy trước.`,
+    });
   };
 
   const handleFsAction = async (action: 'retrain' | 'load') => {
     if (!datasetId) return;
-    setIsFsLoading(true);
-    setFsLog('');
-    setExtractionStats(null);
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
     try {
       if (action === 'load') {
-        setFsLog(`[HỆ THỐNG] Đang tải kết quả log trước đó cho thuật toán ${fsMethodKey.toUpperCase()}...`);
+        dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải kết quả log trước đó cho thuật toán ${fsMethodKey.toUpperCase()}...` });
         const stats = await api.getFeatureSelection(datasetId, fsMethodKey);
-        setExtractionStats(stats);
-        setFsRunId(null);
-        setFsLog(prev => prev + '\n[CACHE] Đã nạp thành công.');
+        dispatch({ type: 'fs_computed', stats, runId: null });
+        dispatch({ type: 'fs_log_appended', line: '[CACHE] Đã nạp thành công.' });
       } else {
         // Keep the requested K and the artifact key (mrmr_k{K}) aligned.
         const params = isMrmr ? mrmrConfig : borutaConfig;
-        setFsLog(`[HỆ THỐNG] Bắt đầu chạy thuật toán ${fsMethodKey.toUpperCase()} (chạy thật, có thể mất vài phút)...`);
+        dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Bắt đầu chạy thuật toán ${fsMethodKey.toUpperCase()} (chạy thật, có thể mất vài phút)...` });
         const { job_id } = await api.trainFeatureSelection(datasetId, fsMethodKey, params, splitParams);
-        const job = await pollJob(job_id, j => setFsLog(j.log.join('\n')));
+        const job = await pollJob(job_id, j => dispatch({ type: 'fs_log_set', log: j.log.join('\n') }));
         if (job.status === 'error') {
           throw new Error(job.error || 'Trich xuat dac trung that bai (xem log server).');
         }
         const stats = await api.getFeatureSelection(datasetId, fsMethodKey, job_id);
-        setExtractionStats(stats);
-        setFsRunId(job_id);
+        dispatch({ type: 'fs_computed', stats, runId: job_id });
         refreshRuns();
       }
     } catch (e: any) {
-      setFsLog(prev => prev + `\n[LỖI] ${e.message}`);
-    } finally {
-      setIsFsLoading(false);
+      dispatch({ type: 'fs_failed', line: `[LỖI] ${e.message}` });
     }
   };
 
   const loadPastFsRun = async (run: RunRecord) => {
     if (!datasetId) return;
-    setIsFsLoading(true);
-    setFsLog(`[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...`);
-    // This run's features may not match whatever model/test-results are
-    // currently shown (same reset as handleFsAction) — otherwise the model
-    // panel keeps displaying stale results as if they belonged to this run.
-    setModelStats(null); setModelRunId(null); setModelLog('');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
+    dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...` });
     try {
       const stats = await api.getFeatureSelection(datasetId, run.fs_method, run.run_id);
-      setExtractionStats(stats);
-      setFsRunId(run.run_id);
-      setFsLog(prev => prev + '\n[OK] Đã nạp lại kết quả chạy trước.');
+      dispatch({ type: 'fs_computed', stats, runId: run.run_id });
+      dispatch({ type: 'fs_log_appended', line: '[OK] Đã nạp lại kết quả chạy trước.' });
     } catch (e: any) {
-      setFsLog(prev => prev + `\n[LỖI] ${e.message}`);
-    } finally {
-      setIsFsLoading(false);
+      dispatch({ type: 'fs_failed', line: `[LỖI] ${e.message}` });
     }
   };
 
+  const buildModelStatsUI = (stats: any): ModelStatsUI => ({
+    acc: Math.round((stats.best_run_test_metrics?.accuracy ?? 0) * 1000) / 10,
+    f1: Math.round((stats.best_run_test_metrics?.f1_macro ?? 0) * 1000) / 10,
+    rules: stats.n_rules ?? 0,
+    cm: stats.confusion_matrix ?? [],
+    labels: stats.class_labels ?? [],
+    hyperparams: stats.hyperparams ?? null,
+    rulesSummary: stats.rules_summary ?? null,
+  });
+
   const handleModelAction = async (action: 'retrain' | 'load') => {
     if (!datasetId) return;
-    setIsModelLoading(true);
-    setModelStats(null);
-    setModelLog(action === 'retrain' ? '[HỆ THỐNG] Bắt đầu huấn luyện mô hình (chạy thật)...' : '');
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
+    dispatch({ type: 'model_started', log: action === 'retrain' ? '[HỆ THỐNG] Bắt đầu huấn luyện mô hình (chạy thật)...' : '' });
     try {
       let stats: any;
       let runId: string | null = null;
@@ -445,7 +289,7 @@ export default function App() {
         stats = await api.getModelStats(datasetId, fsMethodKey, modelType);
       } else {
         const { job_id } = await api.trainModel(datasetId, fsMethodKey, modelType, modelConfig, fsRunId, splitParams);
-        const job = await pollJob(job_id, j => setModelLog(j.log.join('\n')));
+        const job = await pollJob(job_id, j => dispatch({ type: 'model_log_set', log: j.log.join('\n') }));
         if (job.status === 'error') {
           throw new Error(job.error || 'Huan luyen mo hinh that bai (xem log server).');
         }
@@ -453,105 +297,79 @@ export default function App() {
         runId = job_id;
         refreshRuns();
       }
-      setModelRunId(runId);
-      setModelStats({
-        acc: Math.round((stats.best_run_test_metrics?.accuracy ?? 0) * 1000) / 10,
-        f1: Math.round((stats.best_run_test_metrics?.f1_macro ?? 0) * 1000) / 10,
-        rules: stats.n_rules ?? 0,
-        cm: stats.confusion_matrix ?? [],
-        labels: stats.class_labels ?? [],
-        hyperparams: stats.hyperparams ?? null,
-        rulesSummary: stats.rules_summary ?? null,
-      });
+      dispatch({ type: 'model_computed', stats: buildModelStatsUI(stats), runId });
     } catch (e: any) {
-      setModelLog(prev => prev + `\n[LỖI] ${e.message}`);
-    } finally {
-      setIsModelLoading(false);
+      dispatch({ type: 'model_failed', line: `[LỖI] ${e.message}` });
     }
   };
 
   const loadPastModelRun = async (run: RunRecord) => {
     if (!datasetId || !run.model) return;
-    setIsModelLoading(true);
-    setModelLog(`[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...`);
-    // Same reasoning as handleModelAction: a prediction/test result from the
-    // PREVIOUS model run must not keep showing next to this newly loaded one.
-    setTestSamples([]); setTestSampleId(''); setTestResults(null); setUploadFile(null);
+    dispatch({ type: 'model_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...` });
     try {
       const stats = await api.getModelStats(datasetId, run.fs_method, run.model, run.run_id);
-      setModelRunId(run.run_id);
-      setModelStats({
-        acc: Math.round((stats.best_run_test_metrics?.accuracy ?? 0) * 1000) / 10,
-        f1: Math.round((stats.best_run_test_metrics?.f1_macro ?? 0) * 1000) / 10,
-        rules: stats.n_rules ?? 0,
-        cm: stats.confusion_matrix ?? [],
-        labels: stats.class_labels ?? [],
-        hyperparams: stats.hyperparams ?? null,
-        rulesSummary: stats.rules_summary ?? null,
-      });
-      setModelLog(prev => prev + '\n[OK] Đã nạp lại kết quả chạy trước.');
+      dispatch({ type: 'model_computed', stats: buildModelStatsUI(stats), runId: run.run_id });
+      dispatch({ type: 'model_log_appended', line: '[OK] Đã nạp lại kết quả chạy trước.' });
     } catch (e: any) {
-      setModelLog(prev => prev + `\n[LỖI] ${e.message}`);
-    } finally {
-      setIsModelLoading(false);
+      dispatch({ type: 'model_failed', line: `[LỖI] ${e.message}` });
     }
   };
 
   const applyPredictionResult = (result: any) => {
-    setTestResults({
-      matchedCount: result.matched_count,
-      rules: result.rules.map((r: any) => ({
-        id: r.rule_id,
-        text: r.text,
-        matched: r.matched,
-        desc: r.explanation || '',
-        sampleValues: r.sample_values || {},
-        class: r.consequent_label,
-      })),
-      classification: result.classification,
-      classDescription: result.class_description,
-      classDisplayName: result.class_display_name || null,
-      classDisplayNames: result.class_display_names || {},
-      rulePrediction: result.rule_prediction || null,
-      rulePredictionDescription: result.rule_prediction_description || null,
-      rulePredictionDisplayName: result.rule_prediction_display_name || null,
-      classVotes: result.class_votes || {},
-      classVotesOver50: result.class_votes_over50 || {},
-      partialMatches: (result.partial_matches || []).map((p: any) => ({
-        ruleId: p.rule_id,
-        text: p.text,
-        class: p.consequent_label,
-        satisfied: p.satisfied,
-        total: p.total,
-        ratio: p.ratio,
-        conditions: p.conditions || [],
-      })),
-      nPartialMatchesTotal: result.n_partial_matches_total ?? (result.partial_matches || []).length,
-      nRulesTotal: result.n_rules_total ?? null,
-      trueLabel: result.true_label,
-      biomedicalSummary: result.biomedical_summary,
-      biomedicalRationale: result.biomedical_rationale,
-      biomedicalModelVsRule: result.biomedical_model_vs_rule,
-      biomedicalDisclaimer: result.biomedical_disclaimer,
-      llmUsed: result.llm_used,
+    dispatch({
+      type: 'test_computed',
+      result: {
+        matchedCount: result.matched_count,
+        rules: result.rules.map((r: any) => ({
+          id: r.rule_id,
+          text: r.text,
+          matched: r.matched,
+          desc: r.explanation || '',
+          sampleValues: r.sample_values || {},
+          class: r.consequent_label,
+        })),
+        classification: result.classification,
+        classDescription: result.class_description,
+        classDisplayName: result.class_display_name || null,
+        classDisplayNames: result.class_display_names || {},
+        rulePrediction: result.rule_prediction || null,
+        rulePredictionDescription: result.rule_prediction_description || null,
+        rulePredictionDisplayName: result.rule_prediction_display_name || null,
+        classVotes: result.class_votes || {},
+        classVotesOver50: result.class_votes_over50 || {},
+        partialMatches: (result.partial_matches || []).map((p: any) => ({
+          ruleId: p.rule_id,
+          text: p.text,
+          class: p.consequent_label,
+          satisfied: p.satisfied,
+          total: p.total,
+          ratio: p.ratio,
+          conditions: p.conditions || [],
+        })),
+        nPartialMatchesTotal: result.n_partial_matches_total ?? (result.partial_matches || []).length,
+        nRulesTotal: result.n_rules_total ?? null,
+        trueLabel: result.true_label,
+        biomedicalSummary: result.biomedical_summary,
+        biomedicalRationale: result.biomedical_rationale,
+        biomedicalModelVsRule: result.biomedical_model_vs_rule,
+        biomedicalDisclaimer: result.biomedical_disclaimer,
+        llmUsed: result.llm_used,
+      },
     });
   };
 
   const handleTestSample = async () => {
     if (!datasetId) return;
     if (testMode === 'sample' && !testSampleId) return;
-    if (testMode === 'upload' && !uploadFile) return;
-    setIsTesting(true);
-    setTestResults(null);
+    if (testMode === 'upload' && !testUploadFile) return;
+    dispatch({ type: 'test_started' });
     try {
       const result = testMode === 'sample'
         ? await api.predict(datasetId, fsMethodKey, modelType, testSampleId, modelRunId, splitParams)
-        : await api.predictUpload(datasetId, fsMethodKey, modelType, uploadFile as File, modelRunId);
+        : await api.predictUpload(datasetId, fsMethodKey, modelType, testUploadFile as File, modelRunId);
       applyPredictionResult(result);
     } catch (e: any) {
-      setTestResults({ matchedCount: 0, rules: [], classification: 'Loi', explanation: e.message });
-    } finally {
-      setIsTesting(false);
+      dispatch({ type: 'test_failed', result: { matchedCount: 0, rules: [], classification: 'Loi', explanation: e.message } });
     }
   };
 
@@ -560,7 +378,7 @@ export default function App() {
   // re-expanded and given a tick to remount before the jump-to-gene listener
   // can catch this.
   const jumpToGene = (gene: string) => {
-    setIsModelOverviewCollapsed(false);
+    dispatch({ type: 'model_overview_expanded' });
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('jump-to-gene', { detail: { gene } }));
     }, 60);
@@ -592,7 +410,7 @@ export default function App() {
     4: !!extractionStats,
     5: !!modelStats,
   };
-  const openStep = (n: number) => { if (stepReady[n]) setActiveStep(n); };
+  const openStep = (n: number) => { if (stepReady[n]) dispatch({ type: 'active_step_set', step: n }); };
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-brand-200 pb-12">
@@ -655,14 +473,14 @@ export default function App() {
 
                   <div className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm mb-4">
                     <button
-                      onClick={() => setDatasetTab('existing')}
+                      onClick={() => dispatch({ type: 'dataset_tab_changed', tab: 'existing' })}
                       disabled={datasetLocked}
                       className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", datasetTab === 'existing' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                     >
                       <ListChecks size={14} /> Chọn dataset có sẵn
                     </button>
                     <button
-                      onClick={() => setDatasetTab('upload')}
+                      onClick={() => dispatch({ type: 'dataset_tab_changed', tab: 'upload' })}
                       disabled={datasetLocked}
                       className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", datasetTab === 'upload' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                     >
@@ -674,7 +492,7 @@ export default function App() {
                     <>
                       <select
                         value={datasetId}
-                        onChange={(e) => setDatasetId(e.target.value)}
+                        onChange={(e) => dispatch({ type: 'dataset_selected', datasetId: e.target.value })}
                         disabled={datasetLocked}
                         className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                       >
@@ -783,8 +601,8 @@ export default function App() {
                         unavailableTitle="Dataset này không còn tồn tại (mất khi khởi động lại server)"
                         onSelect={run => {
                           if (!run.dataset) return;
-                          setDatasetId(run.dataset);
-                          setDatasetTab('existing');
+                          dispatch({ type: 'dataset_selected', datasetId: run.dataset });
+                          dispatch({ type: 'dataset_tab_changed', tab: 'existing' });
                         }}
                         renderLabel={run => `${String(run.summary?.tissue ?? '')} · ${run.run_id}`}
                         renderStatus={run => `${run.summary?.n_samples ?? '?'} mẫu`}
@@ -828,11 +646,11 @@ export default function App() {
                       <div className="grid grid-cols-1 gap-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-neutral-600">min_samples_per_class</span>
-                          <input type="number" min={2} value={splitInputs.min_samples_per_class} onChange={e => setSplitInputs({ ...splitInputs, min_samples_per_class: Number(e.target.value) })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                          <input type="number" min={2} value={splitInputs.min_samples_per_class} onChange={e => dispatch({ type: 'split_inputs_changed', inputs: { ...splitInputs, min_samples_per_class: Number(e.target.value) } })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-neutral-600">test_size</span>
-                          <input type="number" step="0.01" min={0.05} max={0.5} value={splitInputs.test_size} onChange={e => setSplitInputs({ ...splitInputs, test_size: Number(e.target.value) })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                          <input type="number" step="0.01" min={0.05} max={0.5} value={splitInputs.test_size} onChange={e => dispatch({ type: 'split_inputs_changed', inputs: { ...splitInputs, test_size: Number(e.target.value) } })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                         </div>
                       </div>
                     </Panel>
@@ -909,11 +727,11 @@ export default function App() {
                   <fieldset disabled={fsSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
                   <div className="flex gap-4 mb-5">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="fsMethod" checked={fsMethod === 'boruta'} onChange={() => setFsMethod('boruta')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <input type="radio" name="fsMethod" checked={fsMethod === 'boruta'} onChange={() => dispatch({ type: 'fs_method_changed', method: 'boruta' })} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
                       <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Boruta</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="fsMethod" checked={fsMethod === 'mrmr'} onChange={() => setFsMethod('mrmr')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <input type="radio" name="fsMethod" checked={fsMethod === 'mrmr'} onChange={() => dispatch({ type: 'fs_method_changed', method: 'mrmr' })} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
                       <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">mRMR</span>
                     </label>
                   </div>
@@ -931,31 +749,31 @@ export default function App() {
                       <div className="grid grid-cols-1 gap-y-3">
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">n_estimators</span>
-                           <input type="text" value={borutaConfig.n_estimators} onChange={e => setBorutaConfig({...borutaConfig, n_estimators: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="text" value={borutaConfig.n_estimators} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, n_estimators: e.target.value} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">rf_n_estimators</span>
-                           <input type="number" value={borutaConfig.rf_n_estimators} onChange={e => setBorutaConfig({...borutaConfig, rf_n_estimators: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" value={borutaConfig.rf_n_estimators} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, rf_n_estimators: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">max_depth</span>
-                           <input type="text" placeholder="null" value={borutaConfig.max_depth} onChange={e => setBorutaConfig({...borutaConfig, max_depth: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="text" placeholder="null" value={borutaConfig.max_depth} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, max_depth: e.target.value} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">max_iter</span>
-                           <input type="number" value={borutaConfig.max_iter} onChange={e => setBorutaConfig({...borutaConfig, max_iter: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" value={borutaConfig.max_iter} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, max_iter: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">perc</span>
-                           <input type="number" value={borutaConfig.perc} onChange={e => setBorutaConfig({...borutaConfig, perc: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" value={borutaConfig.perc} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, perc: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">alpha</span>
-                           <input type="number" step="0.01" value={borutaConfig.alpha} onChange={e => setBorutaConfig({...borutaConfig, alpha: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" step="0.01" value={borutaConfig.alpha} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, alpha: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">class_weight</span>
-                           <select value={borutaConfig.class_weight} onChange={e => setBorutaConfig({...borutaConfig, class_weight: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                           <select value={borutaConfig.class_weight} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, class_weight: e.target.value} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
                              <option value="balanced">balanced</option>
                              <option value="balanced_subsample">balanced_subsample</option>
                              <option value="none">none</option>
@@ -963,13 +781,13 @@ export default function App() {
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">random_state</span>
-                           <input type="number" value={borutaConfig.random_state} onChange={e => setBorutaConfig({...borutaConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" value={borutaConfig.random_state} onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, random_state: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">Chế độ chọn đặc trưng</span>
                            <select
                              value={borutaConfig.selection_mode}
-                             onChange={e => setBorutaConfig({...borutaConfig, selection_mode: e.target.value as typeof borutaConfig.selection_mode})}
+                             onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, selection_mode: e.target.value as typeof borutaConfig.selection_mode} })}
                              className="w-40 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                            >
                              <option value="confirmed">confirmed</option>
@@ -985,7 +803,7 @@ export default function App() {
                                min={1}
                                placeholder="số đặc trưng"
                                value={borutaConfig.k}
-                               onChange={e => setBorutaConfig({...borutaConfig, k: e.target.value === '' ? '' : Number(e.target.value)})}
+                               onChange={e => dispatch({ type: 'boruta_config_changed', config: {...borutaConfig, k: e.target.value === '' ? '' : Number(e.target.value)} })}
                                className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                              />
                            </div>
@@ -1011,9 +829,9 @@ export default function App() {
                              value={mrmrKMode}
                              onChange={e => {
                                const mode = e.target.value as typeof mrmrKMode;
-                               setMrmrKMode(mode);
+                               dispatch({ type: 'mrmr_k_mode_changed', mode });
                                if (mode !== 'custom') {
-                                 setMrmrConfig({ ...mrmrConfig, K: Number(mode) });
+                                 dispatch({ type: 'mrmr_config_changed', config: { ...mrmrConfig, K: Number(mode) } });
                                }
                              }}
                              className="w-24 px-2 py-1 font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
@@ -1030,7 +848,7 @@ export default function App() {
                                type="number"
                                min={1}
                                value={mrmrConfig.K}
-                               onChange={e => setMrmrConfig({ ...mrmrConfig, K: Math.max(1, Number(e.target.value) || 1) })}
+                               onChange={e => dispatch({ type: 'mrmr_config_changed', config: { ...mrmrConfig, K: Math.max(1, Number(e.target.value) || 1) } })}
                                className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                                aria-label="Giá trị K mới"
                              />
@@ -1038,11 +856,11 @@ export default function App() {
                          )}
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">n_bins</span>
-                           <input type="number" value={mrmrConfig.n_bins} onChange={e => setMrmrConfig({...mrmrConfig, n_bins: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" value={mrmrConfig.n_bins} onChange={e => dispatch({ type: 'mrmr_config_changed', config: {...mrmrConfig, n_bins: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                          <div className="flex justify-between items-center">
                            <span className="text-neutral-600">random_state</span>
-                           <input type="number" value={mrmrConfig.random_state} onChange={e => setMrmrConfig({...mrmrConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                           <input type="number" value={mrmrConfig.random_state} onChange={e => dispatch({ type: 'mrmr_config_changed', config: {...mrmrConfig, random_state: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                          </div>
                       </div>
                     </Panel>
@@ -1126,11 +944,11 @@ export default function App() {
                   <fieldset disabled={modelSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
                   <div className="flex gap-4 mb-5">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="modelType" checked={modelType === 'rf'} onChange={() => setModelType('rf')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <input type="radio" name="modelType" checked={modelType === 'rf'} onChange={() => dispatch({ type: 'model_type_changed', modelType: 'rf' })} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
                       <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Random Forest</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input type="radio" name="modelType" checked={modelType === 'dt'} onChange={() => setModelType('dt')} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
+                      <input type="radio" name="modelType" checked={modelType === 'dt'} onChange={() => dispatch({ type: 'model_type_changed', modelType: 'dt' })} className="w-4 h-4 shrink-0 accent-brand-600 focus:ring-brand-500" />
                       <span className="font-medium text-neutral-800 group-hover:text-brand-700 transition-colors">Decision Tree</span>
                     </label>
                   </div>
@@ -1150,20 +968,20 @@ export default function App() {
                       {modelType === 'rf' && (
                         <div className="flex justify-between items-center">
                           <span className="text-neutral-600">n_estimators</span>
-                          <input type="number" value={modelConfig.n_estimators} onChange={e => setModelConfig({...modelConfig, n_estimators: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                          <input type="number" value={modelConfig.n_estimators} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, n_estimators: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                         </div>
                       )}
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">max_depth</span>
-                        <input type="number" value={modelConfig.max_depth} onChange={e => setModelConfig({...modelConfig, max_depth: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.max_depth} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, max_depth: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">min_samples_leaf</span>
-                        <input type="number" value={modelConfig.min_samples_leaf} onChange={e => setModelConfig({...modelConfig, min_samples_leaf: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.min_samples_leaf} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, min_samples_leaf: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">class_weight</span>
-                        <select value={modelConfig.class_weight} onChange={e => setModelConfig({...modelConfig, class_weight: e.target.value})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                        <select value={modelConfig.class_weight} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, class_weight: e.target.value} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
                           <option value="balanced">balanced</option>
                           <option value="balanced_subsample">balanced_subsample</option>
                           <option value="none">none</option>
@@ -1171,7 +989,7 @@ export default function App() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">random_state</span>
-                        <input type="number" value={modelConfig.random_state} onChange={e => setModelConfig({...modelConfig, random_state: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.random_state} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, random_state: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                     </div>
                   </Panel>
@@ -1184,47 +1002,47 @@ export default function App() {
                     <div className="grid grid-cols-1 gap-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">min_confidence</span>
-                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_confidence} onChange={e => setModelConfig({...modelConfig, min_confidence: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_confidence} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, min_confidence: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">min_fidelity</span>
-                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_fidelity} onChange={e => setModelConfig({...modelConfig, min_fidelity: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_fidelity} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, min_fidelity: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">min_support</span>
-                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_support} onChange={e => setModelConfig({...modelConfig, min_support: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" step="0.01" min="0" max="1" value={modelConfig.min_support} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, min_support: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">min_abs_support</span>
-                        <input type="number" value={modelConfig.min_abs_support} onChange={e => setModelConfig({...modelConfig, min_abs_support: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.min_abs_support} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, min_abs_support: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">max_conditions</span>
-                        <input type="number" value={modelConfig.max_conditions} onChange={e => setModelConfig({...modelConfig, max_conditions: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.max_conditions} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, max_conditions: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">max_rules_per_class</span>
-                        <input type="number" value={modelConfig.max_rules_per_class} onChange={e => setModelConfig({...modelConfig, max_rules_per_class: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.max_rules_per_class} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, max_rules_per_class: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">max_rules_total</span>
-                        <input type="number" value={modelConfig.max_rules_total} onChange={e => setModelConfig({...modelConfig, max_rules_total: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" value={modelConfig.max_rules_total} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, max_rules_total: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">merge_same_gene</span>
-                        <input type="checkbox" checked={modelConfig.merge_same_gene} onChange={e => setModelConfig({...modelConfig, merge_same_gene: e.target.checked})} className="w-4 h-4 accent-brand-600" />
+                        <input type="checkbox" checked={modelConfig.merge_same_gene} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, merge_same_gene: e.target.checked} })} className="w-4 h-4 accent-brand-600" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">dedup</span>
-                        <input type="checkbox" checked={modelConfig.dedup} onChange={e => setModelConfig({...modelConfig, dedup: e.target.checked})} className="w-4 h-4 accent-brand-600" />
+                        <input type="checkbox" checked={modelConfig.dedup} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, dedup: e.target.checked} })} className="w-4 h-4 accent-brand-600" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600">dedup_sig_figs</span>
-                        <input type="number" min={1} max={6} value={modelConfig.dedup_sig_figs} onChange={e => setModelConfig({...modelConfig, dedup_sig_figs: Number(e.target.value)})} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                        <input type="number" min={1} max={6} value={modelConfig.dedup_sig_figs} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, dedup_sig_figs: Number(e.target.value)} })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-neutral-600" title="Loại bỏ luật bị luật khác (cùng bộ gene, cùng lớp) bao trùm hoàn toàn — xem giải thích ở khung chat.">merge_generalization</span>
-                        <input type="checkbox" checked={modelConfig.merge_generalization} onChange={e => setModelConfig({...modelConfig, merge_generalization: e.target.checked})} className="w-4 h-4 accent-brand-600" />
+                        <input type="checkbox" checked={modelConfig.merge_generalization} onChange={e => dispatch({ type: 'model_config_changed', config: {...modelConfig, merge_generalization: e.target.checked} })} className="w-4 h-4 accent-brand-600" />
                       </div>
                     </div>
                   </Panel>
@@ -1298,13 +1116,13 @@ export default function App() {
                   <div className="flex flex-col gap-4">
                      <div className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm">
                        <button
-                         onClick={() => setTestMode('sample')}
+                         onClick={() => dispatch({ type: 'test_mode_changed', mode: 'sample' })}
                          className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'sample' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                        >
                          <ListChecks size={14} /> Chọn mẫu có sẵn
                        </button>
                        <button
-                         onClick={() => setTestMode('upload')}
+                         onClick={() => dispatch({ type: 'test_mode_changed', mode: 'upload' })}
                          className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'upload' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
                        >
                          <UploadCloud size={14} /> Tải lên file
@@ -1331,7 +1149,7 @@ export default function App() {
                      {testMode === 'sample' ? (
                        <select
                          value={testSampleId}
-                         onChange={(e) => setTestSampleId(e.target.value)}
+                         onChange={(e) => dispatch({ type: 'test_sample_selected', sampleId: e.target.value })}
                          className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-sm"
                        >
                          <option value="">-- Chọn mẫu bệnh phẩm (test set thật) --</option>
@@ -1342,18 +1160,18 @@ export default function App() {
                      ) : (
                        <label className="w-full border-2 border-dashed border-brand-200 bg-brand-50/30 hover:bg-brand-50/80 text-brand-700 rounded-xl px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
                          <UploadCloud size={24} className="mb-2 text-brand-500" />
-                         <span className="font-medium text-sm">{uploadFile ? uploadFile.name : 'Tải lên mẫu bệnh phẩm'}</span>
+                         <span className="font-medium text-sm">{testUploadFile ? testUploadFile.name : 'Tải lên mẫu bệnh phẩm'}</span>
                          <span className="text-xs text-neutral-500 mt-1">
                            Định dạng <span className="font-mono">.json</span> (giống mẫu test_set — chỉ cần giữ lại dữ liệu microarray, các trường khác có thể lược bỏ),
                            {' '}<span className="font-mono">.csv</span> (cột "samples,type,{'{probe}'}...") hoặc <span className="font-mono">.txt</span> (2 cột probe,giá trị)
                          </span>
-                         <input type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+                         <input type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => dispatch({ type: 'test_upload_file_changed', file: e.target.files?.[0] || null })} />
                        </label>
                      )}
 
                       <Button
                         onClick={handleTestSample}
-                        disabled={(testMode === 'sample' ? !testSampleId : !uploadFile) || isTesting}
+                        disabled={(testMode === 'sample' ? !testSampleId : !testUploadFile) || isTesting}
                         size="lg"
                         className="w-full"
                       >
@@ -1412,7 +1230,7 @@ export default function App() {
               <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
                 <div
                   className="flex items-center justify-between gap-4 cursor-pointer group"
-                  onClick={() => setIsModelOverviewCollapsed(c => !c)}
+                  onClick={() => dispatch({ type: 'model_overview_toggled' })}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
@@ -1473,7 +1291,7 @@ export default function App() {
                           <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                             <div
                               className="flex items-center justify-between cursor-pointer group/cfg"
-                              onClick={() => setIsModelConfigCollapsed(c => !c)}
+                              onClick={() => dispatch({ type: 'model_config_panel_toggled' })}
                             >
                               <div className="flex items-center gap-2">
                                 <Settings2 className="text-brand-600" size={20} />
@@ -1526,7 +1344,7 @@ export default function App() {
                       <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                         <div
                           className="flex items-center justify-between cursor-pointer group/cm"
-                          onClick={() => setIsConfusionMatrixCollapsed(c => !c)}
+                          onClick={() => dispatch({ type: 'confusion_matrix_toggled' })}
                         >
                           <div className="flex items-center gap-2">
                             <Table2 className="text-brand-600" size={20} />
@@ -1547,7 +1365,7 @@ export default function App() {
                       <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
                         <div
                           className="flex items-center justify-between cursor-pointer group/cr"
-                          onClick={() => setIsClassificationReportCollapsed(c => !c)}
+                          onClick={() => dispatch({ type: 'classification_report_toggled' })}
                         >
                           <div className="flex items-center gap-2">
                             <FileText className="text-brand-600" size={20} />
@@ -1606,7 +1424,7 @@ export default function App() {
               <div>
                 <div
                   className="flex items-center justify-between mb-6 cursor-pointer group"
-                  onClick={() => setIsTestResultsCollapsed(c => !c)}
+                  onClick={() => dispatch({ type: 'test_results_toggled' })}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 shrink-0 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
@@ -1703,7 +1521,7 @@ export default function App() {
                       <div className="bg-white rounded-xl p-5 border border-neutral-200 mb-6">
                         <div
                           className="flex items-center justify-between mb-4 cursor-pointer group/rules"
-                          onClick={() => setIsMatchedRulesCollapsed(c => !c)}
+                          onClick={() => dispatch({ type: 'matched_rules_toggled' })}
                         >
                           <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 group-hover/rules:text-brand-800 transition-colors">
                             Danh sách Luật Khớp ({testResults.rules.length})
@@ -1729,7 +1547,7 @@ export default function App() {
                                   <code className="font-mono text-xs md:text-sm text-brand-800">{rule.text}</code>
                                 </div>
                                 <button
-                                  onClick={() => setExpandedRule(expandedRule === rule.id ? null : rule.id)}
+                                  onClick={() => dispatch({ type: 'expanded_rule_toggled', ruleId: rule.id })}
                                   className="text-brand-700 hover:text-brand-900 transition-colors shrink-0 ml-4"
                                   title="Giải thích Y sinh"
                                 >
@@ -1783,7 +1601,7 @@ export default function App() {
                         <Panel padding="lg" className="mb-6">
                           <div
                             className="flex items-center justify-between mb-4 cursor-pointer group/partial"
-                            onClick={() => setIsPartialMatchesCollapsed(c => !c)}
+                            onClick={() => dispatch({ type: 'partial_matches_toggled' })}
                           >
                             <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 group-hover/partial:text-brand-800 transition-colors">
                               Luật Khớp Một Phần ({testResults.partialMatches.length})
