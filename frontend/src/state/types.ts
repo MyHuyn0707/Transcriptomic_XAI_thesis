@@ -184,6 +184,12 @@ export interface WorkspaceState {
   isPartialMatchesCollapsed: boolean;
 }
 
+// K is part of the artifact identifier — this is why cached K=50 and K=75
+// runs are loaded through mrmr_k50/mrmr_k75 rather than the obsolete mrmr_miq.
+export function fsMethodKeyOf(state: Pick<WorkspaceState, 'fsMethod' | 'mrmrConfig'>): string {
+  return state.fsMethod === 'mrmr' ? `mrmr_k${state.mrmrConfig.K}` : state.fsMethod;
+}
+
 export const initialWorkspaceState: WorkspaceState = {
   activeStep: 1,
 
