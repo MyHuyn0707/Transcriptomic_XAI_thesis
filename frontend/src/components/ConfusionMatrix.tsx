@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Maximize2, X } from 'lucide-react';
+import { ExpandSquare4, Close } from '@tailgrids/icons';
 import { cn } from '../lib/utils';
 
 interface ConfusionMatrixProps {
@@ -85,7 +85,7 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
           className="absolute -top-1 right-0 z-10 p-1.5 rounded-full bg-white border border-neutral-200 text-neutral-500 opacity-0 group-hover/matrix:opacity-100 hover:text-brand-600 hover:border-brand-200 transition-all shadow-sm"
           title="Phóng to ma trận nhầm lẫn"
         >
-          <Maximize2 size={14} />
+          <ExpandSquare4 size={14} />
         </button>
         <MatrixGrid data={data} labels={labels} fontSizeClass="text-[11px] sm:text-sm" labelFontSizeClass="text-[9px] sm:text-xs" />
       </div>
@@ -105,7 +105,7 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
                 onClick={() => setZoomed(false)}
                 className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-600 transition-colors"
               >
-                <X size={18} />
+                <Close size={18} />
               </button>
             </div>
             <div style={{ width: Math.max(480, labels.length * 90) }}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { ChevronDown, ChevronUp, GitMerge, AlertTriangle } from 'lucide-react';
+import { GitMerge, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp } from '@tailgrids/icons';
 import { api, ContentInfo, SplitStats } from '../lib/api';
 import { PALETTE, DROPPED_COLOR } from '../lib/palette';
 

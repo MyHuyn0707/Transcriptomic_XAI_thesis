@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Download, Info, ListChecks, Loader2, UploadCloud } from 'lucide-react';
+import { Activity, AlertTriangle, ListChecks } from 'lucide-react';
+import { ChevronDown, ChevronUp, UploadCloud, CheckCircle1, Download1, InfoCircle, Reload } from '@tailgrids/icons';
 import { cn, errorMessage } from '../../lib/utils';
 import { classColor } from '../../lib/palette';
 import { displayLabel } from '../../lib/metrics';
 import { api, PredictResponse } from '../../lib/api';
 import { canonicalClassLabels, fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
-import Button from '../ui/Button';
+import { Button } from '../tailgrids/core/button';
 import Panel from '../ui/Panel';
 import VoteBar from '../VoteBar';
 import GeneChipList from '../GeneChipList';
@@ -138,7 +139,7 @@ export default function Step5Testing({ state, dispatch }: Props) {
              download
              className="w-full py-2 border border-neutral-200 hover:bg-neutral-50 text-neutral-700 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"
            >
-             <Download size={14} /> Tải xuống test set (ZIP) — minh bạch dữ liệu đánh giá
+             <Download1 size={14} /> Tải xuống test set (ZIP) — minh bạch dữ liệu đánh giá
            </a>
          )}
 
@@ -171,7 +172,7 @@ export default function Step5Testing({ state, dispatch }: Props) {
             size="lg"
             className="w-full"
           >
-            {isTesting ? <Loader2 size={18} className="animate-spin" /> : <Activity size={18} />}
+            {isTesting ? <Reload size={18} className="animate-spin" /> : <Activity size={18} />}
             Dự Đoán Kết Quả
           </Button>
       </div>
@@ -223,7 +224,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
           ) : (
           <div className="bg-white p-6 rounded-2xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 border border-neutral-200 h-full">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200">
-              <CheckCircle2 className="text-brand-600" size={24} />
+              <CheckCircle1 className="text-brand-600" size={24} />
               <h3 className="text-lg font-bold text-neutral-800">Báo cáo Phân loại</h3>
               <span className="ml-auto bg-brand-100 text-brand-700 border border-brand-200 text-xs py-1 px-3 rounded-full font-medium">
                 Khớp {testResults.matchedCount} rules
@@ -321,7 +322,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                         className="text-brand-700 hover:text-brand-900 transition-colors shrink-0 ml-4 pl-3 border-l border-brand-200"
                         title="Giải thích Y sinh"
                       >
-                        <Info size={16} />
+                        <InfoCircle size={16} />
                       </button>
                     </div>
                     {expandedRule === rule.id && (

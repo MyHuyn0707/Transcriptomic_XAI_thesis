@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer } from 'react';
-import { Activity, Database, Dna, GitMerge, Microscope, Settings2 } from 'lucide-react';
+import { Activity, Database, Dna, GitMerge, Microscope } from 'lucide-react';
+import { Gear1 } from '@tailgrids/icons';
 import { cn } from './lib/utils';
 import { api } from './lib/api';
 import { workspaceReducer } from './state/workspaceReducer';
@@ -87,7 +88,7 @@ export default function App() {
             <span className="text-neutral-400">/</span>
             <span className={cn("flex items-center gap-1.5 transition-colors", splitStats ? "text-success-600" : "")}><GitMerge size={16}/> Chia dữ liệu</span>
             <span className="text-neutral-400">/</span>
-            <span className={cn("flex items-center gap-1.5 transition-colors", fsLog ? "text-success-600" : "")}><Settings2 size={16}/> Trích xuất</span>
+            <span className={cn("flex items-center gap-1.5 transition-colors", fsLog ? "text-success-600" : "")}><Gear1 size={16}/> Trích xuất</span>
             <span className="text-neutral-400">/</span>
             <span className={cn("flex items-center gap-1.5 transition-colors", modelStats ? "text-success-600" : "")}><GitMerge size={16}/> Mô hình</span>
             <span className="text-neutral-400">/</span>
@@ -100,7 +101,7 @@ export default function App() {
 
         {/* Cột Trái: Cấu hình */}
         <div className="lg:col-span-4 space-y-8 relative">
-          <div className="absolute left-[23px] top-12 bottom-12 w-0.5 bg-neutral-100 -z-10 hidden lg:block"></div>
+          <div className="absolute left-5 top-10 bottom-10 w-0.5 bg-neutral-100 -z-10 hidden lg:block"></div>
 
           <WizardStep number={1} title="Chọn Dữ Liệu" active={activeStep === 1} ready={stepReady[1]} onOpen={() => openStep(1)}>
             <Step1Dataset state={state} dispatch={dispatch} />

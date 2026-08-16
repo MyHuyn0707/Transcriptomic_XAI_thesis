@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import { FileText, Loader2, PlayCircle } from 'lucide-react';
+import { FileText, Reload, Play } from '@tailgrids/icons';
 import { api, RunRecord, SplitStats } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
-import Button from '../ui/Button';
+import { Button } from '../tailgrids/core/button';
 import Panel from '../ui/Panel';
-import Badge from '../ui/Badge';
+import { Badge } from '../tailgrids/core/badge';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
@@ -92,7 +92,7 @@ export default function Step2Split({ state, dispatch }: Props) {
       <Panel className="mb-5 text-sm">
         <div className="flex justify-between items-center mb-3">
           <span className="font-semibold text-neutral-800">Cấu hình chia dữ liệu</span>
-          <Badge tone="brand">Tùy chỉnh</Badge>
+          <Badge color="primary">Tùy chỉnh</Badge>
         </div>
         <div className="grid grid-cols-1 gap-y-3">
           <div className="flex justify-between items-center">
@@ -112,11 +112,11 @@ export default function Step2Split({ state, dispatch }: Props) {
           disabled={isSplitLoading || !datasetId}
           className="flex-1"
         >
-          {isSplitLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
+          {isSplitLoading ? <Reload size={16} className="animate-spin" /> : <Play size={16} />}
           Thực hiện lại
         </Button>
         <Button
-          variant="secondary"
+          variant="primary" appearance="outline"
           onClick={() => handleSplitAction('load')}
           disabled={isSplitLoading || !datasetId || selectedDataset?.is_temp}
           title={selectedDataset?.is_temp ? 'Dataset tải lên chưa từng qua xử lý offline nên không có số liệu chia dữ liệu cache — dùng "Thực hiện lại".' : undefined}

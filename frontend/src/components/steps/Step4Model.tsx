@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
-import { ChevronDown, ChevronUp, FileText, GitMerge, Loader2, PlayCircle, Settings2, Table2 } from 'lucide-react';
+import { GitMerge } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Table2, Reload, Play, Gear1 } from '@tailgrids/icons';
 import { api, ModelStatsResponse, pollJob, RunRecord } from '../../lib/api';
 import { classificationReport } from '../../lib/metrics';
 import { errorMessage } from '../../lib/utils';
 import { canonicalClassLabels, fsMethodKeyOf, ModelStatsUI, WorkspaceAction, WorkspaceState } from '../../state/types';
-import Button from '../ui/Button';
+import { Button } from '../tailgrids/core/button';
 import Panel from '../ui/Panel';
-import Badge from '../ui/Badge';
+import { Badge } from '../tailgrids/core/badge';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 import ConfusionMatrix from '../ConfusionMatrix';
@@ -119,7 +120,7 @@ export default function Step4Model({ state, dispatch }: Props) {
       <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
         <div className="flex justify-between items-center mb-3">
           <span className="font-semibold text-neutral-800">Cấu hình huấn luyện</span>
-          <Badge tone="brand">Tùy chỉnh</Badge>
+          <Badge color="primary">Tùy chỉnh</Badge>
         </div>
         <div className="grid grid-cols-1 gap-y-3">
           {modelType === 'rf' && (
@@ -154,7 +155,7 @@ export default function Step4Model({ state, dispatch }: Props) {
       <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
         <div className="flex justify-between items-center mb-3">
           <span className="font-semibold text-neutral-800">Cấu hình Lọc Luật</span>
-          <Badge tone="brand">Tùy chỉnh</Badge>
+          <Badge color="primary">Tùy chỉnh</Badge>
         </div>
         <div className="grid grid-cols-1 gap-y-3">
           <div className="flex justify-between items-center">
@@ -210,11 +211,11 @@ export default function Step4Model({ state, dispatch }: Props) {
           disabled={isModelLoading || !extractionStats}
           className="flex-1"
         >
-          {isModelLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
+          {isModelLoading ? <Reload size={16} className="animate-spin" /> : <Play size={16} />}
           Huấn luyện lại
         </Button>
         <Button
-          variant="secondary"
+          variant="primary" appearance="outline"
           onClick={() => handleModelAction('load')}
           disabled={modelLoadDisabled}
           title={fsRunId ? 'Không khả dụng khi đặc trưng hiện tại đến từ một lần chạy live' : undefined}
@@ -321,7 +322,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                     onClick={() => dispatch({ type: 'model_config_panel_toggled' })}
                   >
                     <div className="flex items-center gap-2">
-                      <Settings2 className="text-brand-600" size={20} />
+                      <Gear1 className="text-brand-600" size={20} />
                       <h3 className="text-base font-semibold text-neutral-900 group-hover/cfg:text-brand-700 transition-colors">Tham số cấu hình</h3>
                     </div>
                     <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
