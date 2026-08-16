@@ -173,6 +173,19 @@
    * white background + a barely-visible shadow to read as selected. */
   --color-tab-active-text: var(--color-brand-700);
   --color-tab-active-border: var(--color-neutral-200);
+
+  /* Select bridge — components/tailgrids/core/select.tsx (only the single-
+   * selection Select/SelectTrigger/SelectContent/SelectItem/SelectValue
+   * path is used so far, not the multi-select/label/description variants). */
+  --color-base-100: var(--color-neutral-100);
+  --color-text-50: var(--color-neutral-800);
+  --color-dropdown-background: var(--color-white-100);
+  --color-dropdown-hover-background: var(--color-neutral-50);
+  --color-input-placeholder-text: var(--color-neutral-400);
+  --color-input-disabled-text: var(--color-neutral-400);
+  --color-input-label-text: var(--color-neutral-700);
+  --color-input-error-focus-border: var(--color-danger-500);
+  --color-input-error: var(--color-danger-600);
 }
 
 /* Tailwind v4 reads @theme and turns each entry into a first-class utility
@@ -300,6 +313,15 @@
   --color-text-100: var(--color-text-100);
   --color-tab-active-text: var(--color-tab-active-text);
   --color-tab-active-border: var(--color-tab-active-border);
+  --color-base-100: var(--color-base-100);
+  --color-text-50: var(--color-text-50);
+  --color-dropdown-background: var(--color-dropdown-background);
+  --color-dropdown-hover-background: var(--color-dropdown-hover-background);
+  --color-input-placeholder-text: var(--color-input-placeholder-text);
+  --color-input-disabled-text: var(--color-input-disabled-text);
+  --color-input-label-text: var(--color-input-label-text);
+  --color-input-error-focus-border: var(--color-input-error-focus-border);
+  --color-input-error: var(--color-input-error);
 
   /* Override Tailwind's default text scale so existing text-xs/text-sm/etc.
      classes inherit the size adjustments above. */

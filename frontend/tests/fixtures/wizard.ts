@@ -9,8 +9,13 @@ export async function openApp(page: Page) {
   await page.goto('/');
 }
 
+// Step 1's dataset picker is Tailgrids' custom Select (a react-aria-components
+// combobox: trigger button + popover listbox), not a native <select>, so this
+// drives it the way a real user would — open the trigger, click the option —
+// instead of Playwright's selectOption (which only targets native <select>).
 export async function selectDataset(page: Page) {
-  await page.getByRole('combobox').first().selectOption({ label: DATASET_NAME });
+  await page.getByRole('button', { name: 'Chọn dataset' }).click();
+  await page.getByRole('option', { name: DATASET_NAME }).click();
 }
 
 export async function openStep(page: Page, title: string | RegExp) {

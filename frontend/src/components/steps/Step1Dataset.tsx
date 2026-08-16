@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { TabContent, TabList, TabRoot, TabTrigger } from '../tailgrids/core/tabs';
-import { ListChecks } from 'lucide-react';
+import { Archive, ListChecks } from 'lucide-react';
 import { FileText, UploadCloud, Reload, Play } from '@tailgrids/icons';
 import { api, BuiltDatasetResult, pollJob, RunRecord } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
 import { Button } from '../tailgrids/core/button';
+import { Select, SelectContent, SelectIndicator, SelectItem, SelectTrigger, SelectValue } from '../tailgrids/core/select';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
@@ -108,26 +109,33 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             want them sharing the row width evenly and wrapping their own
             text onto a 2nd line on narrow screens, never scrolling/clipping. */}
         <TabList className="!p-0 !border-0 mb-4 overflow-visible flex-wrap">
-          <TabTrigger value="existing" disabled={datasetLocked} icon={<ListChecks size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
-            Chọn dataset có sẵn
+          <TabTrigger value="existing" disabled={datasetLocked} icon={<Archive size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
+            Kho lưu trữ
           </TabTrigger>
           <TabTrigger value="upload" disabled={datasetLocked} icon={<UploadCloud size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
-            Tải lên dataset mới
+            Tải lên
           </TabTrigger>
         </TabList>
 
           <TabContent value="existing" className="!p-0">
-            <select
+            <Select
+              aria-label="Chọn dataset"
               value={datasetId}
-              onChange={(e) => dispatch({ type: 'dataset_selected', datasetId: e.target.value })}
-              disabled={datasetLocked}
-              className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              onChange={(key) => dispatch({ type: 'dataset_selected', datasetId: String(key) })}
+              isDisabled={datasetLocked}
+              className="w-full"
             >
-              <option value="">-- Chọn Dữ liệu --</option>
-              {datasets.map(d => (
-                <option key={d.id} value={d.id}>{d.name || d.id}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+                <SelectIndicator />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="" textValue="-- Chọn Dữ liệu --">-- Chọn Dữ liệu --</SelectItem>
+                {datasets.map(d => (
+                  <SelectItem key={d.id} id={d.id} textValue={d.name || d.id}>{d.name || d.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {selectedDataset && (
               <div className="mt-4 bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-1 shadow-sm text-sm">
