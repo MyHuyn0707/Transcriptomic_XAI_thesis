@@ -102,7 +102,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
       <TabRoot
         value={datasetTab}
         onValueChange={(tab) => dispatch({ type: 'dataset_tab_changed', tab: tab as 'existing' | 'upload' })}
-        className="border-0 rounded-none max-w-full"
+        className="border-0 rounded-none max-w-full [&>div:first-child]:border-none! [&>div:first-child]:p-0!"
       >
         {/* overflow-visible + flex-wrap replace Tabs' default horizontal-scroll
             behavior (built for many tabs in a row) — with only 2 triggers we
@@ -130,7 +130,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 <SelectIndicator />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem id="" textValue="-- Chọn Dữ liệu --">-- Chọn Dữ liệu --</SelectItem>
+                <SelectItem id="" textValue="-- Chọn dữ liệu --">-- Chọn dữ liệu --</SelectItem>
                 {datasets.map(d => (
                   <SelectItem key={d.id} id={d.id} textValue={d.name || d.id}>{d.name || d.id}</SelectItem>
                 ))}
@@ -138,26 +138,28 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             </Select>
 
             {selectedDataset && (
-              <div className="mt-4 bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-1 shadow-sm text-sm">
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Mã</span>
-                  <span className="text-neutral-900 font-bold font-mono truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Mã dataset</span>
+                  <span className="font-mono text-xs text-neutral-500 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Nền tảng vi mảng</span>
-                  <span className="text-neutral-900 font-medium">{selectedDataset.platform}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Mẫu bệnh phẩm</span>
-                  <span className="text-neutral-900 font-medium">{selectedDataset.n_samples}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Đặc trưng</span>
-                  <span className="text-neutral-900 font-medium">{selectedDataset.n_features?.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2">
-                  <span className="text-neutral-600 font-medium">Số lớp</span>
-                  <span className="text-brand-700 font-bold">{selectedDataset.n_classes}</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nền tảng vi mảng</p>
+                    <p className="text-lg font-bold text-neutral-900 mt-0.5 truncate">{selectedDataset.platform}</p>
+                  </div>
+                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Mẫu bệnh phẩm</p>
+                    <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_samples}</p>
+                  </div>
+                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Đặc trưng</p>
+                    <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_features?.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Số lớp</p>
+                    <p className="text-lg font-bold text-brand-700 mt-0.5">{selectedDataset.n_classes}</p>
+                  </div>
                 </div>
               </div>
             )}
