@@ -78,7 +78,7 @@ export default function FilePicker({ value, onChange, accept, disabled, placehol
         >
           <UploadCloud size={20} className="text-neutral-400" />
           <span className="text-sm text-neutral-600">{placeholder}</span>
-          {accept && <span className="text-xs text-neutral-400">{accept}</span>}
+          {accept && <span className="text-xs text-neutral-500">{accept}</span>}
         </button>
       )}
     </div>

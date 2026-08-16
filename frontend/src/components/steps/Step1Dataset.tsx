@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TabContent, TabList, TabRoot, TabTrigger } from '../tailgrids/core/tabs';
-import { Archive, ListChecks } from 'lucide-react';
+import { Archive, ListChecks, ScanSearch } from 'lucide-react';
 import { FileText, UploadCloud, Reload, Play } from '@tailgrids/icons';
 import { api, BuiltDatasetResult, pollJob, RunRecord } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
@@ -196,7 +196,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
 
               <div>
                 <label className="text-xs text-neutral-600 font-medium block mb-1">
-                  {uploadSource === 'geo' ? 'File series matrix (.txt.gz)' : 'File probe CuMiDa (.csv)'}
+                  {uploadSource === 'geo' ? 'File series matrix' : 'File probe CuMiDa'}
                 </label>
                 <FilePicker
                   value={uploadFile1}
@@ -206,7 +206,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               </div>
               <div>
                 <label className="text-xs text-neutral-600 font-medium block mb-1">
-                  File annotation {uploadSource === 'geo' ? 'GPL (tùy chọn)' : 'CuMiDa (tùy chọn)'}
+                  File annotation {uploadSource === 'geo' ? 'GPL' : 'CuMiDa'} (không bắt buộc)
                 </label>
                 <FilePicker
                   value={uploadFile2}
@@ -215,13 +215,13 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               </div>
 
               <Button
-                variant="primary" appearance="outline"
+                variant="primary" appearance="fill"
                 onClick={handleUploadInspect}
                 disabled={!uploadFile1 || isUploadInspecting || isUploadBuilding}
                 className="w-full"
               >
-                {isUploadInspecting ? <Reload size={16} className="animate-spin" /> : <FileText size={16} className="text-neutral-500" />}
-                Phân tích file
+                {isUploadInspecting ? <Reload size={16} className="animate-spin" /> : <ScanSearch size={16} className="text-neutral-500" />}
+                Phân tích
               </Button>
 
               {uploadCharacteristics.length > 0 && (

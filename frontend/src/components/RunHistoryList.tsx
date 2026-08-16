@@ -26,7 +26,7 @@ export default function RunHistoryList({
   isSelected,
   isAvailable,
   unavailableTitle,
-  unavailableLabel = 'đã mất',
+  unavailableLabel = '',
   onSelect,
   renderLabel,
   renderStatus,
@@ -59,8 +59,8 @@ export default function RunHistoryList({
                       : "border-neutral-100 bg-neutral-50 text-neutral-700 hover:bg-neutral-100"
               )}
             >
-              <span className="font-mono truncate">{renderLabel(run)}</span>
-              <span className="shrink-0">
+              <span className={cn("font-mono truncate", !available && "line-through")}>{renderLabel(run)}</span>
+              <span className={cn("shrink-0", !available && "line-through")}>
                 {run.status === 'error' ? 'lỗi' : !available ? unavailableLabel : renderStatus(run)}
               </span>
             </button>
