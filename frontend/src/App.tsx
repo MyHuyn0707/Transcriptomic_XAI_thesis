@@ -103,11 +103,11 @@ export default function App() {
         <div className="lg:col-span-4 space-y-8 relative">
           <div className="absolute left-5 top-10 bottom-10 w-0.5 bg-neutral-100 -z-10 hidden lg:block"></div>
 
-          <WizardStep number={1} title="Chọn Dữ Liệu" active={activeStep === 1} ready={stepReady[1]} onOpen={() => openStep(1)}>
+          <WizardStep number={1} title="Chọn dữ liệu" active={activeStep === 1} ready={stepReady[1]} onOpen={() => openStep(1)}>
             <Step1Dataset state={state} dispatch={dispatch} />
           </WizardStep>
 
-          <WizardStep number={2} title="Xử lý & Chia Dữ liệu" active={activeStep === 2} ready={stepReady[2]} onOpen={() => openStep(2)}>
+          <WizardStep number={2} title="Xử lý & Chia dữ liệu" active={activeStep === 2} ready={stepReady[2]} onOpen={() => openStep(2)}>
             <Step2Split state={state} dispatch={dispatch} />
           </WizardStep>
 
@@ -115,11 +115,11 @@ export default function App() {
             <Step3FeatureExtraction state={state} dispatch={dispatch} />
           </WizardStep>
 
-          <WizardStep number={4} title="Mô Hình" active={activeStep === 4} ready={stepReady[4]} onOpen={() => openStep(4)}>
+          <WizardStep number={4} title="Mô hình" active={activeStep === 4} ready={stepReady[4]} onOpen={() => openStep(4)}>
             <Step4Model state={state} dispatch={dispatch} />
           </WizardStep>
 
-          <WizardStep number={5} title="Kiểm Thử (Thực Nghiệm)" active={activeStep === 5} ready={stepReady[5]} onOpen={() => openStep(5)}>
+          <WizardStep number={5} title="Kiểm thử (Thực nghiệm)" active={activeStep === 5} ready={stepReady[5]} onOpen={() => openStep(5)}>
             <Step5Testing state={state} dispatch={dispatch} />
           </WizardStep>
         </div>
