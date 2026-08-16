@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { AlertTriangle, FileText, Loader2, PlayCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { FileText, Reload, Play } from '@tailgrids/icons';
 import { api, pollJob, RunRecord } from '../../lib/api';
 import { fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
-import Button from '../ui/Button';
+import { Button } from '../tailgrids/core/button';
 import Panel from '../ui/Panel';
-import Badge from '../ui/Badge';
+import { Badge } from '../tailgrids/core/badge';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
@@ -102,7 +103,7 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
         <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-3">
             <span className="font-semibold text-neutral-800">Cấu hình Boruta</span>
-            <Badge tone="brand">Tùy chỉnh</Badge>
+            <Badge color="primary">Tùy chỉnh</Badge>
           </div>
           <div className="grid grid-cols-1 gap-y-3">
              <div className="flex justify-between items-center">
@@ -174,7 +175,7 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
         <Panel className="mb-5 text-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-3">
             <span className="font-semibold text-neutral-800">Cấu hình mRMR</span>
-            <Badge tone="brand">Tùy chỉnh</Badge>
+            <Badge color="primary">Tùy chỉnh</Badge>
           </div>
           <div className="grid grid-cols-1 gap-y-3">
              <div className="flex justify-between items-center">
@@ -230,11 +231,11 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
           disabled={isFsLoading || !splitStats}
           className="flex-1"
         >
-          {isFsLoading ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
+          {isFsLoading ? <Reload size={16} className="animate-spin" /> : <Play size={16} />}
           Trích xuất lại
         </Button>
         <Button
-          variant="secondary"
+          variant="primary" appearance="outline"
           onClick={() => handleFsAction('load')}
           disabled={isFsLoading || !splitStats || !selectedDataset?.fs_models[fsMethodKey]}
           className="flex-1"

@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { CheckCircle1, InfoCircle, Reload } from '@tailgrids/icons';
 import { cn } from '../../lib/utils';
 
 interface StatusLineProps {
@@ -24,7 +25,7 @@ export default function StatusLine({ log, loading, className }: StatusLineProps)
   const isSuccess = !loading && !isError && SUCCESS_MARKERS.some(m => lastLine.includes(m));
   const text = lastLine.replace(/^\[[^\]]+\]\s*/, '');
 
-  const Icon = loading ? Loader2 : isError ? AlertTriangle : isSuccess ? CheckCircle2 : Info;
+  const Icon = loading ? Reload : isError ? AlertTriangle : isSuccess ? CheckCircle1 : InfoCircle;
   const toneClass = isError ? 'text-danger-600' : isSuccess ? 'text-success-600' : 'text-neutral-500';
 
   return (

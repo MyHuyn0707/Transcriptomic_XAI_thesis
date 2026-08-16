@@ -99,6 +99,66 @@
   --color-info-900: #1e3a8a;
 
   --color-focus: var(--color-brand-500);
+
+  /* Tailgrids bridge — pilot for src/components/tailgrids/core/button.tsx
+   * (see docs/onboarding notes: adopted-as-is from github.com/TailGrids/
+   * tailgrids's registry, only the `cn` import path was changed). Its
+   * classes reference Tailgrids' own --color-button-... and --color-primary-400
+   * --color-white-100 variable names; every one of those is aliased here to
+   * an EXISTING value from the scales above instead of introducing new
+   * colors, so there's still exactly one place (this file) that decides
+   * what the app's brand/success/danger colors actually are. */
+  --color-white-100: #ffffff;
+  --color-primary-400: var(--color-brand-400);
+
+  --color-button-primary-background: var(--color-brand-600);
+  --color-button-primary-hover-background: var(--color-brand-700);
+  --color-button-primary-text: var(--color-white-100);
+  --color-button-primary-focus-ring: var(--color-brand-500);
+
+  --color-button-outline-background: var(--color-white-100);
+  --color-button-outline-border: var(--color-neutral-200);
+  --color-button-outline-text: var(--color-neutral-800);
+  --color-button-outline-hover-background: var(--color-neutral-50);
+  --color-button-outline-hover-text: var(--color-neutral-900);
+  --color-button-outline-focus-ring: var(--color-neutral-400);
+  --color-button-outline-disabled-background: var(--color-neutral-50);
+  --color-button-outline-disabled-border: var(--color-neutral-100);
+  --color-button-outline-disabled-text: var(--color-neutral-400);
+
+  --color-button-error-background: var(--color-danger-600);
+  --color-button-error-hover-background: var(--color-danger-700);
+  --color-button-error-text: var(--color-white-100);
+  --color-button-error-focus-ring: var(--color-danger-500);
+  --color-button-error-outline-background: var(--color-danger-50);
+  --color-button-error-outline-border: var(--color-danger-200);
+  --color-button-error-outline-text: var(--color-danger-700);
+  --color-button-error-outline-hover-background: var(--color-danger-100);
+  --color-button-error-outline-hover-text: var(--color-danger-800);
+  --color-button-error-outline-focus-ring: var(--color-danger-500);
+
+  --color-button-success-background: var(--color-success-600);
+  --color-button-success-hover-background: var(--color-success-700);
+  --color-button-success-text: var(--color-white-100);
+  --color-button-success-focus-ring: var(--color-success-500);
+  --color-button-success-outline-background: var(--color-success-50);
+  --color-button-success-outline-border: var(--color-success-200);
+  --color-button-success-outline-text: var(--color-success-700);
+  --color-button-success-outline-hover-background: var(--color-success-100);
+  --color-button-success-outline-focus-ring: var(--color-success-500);
+
+  --color-button-disabled-background: var(--color-neutral-100);
+  --color-button-disabled-text: var(--color-neutral-400);
+
+  --color-button-ghost-text: var(--color-neutral-400);
+  --color-button-ghost-hover-text: var(--color-neutral-600);
+  --color-button-ghost-hover-background: var(--color-neutral-100);
+
+  /* Badge bridge — only the "primary" color variant is used anywhere in the
+   * app so far (see components/tailgrids/core/badge.tsx). */
+  --color-badge-primary-background: var(--color-brand-100);
+  --color-badge-primary-text: var(--color-brand-700);
+  --color-badge-primary-icon-color: var(--color-brand-600);
 }
 
 /* Tailwind v4 reads @theme and turns each entry into a first-class utility
@@ -173,6 +233,52 @@
   --color-info-700: var(--color-info-700);
   --color-info-800: var(--color-info-800);
   --color-info-900: var(--color-info-900);
+
+  /* Tailgrids bridge — re-exposes the aliases defined in :root above as
+   * real Tailwind utilities (bg-button-primary-background, etc.) the same
+   * way every other scale in this file does. */
+  --color-white-100: var(--color-white-100);
+  --color-primary-400: var(--color-primary-400);
+  --color-button-primary-background: var(--color-button-primary-background);
+  --color-button-primary-hover-background: var(--color-button-primary-hover-background);
+  --color-button-primary-text: var(--color-button-primary-text);
+  --color-button-primary-focus-ring: var(--color-button-primary-focus-ring);
+  --color-button-outline-background: var(--color-button-outline-background);
+  --color-button-outline-border: var(--color-button-outline-border);
+  --color-button-outline-text: var(--color-button-outline-text);
+  --color-button-outline-hover-background: var(--color-button-outline-hover-background);
+  --color-button-outline-hover-text: var(--color-button-outline-hover-text);
+  --color-button-outline-focus-ring: var(--color-button-outline-focus-ring);
+  --color-button-outline-disabled-background: var(--color-button-outline-disabled-background);
+  --color-button-outline-disabled-border: var(--color-button-outline-disabled-border);
+  --color-button-outline-disabled-text: var(--color-button-outline-disabled-text);
+  --color-button-error-background: var(--color-button-error-background);
+  --color-button-error-hover-background: var(--color-button-error-hover-background);
+  --color-button-error-text: var(--color-button-error-text);
+  --color-button-error-focus-ring: var(--color-button-error-focus-ring);
+  --color-button-error-outline-background: var(--color-button-error-outline-background);
+  --color-button-error-outline-border: var(--color-button-error-outline-border);
+  --color-button-error-outline-text: var(--color-button-error-outline-text);
+  --color-button-error-outline-hover-background: var(--color-button-error-outline-hover-background);
+  --color-button-error-outline-hover-text: var(--color-button-error-outline-hover-text);
+  --color-button-error-outline-focus-ring: var(--color-button-error-outline-focus-ring);
+  --color-button-success-background: var(--color-button-success-background);
+  --color-button-success-hover-background: var(--color-button-success-hover-background);
+  --color-button-success-text: var(--color-button-success-text);
+  --color-button-success-focus-ring: var(--color-button-success-focus-ring);
+  --color-button-success-outline-background: var(--color-button-success-outline-background);
+  --color-button-success-outline-border: var(--color-button-success-outline-border);
+  --color-button-success-outline-text: var(--color-button-success-outline-text);
+  --color-button-success-outline-hover-background: var(--color-button-success-outline-hover-background);
+  --color-button-success-outline-focus-ring: var(--color-button-success-outline-focus-ring);
+  --color-button-disabled-background: var(--color-button-disabled-background);
+  --color-button-disabled-text: var(--color-button-disabled-text);
+  --color-button-ghost-text: var(--color-button-ghost-text);
+  --color-button-ghost-hover-text: var(--color-button-ghost-hover-text);
+  --color-button-ghost-hover-background: var(--color-button-ghost-hover-background);
+  --color-badge-primary-background: var(--color-badge-primary-background);
+  --color-badge-primary-text: var(--color-badge-primary-text);
+  --color-badge-primary-icon-color: var(--color-badge-primary-icon-color);
 
   /* Override Tailwind's default text scale so existing text-xs/text-sm/etc.
      classes inherit the size adjustments above. */

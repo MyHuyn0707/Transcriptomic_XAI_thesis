@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, FileText, GitMerge, Zap, Info, ListFilter, ArrowRight, Search } from 'lucide-react';
+import { GitMerge } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, ArrowRight, Bolt1, InfoCircle, Filter, Search1 } from '@tailgrids/icons';
 import { cn } from '../lib/utils';
 import { classColor } from '../lib/palette';
 import { api } from '../lib/api';
@@ -191,7 +192,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100">
         <div className="flex items-center gap-2 mb-6">
           <div className="w-8 h-8 rounded-full bg-success-50 flex items-center justify-center text-success-600">
-            <Zap size={18} />
+            <Bolt1 size={18} />
           </div>
           <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">
             Kết quả Trích xuất Luật sinh học
@@ -209,7 +210,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
         {rulesSummary && (rulesSummary.n_rules_raw != null) && (
           <div className="mb-6 bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <ListFilter size={16} className="text-neutral-500" />
+              <Filter size={16} className="text-neutral-500" />
               <span className="text-xs font-bold uppercase tracking-widest text-neutral-600">Nhật ký trích xuất luật</span>
             </div>
             <div className="flex items-center gap-3 sm:gap-4">
@@ -253,7 +254,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             {!isRulesCollapsed && (
               <div className="p-5 bg-white space-y-5">
                 <div className="relative">
-                  <Search size={15} className="absolute left-3 top-1/2 -tranneutral-y-1/2 text-neutral-500" />
+                  <Search1 size={15} className="absolute left-3 top-1/2 -tranneutral-y-1/2 text-neutral-500" />
                   <input
                     type="text"
                     value={ruleSearch}
@@ -306,7 +307,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                                         : { backgroundColor: 'white', color: '#94a3b8', borderColor: '#e2e8f0' }}
                                       title="Giải thích luật"
                                     >
-                                      <Info size={16} />
+                                      <InfoCircle size={16} />
                                     </button>
                                   </div>
 
@@ -314,7 +315,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                                     <div className="mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-2" style={{ borderColor: color + '25' }}>
                                       <div className="p-4 rounded-xl" style={{ backgroundColor: color + '0d' }}>
                                         <span className="font-bold uppercase tracking-wider text-xs flex items-center gap-1.5 mb-2" style={{ color }}>
-                                          <Info size={13} /> Mô tả sinh học
+                                          <InfoCircle size={13} /> Mô tả sinh học
                                         </span>
                                         <p className="text-sm leading-relaxed text-neutral-800">
                                           {ruleItem.explanation || 'Chưa có mô tả (chạy scripts/generate_bio_descriptions.py để sinh).'}
@@ -369,7 +370,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             {!isGenesCollapsed && (
               <div className="p-5 space-y-3">
                 <div className="relative">
-                  <Search size={15} className="absolute left-3 top-1/2 -tranneutral-y-1/2 text-neutral-500" />
+                  <Search1 size={15} className="absolute left-3 top-1/2 -tranneutral-y-1/2 text-neutral-500" />
                   <input
                     type="text"
                     value={geneSearch}
@@ -436,7 +437,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                             )}
                             title="Thông tin chi tiết Gene"
                           >
-                            <Info size={18} />
+                            <InfoCircle size={18} />
                           </button>
                         </div>
 

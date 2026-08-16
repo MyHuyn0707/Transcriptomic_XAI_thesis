@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Database, ExternalLink, Info, AlertTriangle } from 'lucide-react';
+import { Database, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Link1AngularRight, InfoCircle } from '@tailgrids/icons';
 import { api, ClassContent, ContentInfo, OriginInfo, OverviewData, Reference } from '../lib/api';
 import { PALETTE, DROPPED_COLOR } from '../lib/palette';
 import { cn } from '../lib/utils';
@@ -27,7 +28,7 @@ function ReferencesList({ referenceList, disclaimer }: { referenceList: Referenc
           <ul className="space-y-1">
             {referenceList.map(ref => (
               <li key={ref.url} className="text-xs text-neutral-600 flex items-center gap-1.5">
-                <ExternalLink size={11} className="shrink-0 text-neutral-500" />
+                <Link1AngularRight size={11} className="shrink-0 text-neutral-500" />
                 <a href={ref.url} target="_blank" rel="noreferrer" className="hover:text-brand-600 hover:underline">
                   {ref.title}
                 </a>
@@ -277,7 +278,7 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                     {datasetStudy.local_ml_relation_vi && (
                       <div className="mt-5 pt-5 border-t border-neutral-100">
                         <div className="bg-info-50/60 rounded-lg p-4 border border-info-200 flex gap-2.5">
-                          <Info size={16} className="text-info-500 shrink-0 mt-0.5" />
+                          <InfoCircle size={16} className="text-info-500 shrink-0 mt-0.5" />
                           <div>
                             <span className="text-info-700 text-xs uppercase tracking-wider font-semibold block mb-1">Liên hệ với bài toán học máy ở đây</span>
                             <span className="text-neutral-800 leading-relaxed text-sm">{datasetStudy.local_ml_relation_vi}</span>

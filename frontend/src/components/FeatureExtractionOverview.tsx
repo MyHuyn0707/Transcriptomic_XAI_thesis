@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, ChevronDown, ChevronUp, Clock, FileText, CheckCircle2 } from 'lucide-react';
+import { Filter, ChevronDown, ChevronUp, ClockThree, FileText, CheckCircle1 } from '@tailgrids/icons';
 import { FeatureExtractionStats } from '../lib/api';
 
 interface Props {
@@ -54,7 +54,7 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
               </div>
               <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-success-100 text-success-600 flex items-center justify-center">
-                  <CheckCircle2 size={20} />
+                  <CheckCircle1 size={20} />
                 </div>
                 <div>
                   <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">Đã chọn</p>
@@ -63,7 +63,7 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
               </div>
               <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-warning-100 text-warning-600 flex items-center justify-center">
-                  <Clock size={20} />
+                  <ClockThree size={20} />
                 </div>
                 <div>
                   <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">Thời gian chạy</p>
