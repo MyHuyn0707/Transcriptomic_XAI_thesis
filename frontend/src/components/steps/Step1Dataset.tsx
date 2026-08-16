@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Loader2, ListChecks, PlayCircle, UploadCloud } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { api, pollJob, RunRecord } from '../../lib/api';
+import { api, BuiltDatasetResult, pollJob, RunRecord } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
+import { errorMessage } from '../../lib/utils';
 import Button from '../ui/Button';
 import RunHistoryList from '../RunHistoryList';
 
@@ -50,8 +51,8 @@ export default function Step1Dataset({ state, dispatch }: Props) {
       setUploadCharacteristics(res.characteristics || []);
       if (res.characteristics?.length) setUploadClassChar(res.characteristics[0]);
       setUploadLog(prev => prev + '\n[OK] Đã phân tích file — chọn nhãn lớp rồi nhấn "Xây dựng dataset".');
-    } catch (e: any) {
-      setUploadLog(prev => prev + `\n[LỖI] ${e.message}`);
+    } catch (e) {
+      setUploadLog(prev => prev + `\n[LỖI] ${errorMessage(e)}`);
     } finally {
       setIsUploadInspecting(false);
     }
@@ -67,7 +68,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
       if (job.status === 'error') {
         throw new Error(job.error || 'Xây dựng dataset thất bại (xem log server).');
       }
-      const built = job.result as any;
+      const built = job.result as unknown as BuiltDatasetResult;
       dispatch({
         type: 'dataset_added',
         dataset: {
@@ -81,8 +82,8 @@ export default function Step1Dataset({ state, dispatch }: Props) {
       dispatch({ type: 'dataset_tab_changed', tab: 'existing' });
       setUploadLog(prev => prev + `\n[THÀNH CÔNG] Dataset '${built.dataset_id}' đã sẵn sàng sử dụng.`);
       api.getUploadHistory().then(setUploadRuns).catch(() => {});
-    } catch (e: any) {
-      setUploadLog(prev => prev + `\n[LỖI] ${e.message}`);
+    } catch (e) {
+      setUploadLog(prev => prev + `\n[LỖI] ${errorMessage(e)}`);
       api.getUploadHistory().then(setUploadRuns).catch(() => {});
     } finally {
       setIsUploadBuilding(false);

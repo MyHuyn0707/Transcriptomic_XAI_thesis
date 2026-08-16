@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { AlertTriangle, FileText, Loader2, PlayCircle } from 'lucide-react';
 import { api, pollJob, RunRecord } from '../../lib/api';
 import { fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
+import { errorMessage } from '../../lib/utils';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
 import Badge from '../ui/Badge';
@@ -62,20 +63,20 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
         dispatch({ type: 'fs_computed', stats, runId: job_id });
         refreshFsRuns();
       }
-    } catch (e: any) {
-      dispatch({ type: 'fs_failed', line: `[LỖI] ${e.message}` });
+    } catch (e) {
+      dispatch({ type: 'fs_failed', line: `[LỖI] ${errorMessage(e)}` });
     }
   };
 
   const loadPastFsRun = async (run: RunRecord) => {
-    if (!datasetId) return;
+    if (!datasetId || !run.fs_method) return;
     dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...` });
     try {
       const stats = await api.getFeatureSelection(datasetId, run.fs_method, run.run_id);
       dispatch({ type: 'fs_computed', stats, runId: run.run_id });
       dispatch({ type: 'fs_log_appended', line: '[OK] Đã nạp lại kết quả chạy trước.' });
-    } catch (e: any) {
-      dispatch({ type: 'fs_failed', line: `[LỖI] ${e.message}` });
+    } catch (e) {
+      dispatch({ type: 'fs_failed', line: `[LỖI] ${errorMessage(e)}` });
     }
   };
 

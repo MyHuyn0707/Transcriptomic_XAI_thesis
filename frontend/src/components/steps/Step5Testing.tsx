@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Download, Info, ListChecks, Loader2, UploadCloud } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn, errorMessage } from '../../lib/utils';
 import { classColor } from '../../lib/palette';
 import { displayLabel } from '../../lib/metrics';
-import { api } from '../../lib/api';
+import { api, PredictResponse } from '../../lib/api';
 import { fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
@@ -49,12 +49,12 @@ export default function Step5Testing({ state, dispatch }: Props) {
     return () => { ignore = true; };
   }, [datasetId, modelStats, fsMethodKey, splitParams, dispatch]);
 
-  const applyPredictionResult = (result: any) => {
+  const applyPredictionResult = (result: PredictResponse) => {
     dispatch({
       type: 'test_computed',
       result: {
         matchedCount: result.matched_count,
-        rules: result.rules.map((r: any) => ({
+        rules: result.rules.map(r => ({
           id: r.rule_id,
           text: r.text,
           matched: r.matched,
@@ -71,7 +71,7 @@ export default function Step5Testing({ state, dispatch }: Props) {
         rulePredictionDisplayName: result.rule_prediction_display_name || null,
         classVotes: result.class_votes || {},
         classVotesOver50: result.class_votes_over50 || {},
-        partialMatches: (result.partial_matches || []).map((p: any) => ({
+        partialMatches: (result.partial_matches || []).map(p => ({
           ruleId: p.rule_id,
           text: p.text,
           class: p.consequent_label,
@@ -102,8 +102,8 @@ export default function Step5Testing({ state, dispatch }: Props) {
         ? await api.predict(datasetId, fsMethodKey, modelType, testSampleId, modelRunId, splitParams)
         : await api.predictUpload(datasetId, fsMethodKey, modelType, testUploadFile as File, modelRunId);
       applyPredictionResult(result);
-    } catch (e: any) {
-      dispatch({ type: 'test_failed', result: { matchedCount: 0, rules: [], classification: 'Loi', explanation: e.message } });
+    } catch (e) {
+      dispatch({ type: 'test_failed', result: { matchedCount: 0, rules: [], classification: 'Loi', explanation: errorMessage(e) } });
     }
   };
 
@@ -302,7 +302,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
               </div>
               {!isMatchedRulesCollapsed && (
               <div className="space-y-3">
-                {testResults.rules.map((rule: { id: number, text: string, matched: boolean, desc: string, sampleValues: Record<string, number>, class: string }) => {
+                {testResults.rules.map((rule) => {
                   const ruleColor = classColor(rule.class, modelStats?.labels || []);
                   return (
                   <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-brand-50 border border-brand-200" : "bg-white border border-neutral-200 opacity-60")}>
@@ -348,7 +348,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 sách Luật" above); click jumps straight to that gene's own card. */}
             {(() => {
               const matchedGenes = Array.from(new Set(
-                testResults.rules.flatMap((rule: { sampleValues: Record<string, number> }) => Object.keys(rule.sampleValues)),
+                testResults.rules.flatMap((rule) => Object.keys(rule.sampleValues)),
               )) as string[];
               return (
                 <GeneChipList
@@ -382,7 +382,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 </div>
                 {!isPartialMatchesCollapsed && (
                 <div className="space-y-3">
-                  {testResults.partialMatches.map((p: { ruleId: number, text: string, class: string, satisfied: number, total: number, ratio: number, conditions: Array<{ gene: string, probe: string, op: string, threshold: number, actual: number, ok: boolean }> }) => {
+                  {testResults.partialMatches.map((p) => {
                     const ruleColor = classColor(p.class, modelStats?.labels || []);
                     return (
                       <div key={p.ruleId} className="rounded-xl overflow-hidden bg-white border border-neutral-200 p-4">
@@ -423,8 +423,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
             {(() => {
               const partialMatchedGenes = Array.from(new Set(
                 (testResults.partialMatches || []).flatMap(
-                  (p: { conditions: Array<{ gene: string, ok: boolean }> }) =>
-                    p.conditions.filter(c => c.ok).map(c => c.gene),
+                  (p) => p.conditions.filter(c => c.ok).map(c => c.gene),
                 ),
               )) as string[];
               return (
