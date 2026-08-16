@@ -10,11 +10,16 @@ interface ConfusionMatrixProps {
 /** Shared cell-color helpers so the compact grid and the zoomed overlay render identically. */
 function useColorScale(data: number[][]) {
   const maxVal = Math.max(...data.flat(), 1);
+  // sqrt (not linear) intensity: a linear val/maxVal scale makes every small
+  // count (0, 1, 2...) look almost the same faint tint next to one dominant
+  // cell — sqrt spreads the low end out so "0" and "1" are actually
+  // distinguishable instead of both reading as "empty".
+  const intensityOf = (val: number) => (val <= 0 ? 0 : Math.sqrt(Math.min(1, val / maxVal)));
   const getBgColor = (val: number) => {
-    const intensity = Math.max(0, Math.min(1, val / maxVal));
-    return `rgba(13, 148, 136, ${intensity * 0.8 + 0.1})`;
+    if (val <= 0) return 'rgba(15, 23, 42, 0.04)';
+    return `rgba(13, 148, 136, ${intensityOf(val) * 0.75 + 0.15})`;
   };
-  const getTextColor = (val: number) => (val / maxVal > 0.5 ? 'text-white' : 'text-neutral-800');
+  const getTextColor = (val: number) => (intensityOf(val) > 0.6 ? 'text-white' : 'text-neutral-800');
   return { getBgColor, getTextColor };
 }
 
