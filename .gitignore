@@ -29,6 +29,9 @@ frontend/node_modules/
 frontend/dist/
 frontend/.playwright-mcp/
 frontend/*.png
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.cache/
 
 notebooks/wandb
 
@@ -38,4 +41,7 @@ Dataset_Description/
 Platform_Annotations/
 
 tests/
+# ...except the frontend's own E2E suite (the rule above targets the
+# Python backend's tests/ dir, not frontend/tests/).
+!frontend/tests/
 CT552_TraMy_Nguyen/
