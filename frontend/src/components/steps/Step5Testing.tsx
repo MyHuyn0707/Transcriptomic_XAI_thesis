@@ -276,7 +276,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                     )}
                   </>
                 ) : (
-                  <span className="font-bold text-xl text-neutral-400">Không có luật khớp</span>
+                  <span className="font-bold text-xl text-neutral-500">Không có luật khớp</span>
                 )}
               </div>
             </div>

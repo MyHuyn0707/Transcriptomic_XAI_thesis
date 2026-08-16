@@ -140,24 +140,24 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             {selectedDataset && (
               <div className="mt-4 space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Mã dataset</span>
-                  <span className="font-mono text-xs text-neutral-500 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Mã dataset</span>
+                  <span className="font-mono text-xs text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nền tảng vi mảng</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Nền tảng vi mảng</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5 truncate">{selectedDataset.platform}</p>
                   </div>
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Mẫu bệnh phẩm</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Mẫu bệnh phẩm</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_samples}</p>
                   </div>
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Đặc trưng</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Đặc trưng</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_features?.toLocaleString()}</p>
                   </div>
                   <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Số lớp</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Số lớp</p>
                     <p className="text-lg font-bold text-brand-700 mt-0.5">{selectedDataset.n_classes}</p>
                   </div>
                 </div>
