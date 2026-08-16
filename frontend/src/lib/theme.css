@@ -168,6 +168,11 @@
   --color-tab-active-background: var(--color-white-100);
   --color-title-50: var(--color-neutral-900);
   --color-text-100: var(--color-neutral-600);
+  /* The selected trigger's own text/ring — brand-colored like every other
+   * "active/selected" state elsewhere in the app, instead of relying on a
+   * white background + a barely-visible shadow to read as selected. */
+  --color-tab-active-text: var(--color-brand-700);
+  --color-tab-active-border: var(--color-neutral-200);
 }
 
 /* Tailwind v4 reads @theme and turns each entry into a first-class utility
@@ -288,6 +293,13 @@
   --color-badge-primary-background: var(--color-badge-primary-background);
   --color-badge-primary-text: var(--color-badge-primary-text);
   --color-badge-primary-icon-color: var(--color-badge-primary-icon-color);
+  --color-base-200: var(--color-base-200);
+  --color-background-soft-100: var(--color-background-soft-100);
+  --color-tab-active-background: var(--color-tab-active-background);
+  --color-title-50: var(--color-title-50);
+  --color-text-100: var(--color-text-100);
+  --color-tab-active-text: var(--color-tab-active-text);
+  --color-tab-active-border: var(--color-tab-active-border);
 
   /* Override Tailwind's default text scale so existing text-xs/text-sm/etc.
      classes inherit the size adjustments above. */
