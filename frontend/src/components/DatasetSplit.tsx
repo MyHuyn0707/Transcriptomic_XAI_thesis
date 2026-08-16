@@ -82,35 +82,35 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
           <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Tổng số mẫu ban đầu</span>
                   <span className="text-neutral-900 font-bold font-mono">
                     {Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Số mẫu sau khi loại lớp hiếm</span>
                   <span className="text-neutral-900 font-bold font-mono">{stats.n_samples_total}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Tổng số lớp ban đầu</span>
                   <span className="text-neutral-900 font-bold font-mono">{allLabels.length}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Số lớp sau khi loại lớp hiếm</span>
                   <span className="text-neutral-900 font-bold font-mono">{stats.class_labels.length}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Ngưỡng loại lớp hiếm</span>
                   <span className="text-neutral-900 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
                 </div>
               </div>
               <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Huấn luyện / Kiểm thử</span>
                   <span className="text-neutral-900 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Tỷ lệ test_size</span>
                   <span className="text-neutral-900 font-bold font-mono">{stats.test_size}</span>
                 </div>

@@ -227,6 +227,15 @@ export function fsMethodKeyOf(state: Pick<WorkspaceState, 'fsMethod' | 'mrmrConf
   return state.fsMethod === 'mrmr' ? `mrmr_k${state.mrmrConfig.K}` : state.fsMethod;
 }
 
+// The one canonical class-label ordering `classColor()` should be indexed
+// against everywhere — DatasetOverview/DatasetSplit derive it independently
+// from the same raw_class_counts, so this keeps Step4/Step5 (which only have
+// modelStats.labels, ordered however sklearn's classes_ sorts them) painting
+// a class the same color it already has in Bước 1/2 instead of drifting.
+export function canonicalClassLabels(state: Pick<WorkspaceState, 'splitStats'>): string[] {
+  return Object.keys(state.splitStats?.raw_class_counts || {});
+}
+
 export const initialWorkspaceState: WorkspaceState = {
   activeStep: 1,
 

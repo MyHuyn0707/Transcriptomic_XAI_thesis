@@ -149,25 +149,25 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
                     {origin.geo_accession && (
-                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                      <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                         <span className="text-neutral-600 font-medium">Mã truy cập GEO</span>
                         <span className="text-success-700 font-bold font-mono bg-success-100/50 px-2 py-0.5 rounded">{origin.geo_accession}</span>
                       </div>
                     )}
                     {origin.platform && (
-                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                      <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                         <span className="text-neutral-600 font-medium">Nền tảng vi mảng</span>
                         <span className="text-success-700 font-bold font-mono bg-success-100/50 px-2 py-0.5 rounded">{origin.platform}</span>
                       </div>
                     )}
                     {origin.samples_kept != null && (
-                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                      <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                         <span className="text-neutral-600 font-medium">Tổng số mẫu ban đầu</span>
                         <span className="text-neutral-900 font-bold font-mono">{origin.samples_kept}</span>
                       </div>
                     )}
                     {overview.raw_class_counts && (
-                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                      <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                         <span className="text-neutral-600 font-medium">Tổng số lớp ban đầu</span>
                         <span className="text-neutral-900 font-bold font-mono">{Object.keys(overview.raw_class_counts).length}</span>
                       </div>
@@ -191,7 +191,7 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                         <span className="text-neutral-900 font-semibold">—</span>
                       )}
                     </div>
-                    <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                    <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                       <span className="text-neutral-600 font-medium">Organism</span>
                       <span className="text-neutral-900 font-semibold text-right">{content.organism || '—'}</span>
                     </div>

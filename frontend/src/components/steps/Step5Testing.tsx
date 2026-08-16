@@ -4,7 +4,7 @@ import { cn, errorMessage } from '../../lib/utils';
 import { classColor } from '../../lib/palette';
 import { displayLabel } from '../../lib/metrics';
 import { api, PredictResponse } from '../../lib/api';
-import { fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
+import { canonicalClassLabels, fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
 import VoteBar from '../VoteBar';
@@ -249,11 +249,11 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 surfaced explicitly instead of only the model's result. */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               <div className="rounded-xl p-4 border" style={{
-                backgroundColor: classColor(testResults.classification, modelStats?.labels || []) + '14',
-                borderColor: classColor(testResults.classification, modelStats?.labels || []) + '55',
+                backgroundColor: classColor(testResults.classification, canonicalClassLabels(state)) + '14',
+                borderColor: classColor(testResults.classification, canonicalClassLabels(state)) + '55',
               }}>
                 <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Mô hình (RF/DT)</span>
-                <span className="font-bold text-xl" style={{ color: classColor(testResults.classification, modelStats?.labels || []) }}>
+                <span className="font-bold text-xl" style={{ color: classColor(testResults.classification, canonicalClassLabels(state)) }}>
                   {testResults.classDisplayName || testResults.classification}
                 </span>
                 {testResults.classDisplayName && (
@@ -261,13 +261,13 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 )}
               </div>
               <div className="rounded-xl p-4 border" style={{
-                backgroundColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, modelStats?.labels || []) + '14' : 'rgba(100,116,139,0.1)',
-                borderColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, modelStats?.labels || []) + '55' : 'rgba(100,116,139,0.3)',
+                backgroundColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, canonicalClassLabels(state)) + '14' : 'rgba(100,116,139,0.1)',
+                borderColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, canonicalClassLabels(state)) + '55' : 'rgba(100,116,139,0.3)',
               }}>
                 <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Tập luật (rule-based)</span>
                 {testResults.rulePrediction ? (
                   <>
-                    <span className="font-bold text-xl" style={{ color: classColor(testResults.rulePrediction, modelStats?.labels || []) }}>
+                    <span className="font-bold text-xl" style={{ color: classColor(testResults.rulePrediction, canonicalClassLabels(state)) }}>
                       {testResults.rulePredictionDisplayName || testResults.rulePrediction}
                     </span>
                     {testResults.rulePredictionDisplayName && (
@@ -303,7 +303,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
               {!isMatchedRulesCollapsed && (
               <div className="space-y-3">
                 {testResults.rules.map((rule) => {
-                  const ruleColor = classColor(rule.class, modelStats?.labels || []);
+                  const ruleColor = classColor(rule.class, canonicalClassLabels(state));
                   return (
                   <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-brand-50 border border-brand-200" : "bg-white border border-neutral-200 opacity-60")}>
                     <div className="px-4 py-3 flex items-center justify-between">
@@ -318,7 +318,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                       </div>
                       <button
                         onClick={() => dispatch({ type: 'expanded_rule_toggled', ruleId: rule.id })}
-                        className="text-brand-700 hover:text-brand-900 transition-colors shrink-0 ml-4"
+                        className="text-brand-700 hover:text-brand-900 transition-colors shrink-0 ml-4 pl-3 border-l border-brand-200"
                         title="Giải thích Y sinh"
                       >
                         <Info size={16} />
@@ -383,7 +383,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 {!isPartialMatchesCollapsed && (
                 <div className="space-y-3">
                   {testResults.partialMatches.map((p) => {
-                    const ruleColor = classColor(p.class, modelStats?.labels || []);
+                    const ruleColor = classColor(p.class, canonicalClassLabels(state));
                     return (
                       <div key={p.ruleId} className="rounded-xl overflow-hidden bg-white border border-neutral-200 p-4">
                         <div className="flex items-center justify-between gap-3 mb-2">
@@ -448,7 +448,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                   label: displayLabel(label, testResults.classDisplayNames),
                   caption: `${v.count} luật (${v.percentage}%)`,
                   percentage: v.percentage,
-                  color: classColor(label, modelStats?.labels || []),
+                  color: classColor(label, canonicalClassLabels(state)),
                 }))}
               />
             )}
@@ -466,7 +466,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                   label: displayLabel(label, testResults.classDisplayNames),
                   caption: `${v.count} luật (${v.percentage}%)`,
                   percentage: v.percentage,
-                  color: classColor(label, modelStats?.labels || []),
+                  color: classColor(label, canonicalClassLabels(state)),
                 }))}
               />
             )}

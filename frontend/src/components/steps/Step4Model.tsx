@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, FileText, GitMerge, Loader2, PlayCircle, Settin
 import { api, ModelStatsResponse, pollJob, RunRecord } from '../../lib/api';
 import { classificationReport } from '../../lib/metrics';
 import { errorMessage } from '../../lib/utils';
-import { fsMethodKeyOf, ModelStatsUI, WorkspaceAction, WorkspaceState } from '../../state/types';
+import { canonicalClassLabels, fsMethodKeyOf, ModelStatsUI, WorkspaceAction, WorkspaceState } from '../../state/types';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
 import Badge from '../ui/Badge';
@@ -333,14 +333,14 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                   </div>
                   {!isModelConfigCollapsed && (
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200">
-                        <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
+                        <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2 shrink-0">
                           <span className="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
                           Siêu tham số mô hình ({modelType === 'rf' ? 'Random Forest' : 'Decision Tree'})
                         </h4>
-                        <div className="grid grid-cols-1 gap-y-3">
+                        <div className="grid grid-cols-1 gap-y-3 flex-1 content-center">
                           {modelStats.hyperparams ? Object.entries(modelStats.hyperparams).map(([k, v]) => (
-                            <div key={k} className="flex justify-between py-2 border-b border-neutral-200 border-dashed">
+                            <div key={k} className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
                               <span className="text-neutral-600 text-sm font-mono">{k}</span>
                               <span className="text-neutral-900 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
                             </div>
@@ -349,14 +349,14 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                           )}
                         </div>
                       </div>
-                      <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200">
-                        <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2">
+                      <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
+                        <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2 shrink-0">
                           <span className="w-1.5 h-4 bg-info-500 rounded-full inline-block"></span>
                           Cấu hình Lọc Luật
                         </h4>
-                        <div className="grid grid-cols-1 gap-y-3">
+                        <div className="grid grid-cols-1 gap-y-3 flex-1 content-center">
                           {Object.entries(filterDisplay).map(([k, v]) => (
-                            <div key={k} className="flex justify-between py-2 border-b border-neutral-200 border-dashed">
+                            <div key={k} className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
                               <span className="text-neutral-600 text-sm font-mono">{k}</span>
                               <span className="text-neutral-900 font-medium text-sm font-mono">{v == null ? '—' : String(v)}</span>
                             </div>
@@ -441,7 +441,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
             model={modelType}
             runId={modelRunId}
             rulesSummary={modelStats.rulesSummary}
-            labels={modelStats.labels}
+            labels={canonicalClassLabels(state)}
           />
         </div>
       )}
