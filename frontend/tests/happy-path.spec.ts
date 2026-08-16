@@ -62,7 +62,8 @@ test.describe('Wizard happy path', () => {
     // panel is collapsed right now (Bước 2 is the active step), so reopen
     // it first — WizardStep hides an inactive step's content entirely.
     await page.getByRole('heading', { name: 'Chọn Dữ Liệu' }).click();
-    await page.getByRole('combobox').first().selectOption({ label: '-- Chọn Dữ liệu --' });
+    await page.getByRole('button', { name: 'Chọn dataset' }).click();
+    await page.getByRole('option', { name: '-- Chọn Dữ liệu --' }).click();
     await expect(page.getByText('44 / 9')).not.toBeVisible();
   });
 });
