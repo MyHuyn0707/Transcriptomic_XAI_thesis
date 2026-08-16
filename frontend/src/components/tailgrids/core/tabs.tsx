@@ -185,7 +185,7 @@ const tabTriggerStyles = cva(
         direction: "vertical",
         variant: "default",
         className:
-          "rounded-md py-2 data-[active=true]:bg-tab-active-background data-[active=true]:text-title-50 data-[active=true]:shadow-xs"
+          "rounded-md py-2 data-[active=true]:bg-tab-active-background data-[active=true]:text-tab-active-text data-[active=true]:shadow-sm data-[active=true]:ring-1 data-[active=true]:ring-tab-active-border"
       },
       {
         direction: "vertical",
