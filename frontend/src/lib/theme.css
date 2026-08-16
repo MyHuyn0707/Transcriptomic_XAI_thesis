@@ -385,6 +385,16 @@
     font: inherit;
   }
 
+  /* Tailwind's preflight resets <button> to cursor: default (matching plain
+     native behavior) — every clickable button/role="button" in this app
+     should still show a pointer on hover, same base rule Tailgrids' own
+     tailgrids.css ships (this file bridges its component colors, not that
+     CSS, so the rule has to live here instead). */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   /* Gene/probe identifiers can be longer than a narrow card. Do not change
      explicitly truncated values, which are intentionally kept on one line. */
   .font-mono:not(.truncate) {
