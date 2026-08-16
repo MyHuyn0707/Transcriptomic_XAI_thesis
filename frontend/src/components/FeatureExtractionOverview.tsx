@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, ChevronDown, ChevronUp, Clock, FileText, CheckCircle2 } from 'lucide-react';
+import { FeatureExtractionStats } from '../lib/api';
 
-export default function FeatureExtractionOverview({ stats, collapseSignal }: { stats: any, collapseSignal?: boolean }) {
+interface Props {
+  stats: FeatureExtractionStats | null;
+  collapseSignal?: boolean;
+}
+
+export default function FeatureExtractionOverview({ stats, collapseSignal }: Props) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {

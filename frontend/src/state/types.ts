@@ -1,4 +1,4 @@
-import { DatasetInfo, RunRecord } from '../lib/api';
+import { DatasetInfo, FeatureExtractionStats, RunRecord, SplitStats, TestSample } from '../lib/api';
 
 // Each config below is also handed to api.ts's request helpers as a plain
 // JSON body (typed there as Record<string, unknown>) — the index signature
@@ -52,12 +52,6 @@ export interface ModelConfig {
   [key: string]: unknown;
 }
 
-export interface TestSample {
-  sample_id: string;
-  true_label: string;
-  row_index: number;
-}
-
 export interface ModelStatsUI {
   acc: number;
   f1: number;
@@ -85,6 +79,52 @@ export interface ModelStatsUI {
       max_rules_total?: number | null;
     } | null;
   } | null;
+}
+
+// The UI-shaped prediction result applyPredictionResult() builds from a raw
+// PredictResponse — camelCase, with the rule/partial-match fields already
+// reshaped for direct rendering.
+export interface PredictedRule {
+  id: number;
+  text: string;
+  matched: boolean;
+  desc: string;
+  sampleValues: Record<string, number>;
+  class: string;
+}
+
+export interface PartialMatch {
+  ruleId: number;
+  text: string;
+  class: string;
+  satisfied: number;
+  total: number;
+  ratio: number;
+  conditions: Array<{ gene: string; probe: string; op: string; threshold: number; actual: number; ok: boolean }>;
+}
+
+export interface TestResults {
+  matchedCount: number;
+  rules: PredictedRule[];
+  classification: string;
+  explanation?: string;
+  classDescription?: string;
+  classDisplayName?: string | null;
+  classDisplayNames?: Record<string, string>;
+  rulePrediction?: string | null;
+  rulePredictionDescription?: string | null;
+  rulePredictionDisplayName?: string | null;
+  classVotes?: Record<string, { count: number; percentage: number }>;
+  classVotesOver50?: Record<string, { count: number; percentage: number }>;
+  partialMatches?: PartialMatch[];
+  nPartialMatchesTotal?: number;
+  nRulesTotal?: number | null;
+  trueLabel?: string;
+  biomedicalSummary?: string;
+  biomedicalRationale?: string;
+  biomedicalModelVsRule?: string;
+  biomedicalDisclaimer?: string;
+  llmUsed?: boolean;
 }
 
 export const DEFAULT_BORUTA_CONFIG: BorutaConfig = {
@@ -142,8 +182,7 @@ export interface WorkspaceState {
 
   splitParams: SplitParams | null;
   splitInputs: SplitParams;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  splitStats: any;
+  splitStats: SplitStats | null;
   isSplitLoading: boolean;
   splitLog: string;
   splitRuns: RunRecord[];
@@ -151,8 +190,7 @@ export interface WorkspaceState {
   fsMethod: 'boruta' | 'mrmr';
   fsLog: string;
   isFsLoading: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extractionStats: any;
+  extractionStats: FeatureExtractionStats | null;
   fsRunId: string | null;
   fsRuns: RunRecord[];
   borutaConfig: BorutaConfig;
@@ -176,8 +214,7 @@ export interface WorkspaceState {
   testSampleId: string;
   testUploadFile: File | null;
   isTesting: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  testResults: any;
+  testResults: TestResults | null;
   isTestResultsCollapsed: boolean;
   expandedRule: number | null;
   isMatchedRulesCollapsed: boolean;
@@ -250,11 +287,9 @@ export type WorkspaceAction =
   | { type: 'split_runs_loaded'; runs: RunRecord[] }
   | { type: 'split_started'; log: string }
   | { type: 'split_log_appended'; line: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { type: 'split_computed'; stats: any; params: SplitParams | null; inputs: SplitParams }
+  | { type: 'split_computed'; stats: SplitStats; params: SplitParams | null; inputs: SplitParams }
   | { type: 'split_failed'; line: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { type: 'split_run_loaded'; stats: any; params: SplitParams; log: string }
+  | { type: 'split_run_loaded'; stats: SplitStats; params: SplitParams; log: string }
   | { type: 'fs_method_changed'; method: 'boruta' | 'mrmr' }
   | { type: 'boruta_config_changed'; config: BorutaConfig }
   | { type: 'mrmr_config_changed'; config: MrmrConfig }
@@ -263,8 +298,7 @@ export type WorkspaceAction =
   | { type: 'fs_started'; log: string }
   | { type: 'fs_log_set'; log: string }
   | { type: 'fs_log_appended'; line: string }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { type: 'fs_computed'; stats: any; runId: string | null }
+  | { type: 'fs_computed'; stats: FeatureExtractionStats; runId: string | null }
   | { type: 'fs_failed'; line: string }
   | { type: 'model_type_changed'; modelType: 'dt' | 'rf' }
   | { type: 'model_config_changed'; config: ModelConfig }
@@ -284,10 +318,8 @@ export type WorkspaceAction =
   | { type: 'test_sample_selected'; sampleId: string }
   | { type: 'test_upload_file_changed'; file: File | null }
   | { type: 'test_started' }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { type: 'test_computed'; result: any }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | { type: 'test_failed'; result: any }
+  | { type: 'test_computed'; result: TestResults }
+  | { type: 'test_failed'; result: TestResults }
   | { type: 'test_results_toggled' }
   | { type: 'expanded_rule_toggled'; ruleId: number }
   | { type: 'matched_rules_toggled' }

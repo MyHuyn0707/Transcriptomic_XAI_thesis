@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { ChevronDown, ChevronUp, FileText, GitMerge, Loader2, PlayCircle, Settings2, Table2 } from 'lucide-react';
-import { api, pollJob, RunRecord } from '../../lib/api';
+import { api, ModelStatsResponse, pollJob, RunRecord } from '../../lib/api';
 import { classificationReport } from '../../lib/metrics';
+import { errorMessage } from '../../lib/utils';
 import { fsMethodKeyOf, ModelStatsUI, WorkspaceAction, WorkspaceState } from '../../state/types';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
@@ -15,7 +16,7 @@ interface Props {
   dispatch: React.Dispatch<WorkspaceAction>;
 }
 
-function buildModelStatsUI(stats: any): ModelStatsUI {
+function buildModelStatsUI(stats: ModelStatsResponse): ModelStatsUI {
   return {
     acc: Math.round((stats.best_run_test_metrics?.accuracy ?? 0) * 1000) / 10,
     f1: Math.round((stats.best_run_test_metrics?.f1_macro ?? 0) * 1000) / 10,
@@ -63,7 +64,7 @@ export default function Step4Model({ state, dispatch }: Props) {
     if (!datasetId) return;
     dispatch({ type: 'model_started', log: action === 'retrain' ? '[HỆ THỐNG] Bắt đầu huấn luyện mô hình (chạy thật)...' : '' });
     try {
-      let stats: any;
+      let stats: ModelStatsResponse;
       let runId: string | null = null;
       if (action === 'load') {
         stats = await api.getModelStats(datasetId, fsMethodKey, modelType);
@@ -78,20 +79,20 @@ export default function Step4Model({ state, dispatch }: Props) {
         refreshModelRuns();
       }
       dispatch({ type: 'model_computed', stats: buildModelStatsUI(stats), runId });
-    } catch (e: any) {
-      dispatch({ type: 'model_failed', line: `[LỖI] ${e.message}` });
+    } catch (e) {
+      dispatch({ type: 'model_failed', line: `[LỖI] ${errorMessage(e)}` });
     }
   };
 
   const loadPastModelRun = async (run: RunRecord) => {
-    if (!datasetId || !run.model) return;
+    if (!datasetId || !run.model || !run.fs_method) return;
     dispatch({ type: 'model_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...` });
     try {
       const stats = await api.getModelStats(datasetId, run.fs_method, run.model, run.run_id);
       dispatch({ type: 'model_computed', stats: buildModelStatsUI(stats), runId: run.run_id });
       dispatch({ type: 'model_log_appended', line: '[OK] Đã nạp lại kết quả chạy trước.' });
-    } catch (e: any) {
-      dispatch({ type: 'model_failed', line: `[LỖI] ${e.message}` });
+    } catch (e) {
+      dispatch({ type: 'model_failed', line: `[LỖI] ${errorMessage(e)}` });
     }
   };
 

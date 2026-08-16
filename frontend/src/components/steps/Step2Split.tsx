@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { FileText, Loader2, PlayCircle } from 'lucide-react';
-import { api, RunRecord } from '../../lib/api';
+import { api, RunRecord, SplitStats } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
+import { errorMessage } from '../../lib/utils';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
 import Badge from '../ui/Badge';
@@ -42,7 +43,7 @@ export default function Step2Split({ state, dispatch }: Props) {
     try {
       if (action === 'load') {
         dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tải số liệu chia dữ liệu (mặc định)...' });
-        let stats: any;
+        let stats: SplitStats;
         try {
           stats = await api.getOverview(datasetId);
         } catch {
@@ -62,8 +63,8 @@ export default function Step2Split({ state, dispatch }: Props) {
         dispatch({ type: 'split_log_appended', line: '[OK] Đã tính lại thành công.' });
       }
       refreshSplitRuns(datasetId);
-    } catch (e: any) {
-      dispatch({ type: 'split_failed', line: `[LỖI] ${e.message}` });
+    } catch (e) {
+      dispatch({ type: 'split_failed', line: `[LỖI] ${errorMessage(e)}` });
     }
   };
 
@@ -79,7 +80,7 @@ export default function Step2Split({ state, dispatch }: Props) {
     };
     dispatch({
       type: 'split_run_loaded',
-      stats: run.summary,
+      stats: run.summary as unknown as SplitStats,
       params,
       log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...\n[OK] Đã nạp lại kết quả chạy trước.`,
     });

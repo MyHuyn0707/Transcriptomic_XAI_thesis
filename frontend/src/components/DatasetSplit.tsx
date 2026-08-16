@@ -1,32 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChevronDown, ChevronUp, GitMerge, AlertTriangle } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, ContentInfo, SplitStats } from '../lib/api';
 import { PALETTE, DROPPED_COLOR } from '../lib/palette';
-
-interface ClassContent {
-  display_name_vi?: string;
-  description_vi?: string;
-  excluded_from_model?: boolean;
-}
-
-interface ContentInfo {
-  classes?: Record<string, ClassContent>;
-  dataset_note_vi?: string;
-}
-
-interface SplitStats {
-  class_labels: string[];
-  train_class_counts: Record<string, number>;
-  test_class_counts: Record<string, number>;
-  raw_class_counts: Record<string, number>;
-  dropped_classes: string[];
-  n_samples_total: number;
-  n_train: number;
-  n_test: number;
-  test_size: number;
-  min_samples_per_class: number;
-}
 
 /** Right-column display for Bước 2 "Xử lý & Chia Dữ liệu" — moved out of
  * DatasetOverview so that component keeps only the dataset-identity content
