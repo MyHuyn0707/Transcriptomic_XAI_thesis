@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Database, ExternalLink, Info, AlertTriangle } f
 import { api } from '../lib/api';
 import { PALETTE, DROPPED_COLOR } from '../lib/palette';
 import { cn } from '../lib/utils';
+import CollapsibleCard from './ui/CollapsibleCard';
 
 interface OriginInfo {
   geo_accession?: string;
@@ -124,45 +125,18 @@ interface OverviewData {
   media_assets?: Record<string, MediaAsset>;
 }
 
-/** Bordered card (matches "Nghiên cứu gốc" styling) with a collapse toggle —
- * used for the long content sections so they don't force the whole overview
- * panel to scroll just to see what's below them. */
-function CollapsibleCard({
-  color, title, children, defaultOpen = true,
-}: { color: string, title: React.ReactNode, children: React.ReactNode, defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 border-l-4" style={{ borderLeftColor: color }}>
-      <div
-        className="flex items-center justify-between cursor-pointer group mb-1"
-        onClick={() => setOpen(o => !o)}
-      >
-        <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 group-hover:text-emerald-700 transition-colors">
-          {title}
-        </h3>
-        <button className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 transition-colors shrink-0">
-          {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-        </button>
-      </div>
-      {open && (
-        <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-200">{children}</div>
-      )}
-    </div>
-  );
-}
-
 /** Reference-citation list nested inside "Nguồn gốc & Chú giải" — its own
  * "Thu gọn/Mở rộng" toggle since the list can get long (many NCI sources)
  * and shouldn't force the whole annotation card to scroll. */
 function ReferencesList({ referenceList, disclaimer }: { referenceList: Reference[], disclaimer?: string }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="mt-5 pt-4 border-t border-slate-100">
+    <div className="mt-5 pt-4 border-t border-neutral-100">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Nguồn tham khảo</p>
+        <p className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Nguồn tham khảo</p>
         <button
           onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-1 text-[11px] font-semibold text-teal-700 border border-teal-200 bg-teal-50 hover:bg-teal-100 rounded-md px-2 py-1 transition-colors"
+          className="flex items-center gap-1 text-[11px] font-semibold text-brand-700 border border-brand-200 bg-brand-50 hover:bg-brand-100 rounded-md px-2 py-1 transition-colors"
         >
           {open ? 'Thu gọn' : 'Mở rộng'}
           {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -172,18 +146,18 @@ function ReferencesList({ referenceList, disclaimer }: { referenceList: Referenc
         <div className="animate-in fade-in slide-in-from-top-2 duration-200">
           <ul className="space-y-1">
             {referenceList.map(ref => (
-              <li key={ref.url} className="text-xs text-slate-500 flex items-center gap-1.5">
-                <ExternalLink size={11} className="shrink-0 text-slate-400" />
-                <a href={ref.url} target="_blank" rel="noreferrer" className="hover:text-teal-600 hover:underline">
+              <li key={ref.url} className="text-xs text-neutral-600 flex items-center gap-1.5">
+                <ExternalLink size={11} className="shrink-0 text-neutral-500" />
+                <a href={ref.url} target="_blank" rel="noreferrer" className="hover:text-brand-600 hover:underline">
                   {ref.title}
                 </a>
-                <span className="text-slate-300">·</span>
+                <span className="text-neutral-400">·</span>
                 <span>{ref.publisher}</span>
               </li>
             ))}
           </ul>
           {disclaimer && (
-            <p className="text-[11px] text-slate-400 italic mt-3">{disclaimer}</p>
+            <p className="text-[11px] text-neutral-500 italic mt-3">{disclaimer}</p>
           )}
         </div>
       )}
@@ -220,15 +194,15 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
   if (isTemp) {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+            <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Tổng quan Dữ liệu</h2>
+            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">Tổng quan Dữ liệu</h2>
           </div>
-          <div className="mt-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 leading-relaxed">
-            <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+          <div className="mt-4 flex items-start gap-2.5 bg-warning-50 border border-warning-200 rounded-lg p-4 text-sm text-warning-800 leading-relaxed">
+            <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
             <p>
               Dataset này được tải lên trong phiên làm việc hiện tại và chưa qua kiểm duyệt hoặc
               tìm kiếm thông tin chi tiết (nghiên cứu gốc, chú giải sinh học, hình ảnh minh họa),
@@ -266,89 +240,89 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 transition-all duration-300">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100 transition-all duration-300">
         <div
           className="flex items-center justify-between cursor-pointer group"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100">
+            <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-2xl font-bold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">
+            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">
               Tổng quan Dữ liệu {origin.geo_accession ? `(${origin.geo_accession})` : ''}
             </h2>
           </div>
-          <button className="p-2 rounded-full hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-colors">
+          <button className="p-2 rounded-full hover:bg-success-50 text-neutral-600 hover:text-success-600 transition-colors">
             {isCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
           </button>
         </div>
 
         {!isCollapsed && (
           <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300 space-y-8">
-            {error && <p className="text-sm text-rose-600">Không tải được overview: {error}</p>}
+            {error && <p className="text-sm text-danger-600">Không tải được overview: {error}</p>}
             {overview && (
               <>
                 {/* Summary card — GEO accession / platform left, title / organism right.
                     Rare-class-drop stats, train/test split, class-distribution charts and
                     per-class biology now live in Bước 2 "Xử lý & Chia Dữ liệu" (DatasetSplit). */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                  <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
                     {origin.geo_accession && (
-                      <div className="flex justify-between py-2 border-b border-slate-200/60">
-                        <span className="text-slate-500 font-medium">Mã truy cập GEO</span>
-                        <span className="text-emerald-700 font-bold font-mono bg-emerald-100/50 px-2 py-0.5 rounded">{origin.geo_accession}</span>
+                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                        <span className="text-neutral-600 font-medium">Mã truy cập GEO</span>
+                        <span className="text-success-700 font-bold font-mono bg-success-100/50 px-2 py-0.5 rounded">{origin.geo_accession}</span>
                       </div>
                     )}
                     {origin.platform && (
-                      <div className="flex justify-between py-2 border-b border-slate-200/60">
-                        <span className="text-slate-500 font-medium">Nền tảng vi mảng</span>
-                        <span className="text-emerald-700 font-bold font-mono bg-emerald-100/50 px-2 py-0.5 rounded">{origin.platform}</span>
+                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                        <span className="text-neutral-600 font-medium">Nền tảng vi mảng</span>
+                        <span className="text-success-700 font-bold font-mono bg-success-100/50 px-2 py-0.5 rounded">{origin.platform}</span>
                       </div>
                     )}
                     {origin.samples_kept != null && (
-                      <div className="flex justify-between py-2 border-b border-slate-200/60">
-                        <span className="text-slate-500 font-medium">Tổng số mẫu ban đầu</span>
-                        <span className="text-slate-800 font-bold font-mono">{origin.samples_kept}</span>
+                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                        <span className="text-neutral-600 font-medium">Tổng số mẫu ban đầu</span>
+                        <span className="text-neutral-900 font-bold font-mono">{origin.samples_kept}</span>
                       </div>
                     )}
                     {overview.raw_class_counts && (
-                      <div className="flex justify-between py-2 border-b border-slate-200/60">
-                        <span className="text-slate-500 font-medium">Tổng số lớp ban đầu</span>
-                        <span className="text-slate-800 font-bold font-mono">{Object.keys(overview.raw_class_counts).length}</span>
+                      <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                        <span className="text-neutral-600 font-medium">Tổng số lớp ban đầu</span>
+                        <span className="text-neutral-900 font-bold font-mono">{Object.keys(overview.raw_class_counts).length}</span>
                       </div>
                     )}
                   </div>
-                  <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
-                    <div className="flex flex-col py-2 border-b border-slate-200/60">
-                      <span className="text-slate-500 font-medium mb-1">Tiêu đề</span>
+                  <div className="bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-3 shadow-sm">
+                    <div className="flex flex-col py-2 border-b border-neutral-200/60">
+                      <span className="text-neutral-600 font-medium mb-1">Tiêu đề</span>
                       {content.title_vi && (
-                        <span className="text-slate-800 font-semibold leading-relaxed">{content.title_vi}</span>
+                        <span className="text-neutral-900 font-semibold leading-relaxed">{content.title_vi}</span>
                       )}
                       {/* dataset_study.original_study_title_en (cross-checked against ArrayExpress+GEO)
                           is populated for every dataset, CuMiDa included — origin.title only comes
                           from the annotation report's "Title" line, which CuMiDa reports don't have. */}
                       {(datasetStudy?.original_study_title_en || origin.title) && (
-                        <span className="text-slate-400 text-xs leading-relaxed mt-0.5">
+                        <span className="text-neutral-500 text-xs leading-relaxed mt-0.5">
                           {datasetStudy?.original_study_title_en || origin.title}
                         </span>
                       )}
                       {!content.title_vi && !datasetStudy?.original_study_title_en && !origin.title && (
-                        <span className="text-slate-800 font-semibold">—</span>
+                        <span className="text-neutral-900 font-semibold">—</span>
                       )}
                     </div>
-                    <div className="flex justify-between py-2 border-b border-slate-200/60">
-                      <span className="text-slate-500 font-medium">Organism</span>
-                      <span className="text-slate-800 font-semibold text-right">{content.organism || '—'}</span>
+                    <div className="flex justify-between py-2 border-b border-neutral-200/60">
+                      <span className="text-neutral-600 font-medium">Organism</span>
+                      <span className="text-neutral-900 font-semibold text-right">{content.organism || '—'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Dataset description — concise summary */}
                 {content.description_vi && (
-                  <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1.5">Mô tả tập dữ liệu</p>
-                    <p className="text-sm text-slate-600 leading-relaxed">{content.description_vi}</p>
+                  <div className="bg-neutral-50 rounded-xl border border-neutral-100 p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-1.5">Mô tả tập dữ liệu</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{content.description_vi}</p>
                   </div>
                 )}
 
@@ -364,28 +338,28 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                             <img
                               src={asset.url}
                               alt={asset.alt_text_vi || asset.title_vi || ''}
-                              className="w-full sm:w-[220px] h-auto rounded-lg border border-slate-200 shadow-sm object-cover"
+                              className="w-full sm:w-[220px] h-auto rounded-lg border border-neutral-200 shadow-sm object-cover"
                             />
-                            <figcaption className="mt-2 text-[11px] text-slate-400 leading-snug">
+                            <figcaption className="mt-2 text-[11px] text-neutral-500 leading-snug">
                               {asset.caption_vi}
                               {asset.credit && <span className="block mt-0.5">Ảnh: {asset.credit}</span>}
                               {asset.source_page_url && (
-                                <a href={asset.source_page_url} target="_blank" rel="noreferrer" className="text-teal-600 hover:underline block mt-0.5">
+                                <a href={asset.source_page_url} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline block mt-0.5">
                                   Nguồn: {asset.source_publisher || 'NCI'}
                                 </a>
                               )}
                             </figcaption>
                           </figure>
                         )}
-                        <div className="space-y-3 min-w-0 bg-slate-50/70 rounded-xl border border-slate-100 p-4">
+                        <div className="space-y-3 min-w-0 bg-neutral-50/70 rounded-xl border border-neutral-100 p-4">
                           {primaryEntity && (
-                            <p className="text-sm text-slate-700 leading-relaxed">{primaryEntity.description_vi}</p>
+                            <p className="text-sm text-neutral-800 leading-relaxed">{primaryEntity.description_vi}</p>
                           )}
                           {diseaseContext.dataset_relationship_vi && (
-                            <p className="text-sm text-slate-600 leading-relaxed italic">{diseaseContext.dataset_relationship_vi}</p>
+                            <p className="text-sm text-neutral-700 leading-relaxed italic">{diseaseContext.dataset_relationship_vi}</p>
                           )}
                           {asset && diseaseContext.media_disclaimer_vi && (
-                            <p className="text-[11px] text-slate-400 leading-relaxed border-t border-slate-200 pt-2">{diseaseContext.media_disclaimer_vi}</p>
+                            <p className="text-[11px] text-neutral-500 leading-relaxed border-t border-neutral-200 pt-2">{diseaseContext.media_disclaimer_vi}</p>
                           )}
                         </div>
                       </div>
@@ -400,40 +374,40 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                     <div className="space-y-5 text-sm">
                       {datasetStudy.original_study_title_en && (
                         <div>
-                          <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1">Tiêu đề nghiên cứu gốc</span>
-                          <span className="text-slate-700 italic">{datasetStudy.original_study_title_en}</span>
+                          <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1">Tiêu đề nghiên cứu gốc</span>
+                          <span className="text-neutral-800 italic">{datasetStudy.original_study_title_en}</span>
                           {datasetStudy.arrayexpress_accession && (
-                            <span className="text-slate-400 text-xs font-mono ml-2">({datasetStudy.arrayexpress_accession})</span>
+                            <span className="text-neutral-500 text-xs font-mono ml-2">({datasetStudy.arrayexpress_accession})</span>
                           )}
                         </div>
                       )}
                       {datasetStudy.study_objective_vi && (
                         <div>
-                          <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1">Mục tiêu nghiên cứu</span>
-                          <span className="text-slate-700 leading-relaxed">{datasetStudy.study_objective_vi}</span>
+                          <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1">Mục tiêu nghiên cứu</span>
+                          <span className="text-neutral-800 leading-relaxed">{datasetStudy.study_objective_vi}</span>
                         </div>
                       )}
                       {datasetStudy.original_design_vi && (
                         <div>
-                          <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold block mb-1">Thiết kế nghiên cứu gốc</span>
-                          <span className="text-slate-700 leading-relaxed">{datasetStudy.original_design_vi}</span>
+                          <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1">Thiết kế nghiên cứu gốc</span>
+                          <span className="text-neutral-800 leading-relaxed">{datasetStudy.original_design_vi}</span>
                         </div>
                       )}
                     </div>
                     {datasetStudy.local_ml_relation_vi && (
-                      <div className="mt-5 pt-5 border-t border-slate-100">
-                        <div className="bg-blue-50/60 rounded-lg p-4 border border-blue-200 flex gap-2.5">
-                          <Info size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                      <div className="mt-5 pt-5 border-t border-neutral-100">
+                        <div className="bg-info-50/60 rounded-lg p-4 border border-info-200 flex gap-2.5">
+                          <Info size={16} className="text-info-500 shrink-0 mt-0.5" />
                           <div>
-                            <span className="text-blue-700 text-xs uppercase tracking-wider font-semibold block mb-1">Liên hệ với bài toán học máy ở đây</span>
-                            <span className="text-slate-700 leading-relaxed text-sm">{datasetStudy.local_ml_relation_vi}</span>
+                            <span className="text-info-700 text-xs uppercase tracking-wider font-semibold block mb-1">Liên hệ với bài toán học máy ở đây</span>
+                            <span className="text-neutral-800 leading-relaxed text-sm">{datasetStudy.local_ml_relation_vi}</span>
                           </div>
                         </div>
                       </div>
                     )}
                     {datasetProvenance?.download_provider?.name && (
-                      <p className="text-xs text-slate-400 mt-4 pt-3 border-t border-slate-100">
-                        Nguồn tải file dữ liệu: <span className="font-semibold text-slate-500">{datasetProvenance.download_provider.name}</span>
+                      <p className="text-xs text-neutral-500 mt-4 pt-3 border-t border-neutral-100">
+                        Nguồn tải file dữ liệu: <span className="font-semibold text-neutral-600">{datasetProvenance.download_provider.name}</span>
                         {datasetProvenance.provenance_note_vi && ` — ${datasetProvenance.provenance_note_vi}`}
                       </p>
                     )}
@@ -447,8 +421,8 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                 {Object.keys(classesContent).length > 0 && (
                   <CollapsibleCard color="#0d9488" title="Đặc tính Sinh học các Phân lớp">
                     {content.dataset_note_vi && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 text-sm text-amber-800 leading-relaxed mb-4 flex gap-2.5">
-                        <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                      <div className="bg-warning-50 border border-warning-200 rounded-lg p-3.5 text-sm text-warning-800 leading-relaxed mb-4 flex gap-2.5">
+                        <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
                         <div><span className="font-semibold">Lưu ý: </span>{content.dataset_note_vi}</div>
                       </div>
                     )}
@@ -460,19 +434,19 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                       const classCard = (label: string, cls: ClassContent, color: string) => (
                         <div
                           key={label}
-                          className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm border-l-4 flex flex-col items-start text-left h-full"
+                          className="bg-white p-4 rounded-lg border border-neutral-200 shadow-sm border-l-4 flex flex-col items-start text-left h-full"
                           style={{ borderLeftColor: color }}
                         >
                           <div className="flex items-start gap-2 mb-2 w-full">
                             <span className="w-2 h-2 rounded-full inline-block mt-1.5 shrink-0" style={{ backgroundColor: color }}></span>
                             <div className="flex flex-col items-start text-left">
-                              <h4 className="font-bold text-slate-800 leading-tight text-left">{cls.display_name_vi || label}</h4>
+                              <h4 className="font-bold text-neutral-900 leading-tight text-left">{cls.display_name_vi || label}</h4>
                               {cls.display_name_vi && (
-                                <span className="text-slate-400 text-[11px] uppercase tracking-wide font-semibold text-left">{label}</span>
+                                <span className="text-neutral-500 text-[11px] uppercase tracking-wide font-semibold text-left">{label}</span>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-slate-600 leading-relaxed text-left">{cls.description_vi}</p>
+                          <p className="text-sm text-neutral-700 leading-relaxed text-left">{cls.description_vi}</p>
                         </div>
                       );
                       return (
@@ -487,25 +461,25 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                               a single grid cell would look lopsided when there's an odd
                               count left over after the active-classes 2-column grid. */}
                           {excluded.length > 0 && (
-                            <div className={cn("space-y-3", active.length > 0 && "mt-4 pt-4 border-t border-slate-100")}>
+                            <div className={cn("space-y-3", active.length > 0 && "mt-4 pt-4 border-t border-neutral-100")}>
                               {excluded.map(([label, cls]) => (
                                 <div
                                   key={label}
-                                  className="bg-amber-50/60 p-4 rounded-lg border border-amber-100 border-l-4 flex flex-col items-start text-left"
+                                  className="bg-warning-50/60 p-4 rounded-lg border border-warning-100 border-l-4 flex flex-col items-start text-left"
                                   style={{ borderLeftColor: DROPPED_COLOR }}
                                 >
                                   <div className="flex items-start gap-2 mb-2 w-full">
                                     <span className="w-2 h-2 rounded-full inline-block mt-1.5 shrink-0" style={{ backgroundColor: DROPPED_COLOR }}></span>
                                     <div className="flex flex-col items-start text-left">
-                                      <h4 className="font-bold text-slate-800 leading-tight text-left">{cls.display_name_vi || label}</h4>
+                                      <h4 className="font-bold text-neutral-900 leading-tight text-left">{cls.display_name_vi || label}</h4>
                                       {cls.display_name_vi && (
-                                        <span className="text-slate-400 text-[11px] uppercase tracking-wide font-semibold text-left">{label}</span>
+                                        <span className="text-neutral-500 text-[11px] uppercase tracking-wide font-semibold text-left">{label}</span>
                                       )}
                                     </div>
                                   </div>
-                                  <p className="text-sm text-slate-600 leading-relaxed text-left mb-2.5">{cls.description_vi}</p>
-                                  <div className="w-full flex items-start gap-1.5 text-amber-700">
-                                    <AlertTriangle size={13} className="shrink-0 mt-0.5 text-amber-500" />
+                                  <p className="text-sm text-neutral-700 leading-relaxed text-left mb-2.5">{cls.description_vi}</p>
+                                  <div className="w-full flex items-start gap-1.5 text-warning-700">
+                                    <AlertTriangle size={13} className="shrink-0 mt-0.5 text-warning-500" />
                                     <p className="text-xs leading-relaxed text-left">
                                       Bị loại khỏi tập huấn luyện do quá ít mẫu.
                                     </p>
@@ -526,37 +500,37 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                   <CollapsibleCard color="#64748b" title="Nguồn gốc & Chú giải">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                       {origin.class_characteristic && (
-                        <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                          <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Class characteristic</div>
-                          <div className="font-mono font-semibold text-slate-700">{origin.class_characteristic}</div>
+                        <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                          <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">Class characteristic</div>
+                          <div className="font-mono font-semibold text-neutral-800">{origin.class_characteristic}</div>
                         </div>
                       )}
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Annotation rows</div>
-                        <div className="font-mono font-semibold text-slate-700">{origin.annotation_rows?.toLocaleString()}</div>
+                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                        <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">Annotation rows</div>
+                        <div className="font-mono font-semibold text-neutral-800">{origin.annotation_rows?.toLocaleString()}</div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Probes có gene symbol</div>
-                        <div className="font-mono font-semibold text-emerald-600">{origin.probes_with_gene_symbol?.toLocaleString()}</div>
-                        <div className="text-[11px] text-slate-400 mt-1">
+                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                        <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">Probes có gene symbol</div>
+                        <div className="font-mono font-semibold text-success-600">{origin.probes_with_gene_symbol?.toLocaleString()}</div>
+                        <div className="text-[11px] text-neutral-500 mt-1">
                           từ annotation file: {origin.probes_from_annotation_file?.toLocaleString()} · MyGene.info: {origin.probes_from_mygene?.toLocaleString()}
                         </div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Probes không có gene symbol</div>
-                        <div className="font-mono font-semibold text-rose-500">{origin.probes_without_gene_symbol?.toLocaleString()}</div>
+                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                        <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">Probes không có gene symbol</div>
+                        <div className="font-mono font-semibold text-danger-500">{origin.probes_without_gene_symbol?.toLocaleString()}</div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">AFFX control đã loại</div>
-                        <div className="font-mono font-semibold text-slate-700">{origin.affx_control_removed?.toLocaleString()}</div>
+                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                        <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">AFFX control đã loại</div>
+                        <div className="font-mono font-semibold text-neutral-800">{origin.affx_control_removed?.toLocaleString()}</div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Probes / Genes duy nhất</div>
-                        <div className="font-mono font-semibold text-slate-700">{origin.unique_probes?.toLocaleString()} / {origin.unique_genes?.toLocaleString()}</div>
+                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                        <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">Probes / Genes duy nhất</div>
+                        <div className="font-mono font-semibold text-neutral-800">{origin.unique_probes?.toLocaleString()} / {origin.unique_genes?.toLocaleString()}</div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Mẫu giữ lại</div>
-                        <div className="font-mono font-semibold text-slate-700">{origin.samples_kept?.toLocaleString()} <span className="text-slate-400 font-normal">(NA dropped: {origin.na_dropped})</span></div>
+                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
+                        <div className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold mb-0.5">Mẫu giữ lại</div>
+                        <div className="font-mono font-semibold text-neutral-800">{origin.samples_kept?.toLocaleString()} <span className="text-neutral-500 font-normal">(NA dropped: {origin.na_dropped})</span></div>
                       </div>
                     </div>
 

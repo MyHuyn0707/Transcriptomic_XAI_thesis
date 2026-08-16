@@ -14,7 +14,7 @@ function useColorScale(data: number[][]) {
     const intensity = Math.max(0, Math.min(1, val / maxVal));
     return `rgba(13, 148, 136, ${intensity * 0.8 + 0.1})`;
   };
-  const getTextColor = (val: number) => (val / maxVal > 0.5 ? 'text-white' : 'text-slate-700');
+  const getTextColor = (val: number) => (val / maxVal > 0.5 ? 'text-white' : 'text-neutral-800');
   return { getBgColor, getTextColor };
 }
 
@@ -31,21 +31,21 @@ function MatrixGrid({
   const n = labels.length;
   return (
     <div className="flex items-center gap-3">
-      <div className="flex flex-col items-center justify-center origin-center -rotate-90 text-sm font-medium text-slate-500 whitespace-nowrap shrink-0">
+      <div className="flex flex-col items-center justify-center origin-center -rotate-90 text-sm font-medium text-neutral-600 whitespace-nowrap shrink-0">
         Nhãn thật
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-center text-sm font-medium text-slate-500 mb-2">Nhãn dự đoán</div>
+        <div className="text-center text-sm font-medium text-neutral-600 mb-2">Nhãn dự đoán</div>
         <div className="grid gap-0.5" style={{ gridTemplateColumns: `minmax(3.5rem, auto) repeat(${n}, minmax(0, 1fr))` }}>
           <div />
           {labels.map((label, i) => (
-            <div key={`x-${i}`} className={cn("text-center font-medium text-slate-600 mb-1 px-0.5 truncate", labelFontSizeClass)} title={label}>
+            <div key={`x-${i}`} className={cn("text-center font-medium text-neutral-700 mb-1 px-0.5 truncate", labelFontSizeClass)} title={label}>
               {label}
             </div>
           ))}
           {data.map((row, i) => (
             <React.Fragment key={`row-${i}`}>
-              <div className={cn("text-right pr-2 font-medium text-slate-600 flex items-center justify-end truncate", labelFontSizeClass)} title={labels[i]}>
+              <div className={cn("text-right pr-2 font-medium text-neutral-700 flex items-center justify-end truncate", labelFontSizeClass)} title={labels[i]}>
                 {labels[i]}
               </div>
               {row.map((cell, j) => (
@@ -77,7 +77,7 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
       <div className="w-full relative group/matrix">
         <button
           onClick={() => setZoomed(true)}
-          className="absolute -top-1 right-0 z-10 p-1.5 rounded-full bg-white border border-slate-200 text-slate-400 opacity-0 group-hover/matrix:opacity-100 hover:text-teal-600 hover:border-teal-200 transition-all shadow-sm"
+          className="absolute -top-1 right-0 z-10 p-1.5 rounded-full bg-white border border-neutral-200 text-neutral-500 opacity-0 group-hover/matrix:opacity-100 hover:text-brand-600 hover:border-brand-200 transition-all shadow-sm"
           title="Phóng to ma trận nhầm lẫn"
         >
           <Maximize2 size={14} />
@@ -87,7 +87,7 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
 
       {zoomed && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-150"
           onClick={() => setZoomed(false)}
         >
           <div
@@ -95,10 +95,10 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-slate-800">Ma trận nhầm lẫn</h3>
+              <h3 className="text-base font-semibold text-neutral-900">Ma trận nhầm lẫn</h3>
               <button
                 onClick={() => setZoomed(false)}
-                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+                className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-600 transition-colors"
               >
                 <X size={18} />
               </button>
