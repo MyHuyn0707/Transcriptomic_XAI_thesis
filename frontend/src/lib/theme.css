@@ -1,17 +1,18 @@
 /*
- * Application theme
- * =================
- * This is the single place to adjust the visual foundation of the frontend.
+ * Design tokens
+ * =============
+ * Every color, spacing and radius value the UI uses lives here as data, keyed
+ * by the role it plays (neutral surface, brand action, success/warning/danger/
+ * info status) rather than by a Tailwind palette name. Components reference a
+ * role — bg-brand-600, text-neutral-500, border-danger-200 — never slate/teal/
+ * emerald/amber/rose/blue directly, so re-tuning the app's palette is a one-file
+ * edit instead of a grep across every component.
  *
- * 1. Change the CSS variables in :root to tune the application globally.
- * 2. The @theme block exposes selected tokens as Tailwind v4 utilities:
- *    bg-surface, text-brand-600, rounded-card, shadow-card, text-display...
- * 3. Existing components still use Tailwind's slate/teal/emerald utilities.
- *    New or refactored UI should prefer the semantic tokens below.
+ * Per-class chart colors (an arbitrary number of categorical hues) are a
+ * different problem and stay in src/lib/palette.ts.
  */
 
 :root {
-  /* Typography */
   --font-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-family-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --font-size-xs: 0.8125rem;
@@ -24,110 +25,154 @@
   --line-height-tight: 1.2;
   --line-height-normal: 1.55;
   --line-height-relaxed: 1.7;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
 
-  /* Brand and semantic colours */
-  --ui-color-brand-50: #f0fdfa;
-  --ui-color-brand-100: #ccfbf1;
-  --ui-color-brand-200: #99f6e4;
-  --ui-color-brand-300: #5eead4;
-  --ui-color-brand-400: #2dd4bf;
-  --ui-color-brand-500: #14b8a6;
-  --ui-color-brand-600: #0d9488;
-  --ui-color-brand-700: #0f766e;
-  --ui-color-brand-800: #115e59;
-  --ui-color-brand-900: #134e4a;
+  /* Neutral — every slate-family surface, border and body/muted text. */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
 
-  --ui-color-accent-50: #ecfdf5;
-  --ui-color-accent-100: #d1fae5;
-  --ui-color-accent-500: #10b981;
-  --ui-color-accent-600: #059669;
-  --ui-color-accent-700: #047857;
+  /* Brand — primary actions, active/selected states, the app's teal identity. */
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
 
-  --ui-color-surface: #ffffff;
-  --ui-color-surface-muted: #f8fafc;
-  --ui-color-surface-subtle: #f1f5f9;
-  --ui-color-page: #f8fafc;
-  --ui-color-text: #0f172a;
-  --ui-color-text-muted: #334155;
-  --ui-color-text-subtle: #475569;
-  --ui-color-border: #e2e8f0;
-  --ui-color-border-subtle: #f1f5f9;
-  --ui-color-focus: var(--ui-color-brand-500);
+  /* Success — completed steps, positive stats, confirmed features. */
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-200: #a7f3d0;
+  --color-success-300: #6ee7b7;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065f46;
+  --color-success-900: #064e3b;
 
-  --ui-color-success: #059669;
-  --ui-color-warning: #d97706;
-  --ui-color-danger: #e11d48;
-  --ui-color-info: #0284c7;
+  /* Warning — cautionary notes, dropped/tentative classes and features. */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
 
-  /* Spacing and sizing */
-  --space-0: 0;
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
-  --content-width: 80rem;
+  /* Danger — errors and rejected features. */
+  --color-danger-50: #fff1f2;
+  --color-danger-100: #ffe4e6;
+  --color-danger-200: #fecdd3;
+  --color-danger-300: #fda4af;
+  --color-danger-400: #fb7185;
+  --color-danger-500: #f43f5e;
+  --color-danger-600: #e11d48;
+  --color-danger-700: #be123c;
+  --color-danger-800: #9f1239;
+  --color-danger-900: #881337;
 
-  /* Shape and elevation */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1rem;
-  --radius-pill: 9999px;
-  --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
-  --shadow-sm: 0 1px 3px rgb(15 23 42 / 0.08);
-  --ui-shadow-card: 0 4px 12px rgb(15 23 42 / 0.06);
-  --shadow-lg: 0 12px 24px rgb(15 23 42 / 0.12);
+  /* Info — explanatory asides that aren't a warning or an error. */
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-200: #bfdbfe;
+  --color-info-300: #93c5fd;
+  --color-info-400: #60a5fa;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+  --color-info-700: #1d4ed8;
+  --color-info-800: #1e40af;
+  --color-info-900: #1e3a8a;
 
-  /* Motion */
-  --duration-fast: 150ms;
-  --duration-normal: 200ms;
-  --duration-slow: 300ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --color-focus: var(--color-brand-500);
 }
 
-/* Tailwind v4 token bridge. These generate semantic utility classes. */
+/* Tailwind v4 reads @theme and turns each entry into a first-class utility
+   family — bg-neutral-50, text-brand-700, border-danger-200/40, etc. — with
+   no extra plumbing per class. */
 @theme {
   --font-sans: var(--font-family-sans);
   --font-mono: var(--font-family-mono);
 
-  --color-brand-50: var(--ui-color-brand-50);
-  --color-brand-100: var(--ui-color-brand-100);
-  --color-brand-200: var(--ui-color-brand-200);
-  --color-brand-300: var(--ui-color-brand-300);
-  --color-brand-400: var(--ui-color-brand-400);
-  --color-brand-500: var(--ui-color-brand-500);
-  --color-brand-600: var(--ui-color-brand-600);
-  --color-brand-700: var(--ui-color-brand-700);
-  --color-brand-800: var(--ui-color-brand-800);
-  --color-brand-900: var(--ui-color-brand-900);
-  --color-accent-50: var(--ui-color-accent-50);
-  --color-accent-100: var(--ui-color-accent-100);
-  --color-accent-500: var(--ui-color-accent-500);
-  --color-accent-600: var(--ui-color-accent-600);
-  --color-accent-700: var(--ui-color-accent-700);
-  --color-surface: var(--ui-color-surface);
-  --color-surface-muted: var(--ui-color-surface-muted);
-  --color-surface-subtle: var(--ui-color-surface-subtle);
-  --color-page: var(--ui-color-page);
-  --color-text: var(--ui-color-text);
-  --color-text-muted: var(--ui-color-text-muted);
-  --color-text-subtle: var(--ui-color-text-subtle);
-  --color-border: var(--ui-color-border);
-  --color-border-subtle: var(--ui-color-border-subtle);
-  --color-success: var(--ui-color-success);
-  --color-warning: var(--ui-color-warning);
-  --color-danger: var(--ui-color-danger);
-  --color-info: var(--ui-color-info);
+  --color-neutral-50: var(--color-neutral-50);
+  --color-neutral-100: var(--color-neutral-100);
+  --color-neutral-200: var(--color-neutral-200);
+  --color-neutral-300: var(--color-neutral-300);
+  --color-neutral-400: var(--color-neutral-400);
+  --color-neutral-500: var(--color-neutral-500);
+  --color-neutral-600: var(--color-neutral-600);
+  --color-neutral-700: var(--color-neutral-700);
+  --color-neutral-800: var(--color-neutral-800);
+  --color-neutral-900: var(--color-neutral-900);
+
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-200: var(--color-brand-200);
+  --color-brand-300: var(--color-brand-300);
+  --color-brand-400: var(--color-brand-400);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+  --color-brand-800: var(--color-brand-800);
+  --color-brand-900: var(--color-brand-900);
+
+  --color-success-50: var(--color-success-50);
+  --color-success-100: var(--color-success-100);
+  --color-success-200: var(--color-success-200);
+  --color-success-300: var(--color-success-300);
+  --color-success-400: var(--color-success-400);
+  --color-success-500: var(--color-success-500);
+  --color-success-600: var(--color-success-600);
+  --color-success-700: var(--color-success-700);
+  --color-success-800: var(--color-success-800);
+  --color-success-900: var(--color-success-900);
+
+  --color-warning-50: var(--color-warning-50);
+  --color-warning-100: var(--color-warning-100);
+  --color-warning-200: var(--color-warning-200);
+  --color-warning-300: var(--color-warning-300);
+  --color-warning-400: var(--color-warning-400);
+  --color-warning-500: var(--color-warning-500);
+  --color-warning-600: var(--color-warning-600);
+  --color-warning-700: var(--color-warning-700);
+  --color-warning-800: var(--color-warning-800);
+  --color-warning-900: var(--color-warning-900);
+
+  --color-danger-50: var(--color-danger-50);
+  --color-danger-100: var(--color-danger-100);
+  --color-danger-200: var(--color-danger-200);
+  --color-danger-300: var(--color-danger-300);
+  --color-danger-400: var(--color-danger-400);
+  --color-danger-500: var(--color-danger-500);
+  --color-danger-600: var(--color-danger-600);
+  --color-danger-700: var(--color-danger-700);
+  --color-danger-800: var(--color-danger-800);
+  --color-danger-900: var(--color-danger-900);
+
+  --color-info-50: var(--color-info-50);
+  --color-info-100: var(--color-info-100);
+  --color-info-200: var(--color-info-200);
+  --color-info-300: var(--color-info-300);
+  --color-info-400: var(--color-info-400);
+  --color-info-500: var(--color-info-500);
+  --color-info-600: var(--color-info-600);
+  --color-info-700: var(--color-info-700);
+  --color-info-800: var(--color-info-800);
+  --color-info-900: var(--color-info-900);
 
   /* Override Tailwind's default text scale so existing text-xs/text-sm/etc.
      classes inherit the size adjustments above. */
@@ -145,35 +190,20 @@
   --text-2xl--line-height: var(--line-height-tight);
   --text-3xl: var(--font-size-3xl);
   --text-3xl--line-height: var(--line-height-tight);
-
-  --text-display: var(--font-size-3xl);
-  --text-display--line-height: var(--line-height-tight);
-  --text-heading: var(--font-size-2xl);
-  --text-heading--line-height: var(--line-height-tight);
-  --text-body: var(--font-size-base);
-  --text-body--line-height: var(--line-height-normal);
-  --text-caption: var(--font-size-xs);
-  --text-caption--line-height: var(--line-height-normal);
-
-  --spacing-layout: var(--space-6);
-  --spacing-section: var(--space-8);
-  --radius-card: var(--radius-xl);
-  --radius-control: var(--radius-lg);
-  --shadow-card: var(--ui-shadow-card);
 }
 
 @layer base {
   html {
     font-family: var(--font-family-sans);
-    color: var(--ui-color-text);
-    background: var(--ui-color-page);
+    color: var(--color-neutral-900);
+    background: var(--color-neutral-50);
     line-height: var(--line-height-normal);
   }
 
   body {
     min-width: 20rem;
     margin: 0;
-    background: var(--ui-color-page);
+    background: var(--color-neutral-50);
   }
 
   /* Readable content wraps naturally after the font scale increase. */
@@ -203,9 +233,10 @@
   select,
   textarea {
     line-height: 1.35;
+    font: inherit;
   }
 
-  /* Gene/probe identifiers can be longer than a narrow card.  Do not change
+  /* Gene/probe identifiers can be longer than a narrow card. Do not change
      explicitly truncated values, which are intentionally kept on one line. */
   .font-mono:not(.truncate) {
     overflow-wrap: anywhere;
@@ -214,98 +245,11 @@
   small,
   .text-sm,
   .text-xs {
-    color: var(--ui-color-text-muted);
-  }
-
-  button,
-  input,
-  select,
-  textarea {
-    font: inherit;
+    color: var(--color-neutral-700);
   }
 
   ::selection {
-    color: var(--ui-color-brand-900);
-    background: var(--ui-color-brand-200);
+    color: var(--color-brand-900);
+    background: var(--color-brand-200);
   }
-}
-
-/* Existing UI uses Tailwind's text-slate-* utilities extensively. Shift only
-   their foreground colour one shade darker without changing slate surfaces or
-   borders: text-slate-400, for example, renders as slate-500. */
-@layer utilities {
-  .text-slate-100 { color: var(--color-slate-200); }
-  .text-slate-200 { color: var(--color-slate-300); }
-  .text-slate-300 { color: var(--color-slate-400); }
-  .text-slate-400 { color: var(--color-slate-500); }
-  .text-slate-500 { color: var(--color-slate-600); }
-  .text-slate-600 { color: var(--color-slate-700); }
-  .text-slate-700 { color: var(--color-slate-800); }
-  .text-slate-800 { color: var(--color-slate-900); }
-}
-
-/* Light presentation for the experimental-result report.  The report was
-   originally composed from dark Tailwind utilities; keep its status colours
-   while translating every dark surface, border and foreground to the light
-   application palette. */
-@layer components {
-  .experimental-report {
-    color: var(--ui-color-text) !important;
-    background: var(--ui-color-surface) !important;
-    border-color: var(--ui-color-border) !important;
-    box-shadow: var(--ui-shadow-card) !important;
-  }
-
-  /* Safety net for present and future slate surfaces inside this scope. */
-  .experimental-report [class*="bg-slate-7"],
-  .experimental-report [class*="bg-slate-8"],
-  .experimental-report [class*="bg-slate-9"] { background-color: #f8fafc !important; }
-
-  .experimental-report [class~="bg-slate-900"] { background-color: var(--ui-color-surface) !important; }
-  .experimental-report [class~="bg-slate-800/50"] { background-color: #ffffff !important; }
-  .experimental-report [class~="bg-slate-800/30"] { background-color: #fcfdff !important; }
-  .experimental-report [class~="bg-slate-950/50"] { background-color: #f8fafc !important; }
-  .experimental-report [class~="bg-slate-900/60"],
-  .experimental-report [class~="bg-slate-900/40"],
-  .experimental-report [class~="bg-slate-800"] { background-color: #ffffff !important; }
-  .experimental-report [class~="bg-slate-700/50"] { background-color: #e2e8f0 !important; }
-
-  .experimental-report [class~="border-slate-800"],
-  .experimental-report [class~="border-slate-800/80"],
-  .experimental-report [class~="border-slate-700"],
-  .experimental-report [class~="border-slate-700/50"] { border-color: var(--ui-color-border) !important; }
-
-  .experimental-report [class~="text-slate-50"],
-  .experimental-report [class~="text-slate-100"],
-  .experimental-report [class~="text-slate-200"],
-  .experimental-report [class~="text-slate-300"] { color: var(--ui-color-text) !important; }
-
-  .experimental-report [class~="text-teal-100/90"],
-  .experimental-report [class~="text-teal-200"],
-  .experimental-report [class~="text-teal-300"],
-  .experimental-report [class~="text-teal-400"] { color: var(--color-brand-700) !important; }
-
-  .experimental-report [class~="bg-teal-900/30"],
-  .experimental-report [class~="bg-teal-950/30"] { background-color: var(--color-brand-50) !important; }
-  .experimental-report [class~="bg-teal-500/20"] { background-color: var(--color-brand-50) !important; }
-  .experimental-report [class~="border-teal-700/50"],
-  .experimental-report [class~="border-teal-800/40"] { border-color: var(--color-brand-200) !important; }
-  .experimental-report [class~="border-teal-500/30"] { border-color: var(--color-brand-200) !important; }
-  .experimental-report [class~="bg-amber-950/30"] { background-color: #fffbeb !important; }
-  .experimental-report [class~="bg-amber-500/10"] { background-color: #fffbeb !important; }
-  .experimental-report [class~="border-amber-800/40"] { border-color: #fcd34d !important; }
-  .experimental-report [class~="border-amber-500/30"] { border-color: #fcd34d !important; }
-  .experimental-report [class~="text-amber-300"],
-  .experimental-report [class~="text-amber-400/90"],
-  .experimental-report [class~="text-amber-400"] { color: #a16207 !important; }
-  .experimental-report [class~="bg-red-950/30"] { background-color: #fff1f2 !important; }
-  .experimental-report [class~="border-red-800/40"] { border-color: #fecdd3 !important; }
-  .experimental-report [class~="text-red-300"],
-  .experimental-report [class~="text-red-400"] { color: #be123c !important; }
-
-  .experimental-report [class~="hover:bg-teal-900/40"]:hover { background-color: var(--color-brand-100) !important; }
-  .experimental-report [class~="hover:border-teal-700"]:hover { border-color: var(--color-brand-400) !important; }
-  .experimental-report [class~="hover:text-teal-200"]:hover,
-  .experimental-report [class~="hover:text-teal-300"]:hover,
-  .experimental-report [class~="hover:text-white"]:hover { color: var(--color-brand-800) !important; }
 }
