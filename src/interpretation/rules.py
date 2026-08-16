@@ -310,7 +310,9 @@ def _dedup_key_str(m: Dict[str, Any], sig_figs: int) -> str:
     dropped by the existing ``seen_keys`` check instead of surviving as a
     "distinct" rule.
     """
-    g, low, high = m["gene"], m["low"], m["high"]
+    # Numeric rule identity is probe-level: several probes may share one gene
+    # symbol but have unrelated expression scales.
+    g, low, high = m["probe"], m["low"], m["high"]
     def r(v: float) -> str:
         return f"{v:.{sig_figs}g}"
     if low is not None and high is not None:
@@ -328,7 +330,7 @@ def _condition_signature(merged: List[Dict[str, Any]]) -> tuple:
     "no bound" as an infinitely loose bound in :func:`_dominates` handles
     that; the grouping itself only needs to fix the gene set).
     """
-    return tuple(sorted(m["gene"] for m in merged))
+    return tuple(sorted(m["probe"] for m in merged))
 
 
 def _dominates(mi: Dict[str, Any], mj: Dict[str, Any]) -> bool:
@@ -376,7 +378,7 @@ def _drop_generalized_duplicates(rows: List[Dict[str, Any]]) -> List[Dict[str, A
     for idxs in groups.values():
         if len(idxs) < 2:
             continue
-        conds = {i: {m["gene"]: m for m in rows[i]["conditions_merged"]} for i in idxs}
+        conds = {i: {m["probe"]: m for m in rows[i]["conditions_merged"]} for i in idxs}
         # rows is already strength_score-sorted (see simplify_rules' main
         # loop), so idxs is too — on a tie (mutual dominance, i.e. identical
         # ranges) the earlier/better-ranked rule survives.
@@ -474,7 +476,9 @@ def simplify_rules(rules: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     min_sup = float(cfg.get("min_support", 0.05))
     min_abs = int(cfg.get("min_abs_support", 3))
     max_cond = cfg.get("max_conditions", 5)
-    merge_gene = bool(cfg.get("merge_same_gene", True))
+    # ``merge_same_gene`` is a display preference.  Never combine numeric
+    # thresholds from different probes merely because they share a gene symbol:
+    # they must remain separate terms in the exported rule.
     do_dedup = bool(cfg.get("dedup", True))
     dedup_sig_figs = int(cfg.get("dedup_sig_figs", 2))
     merge_generalization = bool(cfg.get("merge_generalization", True))
@@ -491,7 +495,10 @@ def simplify_rules(rules: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     seen_keys: set = set()
 
     for _, rule in rules.sort_values("strength_score", ascending=False).iterrows():
-        merged = _merge_conditions(rule["conditions"], by_gene=merge_gene)
+        # Repeated splits of the SAME probe become a valid interval; probes
+        # sharing a gene remain separate conditions (e.g. RGCC>10.69 AND
+        # RGCC<=8.006, rather than 10.69<RGCC<=8.006).
+        merged = _merge_conditions(rule["conditions"], by_gene=False)
 
         if max_cond is not None and len(merged) > int(max_cond):
             continue
@@ -732,13 +739,18 @@ def genes_in_rules(rules: pd.DataFrame) -> pd.DataFrame:
     per_gene: Dict[str, Dict[str, Any]] = {}
     for _, r in rules.iterrows():
         cls = r["consequent_label"]
+        seen_in_rule: set[str] = set()
         for m in r["conditions_merged"]:
             gene = m["gene"]
             entry = per_gene.setdefault(
                 gene, {"probes": set(), "n_rules": 0, "classes": set()}
             )
             entry["probes"].update(m["probe"].split(","))
-            entry["n_rules"] += 1
+            # The same gene may now have several probe terms in one rule;
+            # this is still one rule mentioning that gene.
+            if gene not in seen_in_rule:
+                entry["n_rules"] += 1
+                seen_in_rule.add(gene)
             entry["classes"].add(str(cls))
 
     rows = [

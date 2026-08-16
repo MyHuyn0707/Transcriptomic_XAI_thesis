@@ -53,7 +53,7 @@ class HoldoutMixin:
         """
         Rule extraction on a stratified train/test split.
 
-        For each k in ``k_values`` (default ``holdout.rare_class_k_values``),
+        For each k in ``k_values`` (default ``holdout.batch.rare_class_k_values``),
         for each dataset:
 
         1. Reads the split (train/test row indices) and feature-selection

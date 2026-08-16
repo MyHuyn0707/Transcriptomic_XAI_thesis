@@ -175,15 +175,12 @@ def _rule_match_detail(rule: Dict[str, Any], feature_values: Dict[str, float]) -
     conds = rule.get("antecedent_raw", [])
     if not conds:
         return None
-    antecedent = rule.get("antecedent", conds)
-    if len(antecedent) != len(conds):
-        raise ValueError(
-            f"antecedent/antecedent_raw length mismatch ({len(antecedent)} != {len(conds)}) "
-            f"for rule {rule.get('rule_id', '?')!r}"
-        )
     detail_conds: List[Dict[str, Any]] = []
     satisfied = 0
-    for c, a in zip(conds, antecedent):
+    # ``antecedent`` is only a display projection.  Match each canonical raw
+    # probe condition independently; a gene can legitimately have many of
+    # them.
+    for c in conds:
         probe = c.get("probe")
         if probe not in feature_values:
             return None
@@ -193,7 +190,7 @@ def _rule_match_detail(rule: Dict[str, Any], feature_values: Dict[str, float]) -
         if ok:
             satisfied += 1
         detail_conds.append({
-            "gene": a.get("gene") or c.get("gene"),
+            "gene": c.get("gene") or probe,
             "probe": probe,
             "op": c["op"],
             "threshold": thr,
@@ -421,8 +418,8 @@ def _predict_from_features_sync(
     rule_prediction = next(iter(class_votes), None)
 
     # Per-class breakdown of the PARTIAL matches only (>=50% but <100% of
-    # conditions satisfied — i.e. partial_candidates, BEFORE the top-10
-    # display slice below), deliberately excluding full matches so this
+    # conditions satisfied — i.e. partial_candidates), deliberately excluding
+    # full matches so this
     # doesn't just duplicate class_votes above with extra rules mixed in —
     # it's the per-class counterpart of the "Khớp một phần (>=50%)" row in
     # the match-tier comparison, not a combined "matched + partial" view.
@@ -436,7 +433,9 @@ def _predict_from_features_sync(
         for label, count in sorted(over50_counts.items(), key=lambda kv: kv[1], reverse=True)
     }
 
-    partial_matches = sorted(partial_candidates, key=lambda p: p["ratio"], reverse=True)[:10]
+    # Return every partial match so the visible list and the per-class/total
+    # charts describe the same rule population.
+    partial_matches = sorted(partial_candidates, key=lambda p: p["ratio"], reverse=True)
 
     from src.api.registry import get_class_description, get_class_display_name
 
@@ -464,10 +463,8 @@ def _predict_from_features_sync(
         "matched_count": len(matched_rules),
         "rules": matched_rules,
         "partial_matches": partial_matches,
-        # partial_matches itself is capped at top-10 (see above) — these two
-        # counts let the frontend compute an accurate "matched >= 50%" ratio
-        # (matched_count + n_partial_matches_total) / n_rules_total without
-        # undercounting when more than 10 rules qualify as partial matches.
+        # The aggregate remains explicit so clients can calculate summary
+        # ratios without re-counting the detail list.
         "n_partial_matches_total": len(partial_candidates),
         "n_rules_total": len(rules),
         "class_votes": class_votes,
