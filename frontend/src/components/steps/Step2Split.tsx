@@ -6,6 +6,7 @@ import { errorMessage } from '../../lib/utils';
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
 import Badge from '../ui/Badge';
+import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
 interface Props {
@@ -131,11 +132,7 @@ export default function Step2Split({ state, dispatch }: Props) {
         </p>
       )}
 
-      {splitLog && (
-        <div className="mt-4 bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
-          {splitLog}
-        </div>
-      )}
+      {splitLog && <StatusLine log={splitLog} loading={isSplitLoading} />}
 
       <RunHistoryList
         title="Lịch sử xử lý và phân chia dữ liệu"

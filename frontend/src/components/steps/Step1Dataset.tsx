@@ -5,6 +5,7 @@ import { api, BuiltDatasetResult, pollJob, RunRecord } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
 import Button from '../ui/Button';
+import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
 interface Props {
@@ -128,15 +129,27 @@ export default function Step1Dataset({ state, dispatch }: Props) {
           </select>
 
           {selectedDataset && (
-            <div className="mt-4 p-4 bg-brand-50/50 rounded-xl border border-brand-100/50 space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-600">Mã dataset</span>
-                <span className="font-mono text-xs text-brand-700 bg-brand-100/60 px-2 py-0.5 rounded" title={selectedDataset.id}>{selectedDataset.id}</span>
+            <div className="mt-4 bg-neutral-50 p-5 rounded-xl border border-neutral-100 space-y-1 shadow-sm text-sm">
+              <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
+                <span className="text-neutral-600 font-medium">Mã</span>
+                <span className="text-neutral-900 font-bold font-mono truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
               </div>
-              <div className="flex justify-between"><span className="text-neutral-600">Nền tảng vi mảng</span> <span className="font-medium text-neutral-800">{selectedDataset.platform}</span></div>
-              <div className="flex justify-between"><span className="text-neutral-600">Mẫu bệnh phẩm</span> <span className="font-medium text-neutral-800">{selectedDataset.n_samples}</span></div>
-              <div className="flex justify-between"><span className="text-neutral-600">Đặc trưng</span> <span className="font-medium text-neutral-800">{selectedDataset.n_features?.toLocaleString()}</span></div>
-              <div className="flex justify-between"><span className="text-neutral-600">Số lớp</span> <span className="font-medium text-brand-700">{selectedDataset.n_classes}</span></div>
+              <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
+                <span className="text-neutral-600 font-medium">Nền tảng vi mảng</span>
+                <span className="text-neutral-900 font-medium">{selectedDataset.platform}</span>
+              </div>
+              <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
+                <span className="text-neutral-600 font-medium">Mẫu bệnh phẩm</span>
+                <span className="text-neutral-900 font-medium">{selectedDataset.n_samples}</span>
+              </div>
+              <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
+                <span className="text-neutral-600 font-medium">Đặc trưng</span>
+                <span className="text-neutral-900 font-medium">{selectedDataset.n_features?.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between gap-3 py-2">
+                <span className="text-neutral-600 font-medium">Số lớp</span>
+                <span className="text-brand-700 font-bold">{selectedDataset.n_classes}</span>
+              </div>
             </div>
           )}
         </>
@@ -211,11 +224,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             </div>
           )}
 
-          {uploadLog && (
-            <div className="bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
-              {uploadLog}
-            </div>
-          )}
+          {uploadLog && <StatusLine log={uploadLog} loading={isUploadInspecting || isUploadBuilding} />}
 
           <RunHistoryList
             title="Lịch sử tải lên"

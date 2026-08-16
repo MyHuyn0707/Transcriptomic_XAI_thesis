@@ -7,6 +7,7 @@ import { canonicalClassLabels, fsMethodKeyOf, ModelStatsUI, WorkspaceAction, Wor
 import Button from '../ui/Button';
 import Panel from '../ui/Panel';
 import Badge from '../ui/Badge';
+import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 import ConfusionMatrix from '../ConfusionMatrix';
 import RuleExtractionResults from '../RuleExtractionResults';
@@ -224,11 +225,7 @@ export default function Step4Model({ state, dispatch }: Props) {
         </Button>
       </div>
 
-      {modelLog && (
-        <div className="mt-4 bg-neutral-900 rounded-xl p-4 text-xs font-mono text-brand-400 whitespace-pre-wrap leading-relaxed shadow-inner border border-neutral-800 max-h-64 overflow-y-auto">
-          {modelLog}
-        </div>
-      )}
+      {modelLog && <StatusLine log={modelLog} loading={isModelLoading} />}
 
       <RunHistoryList
         title="Lịch sử huấn luyện"
