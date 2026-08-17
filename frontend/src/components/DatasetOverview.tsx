@@ -149,17 +149,17 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                     Rare-class-drop stats, train/test split, class-distribution charts and
                     per-class biology now live in Bước 2 "Xử lý & Chia Dữ liệu" (DatasetSplit). */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Panel padding="lg" className="space-y-3 shadow-sm">
+                  <Panel padding="lg" className="space-y-3">
                     {origin.geo_accession && (
                       <div className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-neutral-200/60">
                         <span className="text-neutral-600 font-medium">Mã truy cập GEO</span>
-                        <span className="text-success-700 font-bold font-mono bg-success-100/50 px-2 py-0.5 rounded whitespace-nowrap">{origin.geo_accession}</span>
+                        <span className="text-success-700 font-bold font-mono bg-success-100 px-2 py-0.5 rounded whitespace-nowrap">{origin.geo_accession}</span>
                       </div>
                     )}
                     {origin.platform && (
                       <div className="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-neutral-200/60">
                         <span className="text-neutral-600 font-medium">Nền tảng vi mảng</span>
-                        <span className="text-success-700 font-bold font-mono bg-success-100/50 px-2 py-0.5 rounded whitespace-nowrap">{origin.platform}</span>
+                        <span className="text-success-700 font-bold font-mono bg-success-100 px-2 py-0.5 rounded whitespace-nowrap">{origin.platform}</span>
                       </div>
                     )}
                     {origin.samples_kept != null && (
@@ -175,7 +175,7 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                       </div>
                     )}
                   </Panel>
-                  <Panel padding="lg" className="space-y-3 shadow-sm">
+                  <Panel padding="lg" className="space-y-3">
                     <div className="flex flex-col py-2 border-b border-neutral-200/60">
                       <span className="text-neutral-600 font-medium mb-1">Tiêu đề</span>
                       {content.title_vi && (
@@ -347,7 +347,7 @@ export default function DatasetOverview({ datasetId, collapseSignal, isTemp }: {
                               {excluded.map(([label, cls]) => (
                                 <div
                                   key={label}
-                                  className="bg-warning-50/60 p-4 rounded-lg border border-warning-100 border-l-4 flex flex-col items-start text-left"
+                                  className="bg-warning-50 p-4 rounded-lg border border-warning-200 border-l-4 flex flex-col items-start text-left"
                                   style={{ borderLeftColor: DROPPED_COLOR }}
                                 >
                                   <div className="flex items-start gap-2 mb-2 w-full">

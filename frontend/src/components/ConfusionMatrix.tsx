@@ -82,12 +82,12 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
       <div className="w-full relative group/matrix">
         <button
           onClick={() => setZoomed(true)}
-          className="absolute -top-1 right-0 z-10 p-1.5 rounded-full bg-white border border-neutral-200 text-neutral-500 opacity-0 group-hover/matrix:opacity-100 hover:text-brand-600 hover:border-brand-200 transition-all shadow-sm"
+          className="absolute -top-1 right-0 z-10 p-1.5 rounded-full bg-white border border-neutral-200 text-neutral-600 opacity-0 group-hover/matrix:opacity-100 hover:text-brand-600 hover:border-brand-200 transition-all shadow-sm"
           title="Phóng to ma trận nhầm lẫn"
         >
           <ExpandSquare4 size={14} />
         </button>
-        <MatrixGrid data={data} labels={labels} fontSizeClass="text-[11px] sm:text-sm" labelFontSizeClass="text-[9px] sm:text-xs" />
+        <MatrixGrid data={data} labels={labels} fontSizeClass="text-xs sm:text-sm" labelFontSizeClass="text-xs" />
       </div>
 
       {zoomed && (

@@ -155,10 +155,10 @@ export default function Step5Testing({ state, dispatch }: Props) {
              ))}
            </select>
          ) : (
-           <label className="w-full border-2 border-dashed border-brand-200 bg-brand-50/30 hover:bg-brand-50/80 text-brand-700 rounded-xl px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
+           <label className="w-full border-2 border-dashed border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
              <UploadCloud size={24} className="mb-2 text-brand-500" />
              <span className="font-medium text-sm">{testUploadFile ? testUploadFile.name : 'Tải lên mẫu bệnh phẩm'}</span>
-             <span className="text-xs text-neutral-500 mt-1">
+             <span className="text-xs text-neutral-600 mt-1">
                Định dạng <span className="font-mono">.json</span> (giống mẫu test_set — chỉ cần giữ lại dữ liệu microarray, các trường khác có thể lược bỏ),
                {' '}<span className="font-mono">.csv</span> (cột "samples,type,{'{probe}'}...") hoặc <span className="font-mono">.txt</span> (2 cột probe,giá trị)
              </span>
@@ -232,16 +232,16 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
             </div>
 
             {testResults.trueLabel ? (
-              <p className="text-sm text-neutral-500 mb-4">
+              <p className="text-sm text-neutral-600 mb-4">
                 Nhãn thật: <span className="font-semibold text-neutral-700">
                   {displayLabel(testResults.trueLabel, testResults.classDisplayNames)}
                 </span>
                 {testResults.classDisplayNames?.[testResults.trueLabel] && (
-                  <span className="text-neutral-500 font-mono text-xs ml-1.5">({testResults.trueLabel})</span>
+                  <span className="text-neutral-600 font-mono text-xs ml-1.5">({testResults.trueLabel})</span>
                 )}
               </p>
             ) : (
-              <p className="text-sm text-neutral-500 mb-4 italic">Dữ liệu upload không có nhãn</p>
+              <p className="text-sm text-neutral-600 mb-4 italic">Dữ liệu upload không có nhãn</p>
             )}
 
             {/* Two independent predictions shown side by side: the model's
@@ -253,30 +253,33 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 backgroundColor: classColor(testResults.classification, canonicalClassLabels(state)) + '14',
                 borderColor: classColor(testResults.classification, canonicalClassLabels(state)) + '55',
               }}>
-                <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Mô hình (RF/DT)</span>
+                <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Mô hình (RF/DT)</span>
                 <span className="font-bold text-xl" style={{ color: classColor(testResults.classification, canonicalClassLabels(state)) }}>
                   {testResults.classDisplayName || testResults.classification}
                 </span>
                 {testResults.classDisplayName && (
-                  <span className="text-neutral-500 font-mono text-xs block mt-0.5">{testResults.classification}</span>
+                  <span className="text-neutral-600 font-mono text-xs block mt-0.5">{testResults.classification}</span>
                 )}
               </div>
-              <div className="rounded-xl p-4 border" style={{
-                backgroundColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, canonicalClassLabels(state)) + '14' : 'rgba(100,116,139,0.1)',
-                borderColor: testResults.rulePrediction ? classColor(testResults.rulePrediction, canonicalClassLabels(state)) + '55' : 'rgba(100,116,139,0.3)',
-              }}>
-                <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Tập luật (rule-based)</span>
+              <div
+                className={cn("rounded-xl p-4 border", !testResults.rulePrediction && "bg-neutral-100 border-neutral-300")}
+                style={testResults.rulePrediction ? {
+                  backgroundColor: classColor(testResults.rulePrediction, canonicalClassLabels(state)) + '14',
+                  borderColor: classColor(testResults.rulePrediction, canonicalClassLabels(state)) + '55',
+                } : undefined}
+              >
+                <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1.5">Dự đoán theo Tập luật (rule-based)</span>
                 {testResults.rulePrediction ? (
                   <>
                     <span className="font-bold text-xl" style={{ color: classColor(testResults.rulePrediction, canonicalClassLabels(state)) }}>
                       {testResults.rulePredictionDisplayName || testResults.rulePrediction}
                     </span>
                     {testResults.rulePredictionDisplayName && (
-                      <span className="text-neutral-500 font-mono text-xs block mt-0.5">{testResults.rulePrediction}</span>
+                      <span className="text-neutral-600 font-mono text-xs block mt-0.5">{testResults.rulePrediction}</span>
                     )}
                   </>
                 ) : (
-                  <span className="font-bold text-xl text-neutral-500">Không có luật khớp</span>
+                  <span className="font-bold text-xl text-neutral-600">Không có luật khớp</span>
                 )}
               </div>
             </div>
@@ -394,7 +397,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                           >
                             {displayLabel(p.class, testResults.classDisplayNames)}
                           </span>
-                          <span className="shrink-0 bg-warning-100 text-warning-700 border border-warning-200 text-[11px] py-1 px-2.5 rounded-full font-semibold">
+                          <span className="shrink-0 bg-warning-100 text-warning-700 border border-warning-200 text-xs py-1 px-2.5 rounded-full font-semibold">
                             {p.satisfied}/{p.total} điều kiện — {Math.round(p.ratio * 100)}%
                           </span>
                         </div>
@@ -498,19 +501,19 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
               <div className="flex items-center gap-2 mb-4 text-brand-700">
                 <Brain size={18} />
                 <h4 className="font-semibold tracking-wide text-xs uppercase">
-                  Đánh Giá Y Sinh {testResults.llmUsed === false && <span className="text-neutral-500 normal-case">(template — Gemini không khả dụng)</span>}
+                  Đánh Giá Y Sinh {testResults.llmUsed === false && <span className="text-neutral-600 normal-case">(template — Gemini không khả dụng)</span>}
                 </h4>
               </div>
               <div className="space-y-5">
                 {testResults.biomedicalSummary && (
                   <div>
-                    <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Tóm tắt</span>
+                    <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1.5">Tóm tắt</span>
                     <p className="text-neutral-800 leading-relaxed text-base font-medium">{testResults.biomedicalSummary}</p>
                   </div>
                 )}
                 {testResults.biomedicalRationale && (
                   <div>
-                    <span className="text-neutral-500 text-xs uppercase tracking-wider font-semibold block mb-1.5">Cơ sở Sinh học</span>
+                    <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1.5">Cơ sở Sinh học</span>
                     <p className="text-neutral-600 leading-relaxed text-base">{testResults.biomedicalRationale}</p>
                   </div>
                 )}
@@ -538,7 +541,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
           </div>
           )
         ) : (
-          <div className="h-full bg-neutral-100/50 border border-neutral-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-neutral-500 p-8 text-center min-h-[300px]">
+          <div className="h-full bg-neutral-50 border border-neutral-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-neutral-600 p-8 text-center min-h-[300px]">
              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-neutral-200 shadow-sm">
                <Activity size={24} className="text-neutral-400" />
              </div>
