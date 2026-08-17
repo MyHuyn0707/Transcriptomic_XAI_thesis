@@ -147,19 +147,19 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                   <span className="font-mono text-xs text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Nền tảng vi mảng</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5 truncate">{selectedDataset.platform}</p>
                   </div>
-                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Mẫu bệnh phẩm</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_samples}</p>
                   </div>
-                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Đặc trưng</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_features?.toLocaleString()}</p>
                   </div>
-                  <div className="rounded-lg border border-neutral-100 px-3 py-2.5">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Số lớp</p>
                     <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_classes}</p>
                   </div>
