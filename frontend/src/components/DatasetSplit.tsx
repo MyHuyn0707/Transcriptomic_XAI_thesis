@@ -70,7 +70,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <GitMerge size={20} />
             </div>
-            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">
+            <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">
               Chia Dữ liệu (Train/Test)
             </h2>
           </div>

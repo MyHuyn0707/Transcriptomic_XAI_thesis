@@ -264,7 +264,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
           <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
             <GitMerge size={20} />
           </div>
-          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
+          <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
         </div>
         <button className="p-2 rounded-full hover:bg-brand-50 text-neutral-600 hover:text-brand-600 transition-colors shrink-0">
           {isModelOverviewCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}

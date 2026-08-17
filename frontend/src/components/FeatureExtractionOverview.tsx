@@ -31,7 +31,7 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
             <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
               <Filter size={18} />
             </div>
-            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-600 transition-colors">
+            <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-600 transition-colors">
               Tổng quan Trích xuất Đặc trưng
             </h2>
           </div>
