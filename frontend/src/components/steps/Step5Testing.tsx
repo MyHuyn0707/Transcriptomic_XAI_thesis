@@ -201,7 +201,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
           <div className="w-10 h-10 shrink-0 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
             <Activity size={20} />
           </div>
-          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">Kết quả Thực nghiệm</h2>
+          <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">Kết quả Thực nghiệm</h2>
         </div>
         <button className="p-2 rounded-full hover:bg-success-50 text-neutral-600 hover:text-success-600 transition-colors shrink-0">
           {isTestResultsCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}

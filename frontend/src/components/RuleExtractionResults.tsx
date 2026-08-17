@@ -194,7 +194,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
           <div className="w-8 h-8 rounded-full bg-success-50 flex items-center justify-center text-success-600">
             <Bolt1 size={18} />
           </div>
-          <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">
+          <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
             Kết quả Trích xuất Luật sinh học
           </h2>
         </div>
