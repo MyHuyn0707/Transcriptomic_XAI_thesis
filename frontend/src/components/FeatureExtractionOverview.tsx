@@ -27,9 +27,9 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
           className="flex items-center justify-between cursor-pointer group"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
-              <Filter size={18} />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
+              <Filter size={20} />
             </div>
             <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-600 transition-colors">
               Tổng quan Trích xuất Đặc trưng

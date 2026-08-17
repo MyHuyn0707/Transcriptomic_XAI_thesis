@@ -28,13 +28,13 @@ export default function WizardStep({ number, title, active, ready, onOpen, child
             // the right-column panel headers) — this was the one place
             // still using its own larger, one-off w-12 h-12.
             "w-10 h-10 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors",
-            ready ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-500 cursor-not-allowed",
+            ready ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-600 cursor-not-allowed",
           )}
         >
           <span className="font-bold text-sm">{number}</span>
         </button>
         <h2 className="flex-1 text-base font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">{title}</h2>
-        <span className="text-neutral-500 group-hover:text-brand-600 transition-colors">
+        <span className="text-neutral-600 group-hover:text-brand-600 transition-colors">
           {active ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </span>
       </div>

@@ -73,16 +73,16 @@ function FunnelStage({
   value, label, rejected, size,
 }: { value: number, label: string, rejected?: string, size: 'lg' | 'md' | 'sm' }) {
   const sizing = {
-    lg: { flex: 'flex-[3]', pad: 'py-8 px-6', num: 'text-4xl', bg: 'bg-success-50', border: 'border-success-200', text: 'text-success-600', lbl: 'text-success-900/50' },
-    md: { flex: 'flex-[2]', pad: 'py-6 px-5', num: 'text-3xl', bg: 'bg-success-100/70', border: 'border-success-300', text: 'text-success-700', lbl: 'text-success-900/55' },
-    sm: { flex: 'flex-[1.3]', pad: 'py-5 px-4', num: 'text-2xl', bg: 'bg-success-200/70', border: 'border-success-400', text: 'text-success-800', lbl: 'text-success-900/60' },
+    lg: { flex: 'flex-[3]', pad: 'py-8 px-6', num: 'text-4xl', bg: 'bg-success-50', border: 'border-success-200', text: 'text-success-600', lbl: 'text-success-800' },
+    md: { flex: 'flex-[2]', pad: 'py-6 px-5', num: 'text-3xl', bg: 'bg-success-100', border: 'border-success-300', text: 'text-success-700', lbl: 'text-success-800' },
+    sm: { flex: 'flex-[1.3]', pad: 'py-5 px-4', num: 'text-2xl', bg: 'bg-success-200', border: 'border-success-400', text: 'text-success-800', lbl: 'text-success-800' },
   }[size];
   return (
     <div className={cn(sizing.flex, "min-w-[140px] rounded-2xl border-2 flex flex-col items-center justify-center text-center shadow-sm", sizing.pad, sizing.bg, sizing.border)}>
       <span className={cn("font-extrabold mb-1.5", sizing.num, sizing.text)}>{value.toLocaleString()}</span>
-      <span className={cn("text-[11px] font-bold uppercase tracking-wider mb-2", sizing.lbl)}>{label}</span>
+      <span className={cn("text-xs font-bold uppercase tracking-wider mb-2", sizing.lbl)}>{label}</span>
       {rejected && (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-danger-600 bg-danger-100 border border-danger-200 px-2.5 py-1 rounded-md">
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-danger-600 bg-danger-100 border border-danger-200 px-2.5 py-1 rounded-md">
           {rejected}
         </span>
       )}
@@ -190,9 +190,9 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
   return (
     <div ref={containerRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-8 h-8 rounded-full bg-success-50 flex items-center justify-center text-success-600">
-            <Bolt1 size={18} />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
+            <Bolt1 size={20} />
           </div>
           <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
             Kết quả Trích xuất Luật sinh học
@@ -210,7 +210,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
         {rulesSummary && (rulesSummary.n_rules_raw != null) && (
           <div className="mb-6 bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6">
-              <Filter size={16} className="text-neutral-500" />
+              <Filter size={16} className="text-neutral-600" />
               <span className="text-xs font-bold uppercase tracking-widest text-neutral-600">Nhật ký trích xuất luật</span>
             </div>
             <div className="flex items-center gap-3 sm:gap-4">
@@ -239,7 +239,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
               each individually collapsible, with a search box to filter. */}
           <div className="border border-success-100 rounded-2xl overflow-hidden shadow-sm">
             <div
-              className="bg-success-50/50 p-5 flex items-center justify-between cursor-pointer hover:bg-success-50 transition-colors"
+              className="bg-success-50 p-5 flex items-center justify-between cursor-pointer hover:bg-success-100 transition-colors"
               onClick={() => setIsRulesCollapsed(!isRulesCollapsed)}
             >
               <div className="flex items-center gap-2">
@@ -254,7 +254,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             {!isRulesCollapsed && (
               <div className="p-5 bg-white space-y-5">
                 <div className="relative">
-                  <Search1 size={15} className="absolute left-3 top-1/2 -tranneutral-y-1/2 text-neutral-500" />
+                  <Search1 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
                   <input
                     type="text"
                     value={ruleSearch}
@@ -264,7 +264,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                   />
                 </div>
                 {ruleQuery && (
-                  <p className="text-xs text-neutral-500 -mt-2">Tìm thấy {filteredRuleCount}/{rules.length} luật khớp với "{ruleSearch}"</p>
+                  <p className="text-xs text-neutral-600 -mt-2">Tìm thấy {filteredRuleCount}/{rules.length} luật khớp với "{ruleSearch}"</p>
                 )}
                 {Object.keys(filteredGroups).map(label => {
                   const color = classColor(label, allLabels);
@@ -277,7 +277,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                       >
                         <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: color }} />
                         <h4 className="font-extrabold text-lg flex-1" style={{ color }}>{label}</h4>
-                        <span className="text-sm text-neutral-500 font-medium">({filteredGroups[label].length} luật)</span>
+                        <span className="text-sm text-neutral-600 font-medium">({filteredGroups[label].length} luật)</span>
                         <button className="p-1 rounded-full transition-colors shrink-0" style={{ color }}>
                           {groupCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                         </button>
@@ -327,7 +327,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                                   {metricEntries.length > 0 && (
                                     <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-neutral-100">
                                       {metricEntries.map(([label, val]) => (
-                                        <span key={label} className="text-[11px] px-2 py-1 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-600 font-mono text-center truncate">
+                                        <span key={label} className="text-xs px-2 py-1 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-600 font-mono text-center truncate">
                                           {label}: <span className="text-neutral-900 font-bold">{typeof val === 'number' ? val.toFixed(2) : String(val)}</span>
                                         </span>
                                       ))}
@@ -343,10 +343,10 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                   );
                 })}
                 {rules.length === 0 && !error && (
-                  <p className="text-sm text-neutral-500 text-center py-6">Không có luật nào để hiển thị.</p>
+                  <p className="text-sm text-neutral-600 text-center py-6">Không có luật nào để hiển thị.</p>
                 )}
                 {rules.length > 0 && Object.keys(filteredGroups).length === 0 && (
-                  <p className="text-sm text-neutral-500 text-center py-6">Không có luật nào khớp với tìm kiếm.</p>
+                  <p className="text-sm text-neutral-600 text-center py-6">Không có luật nào khớp với tìm kiếm.</p>
                 )}
               </div>
             )}
@@ -355,7 +355,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
           {/* List of Genes */}
           <div className="border border-brand-100 rounded-2xl overflow-hidden shadow-sm">
             <div
-              className="bg-brand-50/50 p-5 flex items-center justify-between cursor-pointer hover:bg-brand-50 transition-colors"
+              className="bg-brand-50 p-5 flex items-center justify-between cursor-pointer hover:bg-brand-100 transition-colors"
               onClick={() => setIsGenesCollapsed(!isGenesCollapsed)}
             >
               <div className="flex items-center gap-2">
@@ -370,7 +370,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             {!isGenesCollapsed && (
               <div className="p-5 space-y-3">
                 <div className="relative">
-                  <Search1 size={15} className="absolute left-3 top-1/2 -tranneutral-y-1/2 text-neutral-500" />
+                  <Search1 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
                   <input
                     type="text"
                     value={geneSearch}
@@ -380,7 +380,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                   />
                 </div>
                 {geneQuery && (
-                  <p className="text-xs text-neutral-500">Tìm thấy {filteredGenes.length}/{genes.length} gene khớp với "{geneSearch}"</p>
+                  <p className="text-xs text-neutral-600">Tìm thấy {filteredGenes.length}/{genes.length} gene khớp với "{geneSearch}"</p>
                 )}
                 {filteredGenes.map((gene) => {
                   const idx = genes.indexOf(gene);
@@ -413,7 +413,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                                 layout mixed in with the name. */}
                             {geneClasses.length > 0 && (
                               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">Xuất hiện ở lớp:</span>
+                                <span className="text-[10px] font-semibold text-neutral-600 uppercase tracking-wider">Xuất hiện ở lớp:</span>
                                 {geneClasses.map(c => {
                                   const color = classColor(c, allLabels);
                                   return (
@@ -433,7 +433,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                             onClick={(e) => { e.stopPropagation(); toggleGene(idx); }}
                             className={cn(
                               "p-2 rounded-full transition-colors shrink-0 flex items-center justify-center border",
-                              isExpanded ? "bg-brand-50 text-brand-600 border-brand-100" : "bg-white text-neutral-500 border-neutral-200 hover:text-brand-600 hover:border-brand-200"
+                              isExpanded ? "bg-brand-50 text-brand-600 border-brand-100" : "bg-white text-neutral-600 border-neutral-200 hover:text-brand-600 hover:border-brand-200"
                             )}
                             title="Thông tin chi tiết Gene"
                           >
@@ -443,9 +443,9 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
 
                         {isExpanded && (
                           <div className="mt-4 pt-4 border-t border-neutral-100 animate-in fade-in slide-in-from-top-2 space-y-3">
-                            <div className="p-3.5 bg-brand-50/40 border border-brand-100 rounded-xl">
+                            <div className="p-3.5 bg-brand-50 border border-brand-100 rounded-xl">
                               <span className="font-bold text-brand-700 uppercase tracking-wider text-[10px] block mb-1">Vai trò sinh học</span>
-                              <span className="text-brand-900/90 text-sm leading-relaxed block">
+                              <span className="text-brand-900 text-sm leading-relaxed block">
                                 {gene.description_vn || 'Chưa có mô tả (chạy scripts/generate_bio_descriptions.py để sinh).'}
                               </span>
                             </div>
@@ -455,13 +455,13 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                                 fields when the GO text on the other side ran much longer. */}
                             <div className="flex flex-wrap gap-2 text-xs">
                               <span className="px-2.5 py-1 rounded-md bg-neutral-50 border border-neutral-200 text-neutral-700">
-                                <span className="text-neutral-500 font-semibold">Species:</span> {gene.species || '—'}
+                                <span className="text-neutral-600 font-semibold">Species:</span> {gene.species || '—'}
                               </span>
                               <span className="px-2.5 py-1 rounded-md bg-neutral-50 border border-neutral-200 text-neutral-700 font-mono">
-                                <span className="text-neutral-500 font-semibold font-sans">GenBank:</span> {gene.genbank_acc || '—'}
+                                <span className="text-neutral-600 font-semibold font-sans">GenBank:</span> {gene.genbank_acc || '—'}
                               </span>
                               <span className="px-2.5 py-1 rounded-md bg-neutral-50 border border-neutral-200 text-neutral-700 font-mono">
-                                <span className="text-neutral-500 font-semibold font-sans">RefSeq:</span> {gene.refseq || '—'}
+                                <span className="text-neutral-600 font-semibold font-sans">RefSeq:</span> {gene.refseq || '—'}
                               </span>
                               <span className="px-2.5 py-1 rounded-md bg-brand-50 border border-brand-100 text-brand-800 font-mono font-semibold">
                                 <span className="text-brand-500 font-semibold font-sans">Probes:</span> {gene.probes || '—'}
@@ -471,7 +471,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                             {gene.go_format === 'combined' ? (
                               <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
                                 <span
-                                  className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] block mb-1"
+                                  className="font-bold text-neutral-600 uppercase tracking-wider text-[10px] block mb-1"
                                   title="Nền tảng annotation này (Agilent) không tách BP/CC/MF riêng — toàn bộ GO term gộp chung vào đây."
                                 >
                                   GO Terms
@@ -485,15 +485,15 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                               // many lines per box, which reads worse than a single wide row.
                               <div className="space-y-2">
                                 <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
-                                  <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] block mb-1">Biological Process</span>
+                                  <span className="font-bold text-neutral-600 uppercase tracking-wider text-[10px] block mb-1">Biological Process</span>
                                   <span className="text-neutral-800 leading-relaxed text-xs">{gene.go_biological_process || '—'}</span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
-                                  <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] block mb-1">Cellular Component</span>
+                                  <span className="font-bold text-neutral-600 uppercase tracking-wider text-[10px] block mb-1">Cellular Component</span>
                                   <span className="text-neutral-800 leading-relaxed text-xs">{gene.go_cellular_component || '—'}</span>
                                 </div>
                                 <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-100">
-                                  <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] block mb-1">Molecular Function</span>
+                                  <span className="font-bold text-neutral-600 uppercase tracking-wider text-[10px] block mb-1">Molecular Function</span>
                                   <span className="text-neutral-800 leading-relaxed text-xs">{gene.go_molecular_function || '—'}</span>
                                 </div>
                               </div>
@@ -505,10 +505,10 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                   );
                 })}
                 {genes.length === 0 && !error && (
-                  <p className="text-sm text-neutral-500 text-center py-6">Không có gene nào để hiển thị.</p>
+                  <p className="text-sm text-neutral-600 text-center py-6">Không có gene nào để hiển thị.</p>
                 )}
                 {genes.length > 0 && filteredGenes.length === 0 && (
-                  <p className="text-sm text-neutral-500 text-center py-6">Không có gene nào khớp với tìm kiếm.</p>
+                  <p className="text-sm text-neutral-600 text-center py-6">Không có gene nào khớp với tìm kiếm.</p>
                 )}
               </div>
             )}

@@ -51,9 +51,9 @@ export default function RunHistoryList({
               className={cn(
                 "w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
                 run.status === 'error'
-                  ? "border-danger-100 bg-danger-50/50 text-danger-500"
+                  ? "border-danger-100 bg-danger-50 text-danger-600"
                   : !available
-                    ? "border-neutral-100 bg-neutral-50 text-neutral-500 cursor-not-allowed"
+                    ? "border-neutral-100 bg-neutral-50 text-neutral-600 cursor-not-allowed"
                     : selected
                       ? "border-brand-300 bg-brand-50 text-brand-700"
                       : "border-neutral-100 bg-neutral-50 text-neutral-700 hover:bg-neutral-100"

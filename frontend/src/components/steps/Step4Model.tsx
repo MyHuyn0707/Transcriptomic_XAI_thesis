@@ -221,7 +221,7 @@ export default function Step4Model({ state, dispatch }: Props) {
           title={fsRunId ? 'Không khả dụng khi đặc trưng hiện tại đến từ một lần chạy live' : undefined}
           className="flex-1"
         >
-          <FileText size={16} className="text-neutral-500" />
+          <FileText size={16} className="text-neutral-600" />
           Tải mô hình có sẵn
         </Button>
       </div>
@@ -275,15 +275,15 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
           the title squeezed the heading on narrower widths. */}
       <div className="flex flex-wrap gap-3 mt-4">
         <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Accuracy</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Accuracy</span>
           <span className="text-xl font-bold text-brand-600">{modelStats.acc}%</span>
         </div>
         <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">F1</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">F1</span>
           <span className="text-xl font-bold text-brand-600">{modelStats.f1}%</span>
         </div>
         <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Rules</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Rules</span>
           <span className="text-xl font-bold text-brand-600">{modelStats.rules}</span>
         </div>
       </div>
@@ -325,7 +325,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                       <Gear1 className="text-brand-600" size={20} />
                       <h3 className="text-base font-semibold text-neutral-900 group-hover/cfg:text-brand-700 transition-colors">Tham số cấu hình</h3>
                     </div>
-                    <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
+                    <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-600 transition-colors shrink-0">
                       {isModelConfigCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                     </button>
                   </div>
@@ -343,7 +343,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                               <span className="text-neutral-900 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
                             </div>
                           )) : (
-                            <p className="text-sm text-neutral-500 italic">Không có dữ liệu.</p>
+                            <p className="text-sm text-neutral-600 italic">Không có dữ liệu.</p>
                           )}
                         </div>
                       </div>
@@ -378,7 +378,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                   <Table2 className="text-brand-600" size={20} />
                   <h3 className="text-base font-semibold text-neutral-900 group-hover/cm:text-brand-700 transition-colors">Ma trận nhầm lẫn</h3>
                 </div>
-                <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
+                <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-600 transition-colors shrink-0">
                   {isConfusionMatrixCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                 </button>
               </div>
@@ -399,14 +399,14 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                   <FileText className="text-brand-600" size={20} />
                   <h3 className="text-base font-semibold text-neutral-900 group-hover/cr:text-brand-700 transition-colors">Chi tiết Phân Loại</h3>
                 </div>
-                <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-500 transition-colors shrink-0">
+                <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-600 transition-colors shrink-0">
                   {isClassificationReportCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                 </button>
               </div>
               {!isClassificationReportCollapsed && (
                 <div className="mt-6 animate-in fade-in slide-in-from-top-2 duration-200">
                   <table className="w-full text-sm text-left table-fixed">
-                    <thead className="text-xs text-neutral-500 uppercase bg-neutral-50/80 rounded-t-lg">
+                    <thead className="text-xs text-neutral-600 uppercase bg-neutral-50 rounded-t-lg">
                       <tr>
                         <th className="px-3 py-3 font-semibold rounded-tl-lg w-2/5">Lớp (Class)</th>
                         <th className="px-3 py-3 font-semibold">Precision</th>
@@ -417,7 +417,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                     </thead>
                     <tbody className="divide-y divide-neutral-100">
                       {modelStats.labels.map((label, idx) => (
-                        <tr key={label} className="hover:bg-neutral-50/50 transition-colors">
+                        <tr key={label} className="hover:bg-neutral-50 transition-colors">
                           <td className="px-3 py-4 font-medium text-neutral-800 truncate" title={label}>{label}</td>
                           <td className="px-3 py-4 text-neutral-700 font-mono">{report[idx]?.precision.toFixed(2)}</td>
                           <td className="px-3 py-4 text-neutral-700 font-mono">{report[idx]?.recall.toFixed(2)}</td>
