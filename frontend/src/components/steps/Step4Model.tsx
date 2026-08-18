@@ -7,6 +7,7 @@ import { errorMessage } from '../../lib/utils';
 import { canonicalClassLabels, fsMethodKeyOf, ModelStatsUI, WorkspaceAction, WorkspaceState } from '../../state/types';
 import { Button } from '../tailgrids/core/button';
 import Panel from '../ui/Panel';
+import ConfigRow from '../ui/ConfigRow';
 import { Badge } from '../tailgrids/core/badge';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
@@ -255,7 +256,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
   const report = classificationReport(modelStats.cm);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6">
+    <div className="bg-white rounded-2xl shadow-xs border border-neutral-200 p-6">
       <div
         className="flex items-center justify-between gap-4 cursor-pointer group"
         onClick={() => dispatch({ type: 'model_overview_toggled' })}
@@ -264,7 +265,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
           <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
             <GitMerge size={20} />
           </div>
-          <h2 className="text-xl font-bold text-neutral-800 tracking-tight group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
+          <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
         </div>
         <button className="p-2 rounded-full hover:bg-brand-50 text-neutral-600 hover:text-brand-600 transition-colors shrink-0">
           {isModelOverviewCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
@@ -274,15 +275,15 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
       {/* Stat badges on their own row below the title — keeping them beside
           the title squeezed the heading on narrower widths. */}
       <div className="flex flex-wrap gap-3 mt-4">
-        <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
+        <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-xs flex items-center gap-3">
           <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Accuracy</span>
           <span className="text-xl font-bold text-brand-600">{modelStats.acc}%</span>
         </div>
-        <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
+        <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-xs flex items-center gap-3">
           <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">F1</span>
           <span className="text-xl font-bold text-brand-600">{modelStats.f1}%</span>
         </div>
-        <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-sm flex items-center gap-3">
+        <div className="bg-white px-5 py-2 rounded-xl border border-neutral-200 shadow-xs flex items-center gap-3">
           <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Rules</span>
           <span className="text-xl font-bold text-brand-600">{modelStats.rules}</span>
         </div>
@@ -316,7 +317,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                 max_rules_total: modelConfig.max_rules_total,
               };
               return (
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+                <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200">
                   <div
                     className="flex items-center justify-between cursor-pointer group/cfg"
                     onClick={() => dispatch({ type: 'model_config_panel_toggled' })}
@@ -331,33 +332,27 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                   </div>
                   {!isModelConfigCollapsed && (
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
+                      <div className="rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
                         <h4 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2 shrink-0">
                           <span className="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
                           Siêu tham số mô hình ({modelType === 'rf' ? 'Random Forest' : 'Decision Tree'})
                         </h4>
-                        <div className="grid grid-cols-1 gap-y-3 flex-1 content-center">
+                        <div className="grid grid-cols-1 gap-y-1 flex-1 content-center">
                           {modelStats.hyperparams ? Object.entries(modelStats.hyperparams).map(([k, v]) => (
-                            <div key={k} className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
-                              <span className="text-neutral-600 text-sm font-mono">{k}</span>
-                              <span className="text-neutral-800 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
-                            </div>
+                            <ConfigRow key={k} label={k} labelMono value={v === null ? 'null' : String(v)} />
                           )) : (
                             <p className="text-sm text-neutral-600 italic">Không có dữ liệu.</p>
                           )}
                         </div>
                       </div>
-                      <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
+                      <div className="rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
                         <h4 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2 shrink-0">
                           <span className="w-1.5 h-4 bg-info-500 rounded-full inline-block"></span>
                           Cấu hình Lọc Luật
                         </h4>
-                        <div className="grid grid-cols-1 gap-y-3 flex-1 content-center">
+                        <div className="grid grid-cols-1 gap-y-1 flex-1 content-center">
                           {Object.entries(filterDisplay).map(([k, v]) => (
-                            <div key={k} className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
-                              <span className="text-neutral-600 text-sm font-mono">{k}</span>
-                              <span className="text-neutral-800 font-medium text-sm font-mono">{v == null ? '—' : String(v)}</span>
-                            </div>
+                            <ConfigRow key={k} label={k} labelMono value={v == null ? '—' : String(v)} />
                           ))}
                         </div>
                       </div>
@@ -369,7 +364,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
 
             {/* Confusion Matrix — own card + collapse, stacked (not side-by-side with
                 the report) so neither gets clipped/overlapped on narrower screens. */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+            <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200">
               <div
                 className="flex items-center justify-between cursor-pointer group/cm"
                 onClick={() => dispatch({ type: 'confusion_matrix_toggled' })}
@@ -390,7 +385,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
             </div>
 
             {/* Detailed Classification Report */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+            <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200">
               <div
                 className="flex items-center justify-between cursor-pointer group/cr"
                 onClick={() => dispatch({ type: 'classification_report_toggled' })}

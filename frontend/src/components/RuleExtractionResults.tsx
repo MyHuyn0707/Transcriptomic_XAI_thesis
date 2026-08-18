@@ -78,7 +78,7 @@ function FunnelStage({
     sm: { flex: 'flex-[1.3]', pad: 'py-5 px-4', num: 'text-2xl', bg: 'bg-success-200', border: 'border-success-400', text: 'text-success-800', lbl: 'text-success-800' },
   }[size];
   return (
-    <div className={cn(sizing.flex, "min-w-[140px] rounded-2xl border-2 flex flex-col items-center justify-center text-center shadow-sm", sizing.pad, sizing.bg, sizing.border)}>
+    <div className={cn(sizing.flex, "min-w-[140px] rounded-2xl border-2 flex flex-col items-center justify-center text-center shadow-xs", sizing.pad, sizing.bg, sizing.border)}>
       <span className={cn("font-extrabold mb-1.5", sizing.num, sizing.text)}>{value.toLocaleString()}</span>
       <span className={cn("text-xs font-bold uppercase tracking-wider mb-2", sizing.lbl)}>{label}</span>
       {rejected && (
@@ -189,12 +189,12 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
 
   return (
     <div ref={containerRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100">
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-success-100">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
             <Bolt1 size={20} />
           </div>
-          <h2 className="text-xl font-bold text-neutral-800 tracking-tight">
+          <h2 className="text-lg font-semibold text-neutral-800">
             Kết quả Trích xuất Luật sinh học
           </h2>
         </div>
@@ -208,7 +208,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             indigo/amber scheme), and blocks visibly shrink stage to stage
             since the rule set itself shrinks — arrows sit centered between them. */}
         {rulesSummary && (rulesSummary.n_rules_raw != null) && (
-          <div className="mb-6 bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm">
+          <div className="mb-6 bg-white border border-neutral-200 rounded-2xl p-6 shadow-xs">
             <div className="flex items-center gap-2 mb-6">
               <Filter size={16} className="text-neutral-600" />
               <span className="text-xs font-bold uppercase tracking-widest text-neutral-600">Nhật ký trích xuất luật</span>
@@ -237,7 +237,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
           {/* List of Rules — grouped by predicted class, each group tinted with
               that class's own color (same classColor() used everywhere else),
               each individually collapsible, with a search box to filter. */}
-          <div className="border border-success-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="border border-success-100 rounded-2xl overflow-hidden shadow-xs">
             <div
               className="bg-success-50 p-5 flex items-center justify-between cursor-pointer hover:bg-success-100 transition-colors"
               onClick={() => setIsRulesCollapsed(!isRulesCollapsed)}
@@ -292,7 +292,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                               .map(({ key, label }) => [label, ruleItem.metrics[key]] as [string, number]);
 
                             return (
-                              <div key={ruleItem.rule_id} className="bg-white rounded-xl border shadow-sm overflow-hidden transition-shadow hover:shadow-md" style={{ borderColor: color + '35' }}>
+                              <div key={ruleItem.rule_id} className="bg-white rounded-xl border shadow-xs overflow-hidden transition-shadow hover:shadow-md" style={{ borderColor: color + '35' }}>
                                 <div className="p-4">
                                   <div className="flex items-start justify-between gap-3">
                                     <code className="font-mono text-[13px] md:text-sm leading-relaxed text-neutral-800 flex-1 pt-0.5">
@@ -353,7 +353,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
           </div>
 
           {/* List of Genes */}
-          <div className="border border-brand-100 rounded-2xl overflow-hidden shadow-sm">
+          <div className="border border-brand-100 rounded-2xl overflow-hidden shadow-xs">
             <div
               className="bg-brand-50 p-5 flex items-center justify-between cursor-pointer hover:bg-brand-100 transition-colors"
               onClick={() => setIsGenesCollapsed(!isGenesCollapsed)}

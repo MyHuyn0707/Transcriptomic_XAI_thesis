@@ -21,7 +21,7 @@ import FeatureExtractionOverview from './components/FeatureExtractionOverview';
 // just scoped per-step instead of one blanket message for the whole app.
 function EmptyStepPlaceholder({ text }: { text: string }) {
   return (
-    <div className="h-full min-h-[400px] bg-white border border-neutral-200 border-dashed rounded-3xl flex flex-col items-center justify-center text-neutral-500 p-8 text-center shadow-sm">
+    <div className="h-full min-h-[400px] bg-white border border-neutral-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-neutral-600 p-8 text-center shadow-xs">
       <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
         <Microscope size={28} className="text-neutral-400" />
       </div>
@@ -72,10 +72,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-800 font-sans selection:bg-brand-200 pb-12">
       {/* Header */}
-      <header className="bg-white border-b border-success-100/80 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
+      <header className="bg-white/90 border-b border-success-100 sticky top-0 z-50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success-50 border border-success-200 rounded-xl flex items-center justify-center text-success-600 shadow-sm">
+            <div className="w-10 h-10 bg-success-50 border border-success-200 rounded-xl flex items-center justify-center text-success-600 shadow-xs">
               <Dna size={22} />
             </div>
             <div>
