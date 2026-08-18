@@ -18,7 +18,7 @@ export default function StatTile({ label, value, mono, truncate, className }: St
   return (
     <div className={cn('rounded-lg border border-neutral-200 px-3 py-2.5', className)}>
       <FieldLabel>{label}</FieldLabel>
-      <p className={cn('text-lg font-bold text-neutral-900 mt-0.5', mono && 'font-mono', truncate && 'truncate')}>
+      <p className={cn('text-lg font-bold text-neutral-800 mt-0.5', mono && 'font-mono', truncate && 'truncate')}>
         {value == null || value === '' ? 'N/A' : value}
       </p>
     </div>

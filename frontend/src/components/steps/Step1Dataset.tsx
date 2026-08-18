@@ -146,7 +146,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               <div className="mt-4 space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
                   <FieldLabel>Mã dataset</FieldLabel>
-                  <span className="font-mono text-base text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
+                  <span className="font-mono text-sm text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <StatTile label="Nền tảng vi mảng" value={selectedDataset.platform} truncate />

@@ -17,19 +17,19 @@ const ACCENT_STYLES: Record<Required<CollapsibleCardProps>['accent'], { border: 
 /** Bordered, left-accented card with its own collapse toggle — for long
  * content sections that shouldn't force their parent panel to scroll just to
  * see what's below them. */
-export default function CollapsibleCard({ accent = 'brand', title, children, defaultOpen = true }: CollapsibleCardProps) {
+export default function CollapsibleCard({ accent = 'neutral', title, children, defaultOpen = true }: CollapsibleCardProps) {
   const [open, setOpen] = useState(defaultOpen);
   const { border, hover } = ACCENT_STYLES[accent];
   return (
-    <div className={cn('bg-white rounded-xl border border-neutral-200 shadow-sm p-5 border-l-4', border)}>
+    <div className={cn('bg-white rounded-xl border border-neutral-200 shadow-xs p-5 border-l-3', border)}>
       <div
         className="flex items-center justify-between cursor-pointer group mb-1"
         onClick={() => setOpen(o => !o)}
       >
-        <h3 className={cn('text-base font-bold text-neutral-800 flex items-center gap-2 transition-colors', hover)}>
+        <h3 className={cn('text-lg font-bold text-neutral-800 flex items-center gap-2 transition-colors', hover)}>
           {title}
         </h3>
-        <button className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 transition-colors shrink-0">
+        <button className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-600 transition-colors shrink-0">
           {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
       </div>

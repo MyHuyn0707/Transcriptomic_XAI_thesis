@@ -367,7 +367,7 @@
 @layer base {
   html {
     font-family: var(--font-family-sans);
-    color: var(--color-neutral-900);
+    color: var(--color-neutral-700);
     background: var(--color-neutral-50);
     line-height: var(--line-height-normal);
   }

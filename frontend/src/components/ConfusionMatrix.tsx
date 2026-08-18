@@ -100,7 +100,7 @@ export default function ConfusionMatrix({ data, labels }: ConfusionMatrixProps) 
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-neutral-900">Ma trận nhầm lẫn</h3>
+              <h3 className="text-base font-semibold text-neutral-800">Ma trận nhầm lẫn</h3>
               <button
                 onClick={() => setZoomed(false)}
                 className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-600 transition-colors"
