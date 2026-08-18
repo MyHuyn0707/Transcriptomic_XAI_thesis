@@ -26,7 +26,7 @@ export default function StatusLine({ log, loading, className }: StatusLineProps)
   const text = lastLine.replace(/^\[[^\]]+\]\s*/, '');
 
   const Icon = loading ? Reload : isError ? AlertTriangle : isSuccess ? CheckCircle1 : InfoCircle;
-  const toneClass = isError ? 'text-danger-600' : isSuccess ? 'text-success-600' : 'text-neutral-500';
+  const toneClass = isError ? 'text-danger-600' : isSuccess ? 'text-success-600' : 'text-neutral-600';
 
   return (
     <div className={cn('flex items-center gap-2 text-xs mt-3', toneClass, className)} title={lastLine}>

@@ -19,7 +19,7 @@ function ReferencesList({ referenceList, disclaimer }: { referenceList: Referenc
         <p className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold">Nguồn tham khảo</p>
         <button
           onClick={() => setOpen((o) => !o)}
-          className="flex items-center gap-1 text-xs font-semibold text-brand-700 border border-brand-200 bg-brand-50 hover:bg-brand-100 rounded-md px-2 py-1 transition-colors"
+          className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 transition-colors"
         >
           {open ? "Thu gọn" : "Mở rộng"}
           {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -94,12 +94,12 @@ export default function DatasetOverview({
   if (isTemp) {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100">
+        <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-xl font-bold text-neutral-800 tracking-tight">Tổng quan dữ liệu</h2>
+            <h2 className="text-lg font-semibold text-neutral-800">Tổng quan dữ liệu</h2>
           </div>
           <div className="mt-4 flex items-start gap-2.5 bg-warning-50 border border-warning-200 rounded-lg p-4 text-sm text-warning-800 leading-relaxed">
             <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
@@ -411,68 +411,47 @@ export default function DatasetOverview({
                     (references get their own nested collapse toggle since the list can be long) */}
                 {origin.annotation_rows != null && (
                   <CollapsibleCard accent="neutral" title="Nguồn gốc & Chú giải">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {origin.class_characteristic && (
-                        <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                          <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                            Class characteristic
-                          </div>
-                          <div className="font-mono font-semibold text-neutral-800">{origin.class_characteristic}</div>
-                        </div>
+                        <StatTile label="Class characteristic" value={origin.class_characteristic} mono />
                       )}
-                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                        <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                          Annotation rows
-                        </div>
-                        <div className="font-mono font-semibold text-neutral-800">
-                          {origin.annotation_rows?.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                        <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                          Probes có gene symbol
-                        </div>
-                        <div className="font-mono font-semibold text-success-600">
-                          {origin.probes_with_gene_symbol?.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-neutral-600 mt-1">
-                          từ annotation file: {origin.probes_from_annotation_file?.toLocaleString()} · MyGene.info:{" "}
-                          {origin.probes_from_mygene?.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                        <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                          Probes không có gene symbol
-                        </div>
-                        <div className="font-mono font-semibold text-danger-500">
-                          {origin.probes_without_gene_symbol?.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                        <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                          AFFX control đã loại
-                        </div>
-                        <div className="font-mono font-semibold text-neutral-800">
-                          {origin.affx_control_removed?.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                        <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                          Probes / Genes duy nhất
-                        </div>
-                        <div className="font-mono font-semibold text-neutral-800">
-                          {origin.unique_probes?.toLocaleString()} / {origin.unique_genes?.toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                        <div className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-0.5">
-                          Mẫu giữ lại
-                        </div>
-                        <div className="font-mono font-semibold text-neutral-800">
-                          {origin.samples_kept?.toLocaleString()}{" "}
-                          <span className="text-neutral-600 font-normal">(NA dropped: {origin.na_dropped})</span>
-                        </div>
-                      </div>
+                      <StatTile label="Annotation rows" value={origin.annotation_rows?.toLocaleString()} mono />
+                      <StatTile
+                        label="Probes có gene symbol"
+                        mono
+                        valueClassName="text-success-600"
+                        value={
+                          <>
+                            {origin.probes_with_gene_symbol?.toLocaleString()}
+                            <span className="block text-xs font-normal text-neutral-600 mt-1">
+                              từ annotation file: {origin.probes_from_annotation_file?.toLocaleString()} · MyGene.info:{" "}
+                              {origin.probes_from_mygene?.toLocaleString()}
+                            </span>
+                          </>
+                        }
+                      />
+                      <StatTile
+                        label="Probes không có gene symbol"
+                        mono
+                        valueClassName="text-danger-500"
+                        value={origin.probes_without_gene_symbol?.toLocaleString()}
+                      />
+                      <StatTile label="AFFX control đã loại" value={origin.affx_control_removed?.toLocaleString()} mono />
+                      <StatTile
+                        label="Probes / Genes duy nhất"
+                        mono
+                        value={`${origin.unique_probes?.toLocaleString()} / ${origin.unique_genes?.toLocaleString()}`}
+                      />
+                      <StatTile
+                        label="Mẫu giữ lại"
+                        mono
+                        value={
+                          <>
+                            {origin.samples_kept?.toLocaleString()}{" "}
+                            <span className="text-sm font-normal text-neutral-600">(NA dropped: {origin.na_dropped})</span>
+                          </>
+                        }
+                      />
                     </div>
 
                     {referenceList.length > 0 && (
