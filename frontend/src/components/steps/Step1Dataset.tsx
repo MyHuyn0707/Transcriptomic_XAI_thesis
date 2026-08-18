@@ -146,7 +146,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               <div className="mt-4 space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
                   <FieldLabel>Mã dataset</FieldLabel>
-                  <span className="font-mono text-xs text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
+                  <span className="font-mono text-base text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <StatTile label="Nền tảng vi mảng" value={selectedDataset.platform} truncate />
@@ -180,12 +180,12 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               </div>
 
               <div>
-                <label className="text-xs text-neutral-600 font-medium block mb-1">Tên thư mục lưu trữ</label>
+                <label className="text-base text-neutral-600 font-medium block mb-1">Tên thư mục lưu trữ</label>
                 <Input value={uploadTissue} onChange={e => setUploadTissue(e.target.value)} className="w-full text-sm" />
               </div>
 
               <div>
-                <label className="text-xs text-neutral-600 font-medium block mb-1">
+                <label className="text-base text-neutral-600 font-medium block mb-1">
                   {uploadSource === 'geo' ? 'File series matrix' : 'File probe CuMiDa'}
                 </label>
                 <FilePicker
@@ -195,7 +195,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 />
               </div>
               <div>
-                <label className="text-xs text-neutral-600 font-medium block mb-1">
+                <label className="text-base text-neutral-600 font-medium block mb-1">
                   File annotation {uploadSource === 'geo' ? 'GPL' : 'CuMiDa'} (không bắt buộc)
                 </label>
                 <FilePicker
