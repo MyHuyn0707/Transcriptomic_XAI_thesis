@@ -7,6 +7,7 @@ import { cn } from "../lib/utils";
 import CollapsibleCard from "./ui/CollapsibleCard";
 import Panel from "./ui/Panel";
 import StatTile from "./ui/StatTile";
+import FieldLabel from "./ui/FieldLabel";
 
 /** Reference-citation list nested inside "Nguồn gốc & Chú giải" — its own
  * "Thu gọn/Mở rộng" toggle since the list can get long (many NCI sources)
@@ -190,7 +191,7 @@ export default function DatasetOverview({
                         {headline || "Tiêu đề không khả dụng"}
                       </h2>
                       {content.title_vi && enTitle && (
-                        <p className="text-neutral-600 text-md leading-relaxed mt-1">– {enTitle}</p>
+                        <p className="text-neutral-600 text-base leading-relaxed mt-1">– {enTitle}</p>
                       )}
                     </div>
                   );
@@ -207,12 +208,10 @@ export default function DatasetOverview({
 
                 {/* Dataset description — concise summary */}
                 {content.description_vi && (
-                  <Panel padding="md">
-                    <p className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold mb-1.5">
-                      Mô tả tập dữ liệu
-                    </p>
-                    <p className="text-sm text-neutral-700 leading-relaxed">{content.description_vi}</p>
-                  </Panel>
+                  <div>
+                    <FieldLabel>Mô tả tập dữ liệu</FieldLabel>
+                    <p className="text-base text-neutral-700 leading-relaxed mt-1.5">{content.description_vi}</p>
+                  </div>
                 )}
 
                 {/* Disease context: what this disease/family actually is, in plain Vietnamese */}
