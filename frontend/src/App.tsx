@@ -70,7 +70,7 @@ export default function App() {
   const openStep = (n: number) => { if (stepReady[n]) dispatch({ type: 'active_step_set', step: n }); };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-brand-200 pb-12">
+    <div className="min-h-screen bg-neutral-50 text-neutral-800 font-sans selection:bg-brand-200 pb-12">
       {/* Header */}
       <header className="bg-white border-b border-success-100/80 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -79,7 +79,7 @@ export default function App() {
               <Dna size={22} />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-neutral-900 tracking-tight">GE-RuGO Workspace</h1>
+              <h1 className="text-xl font-bold text-neutral-800 tracking-tight">GE-RuGO Workspace</h1>
               <p className="text-[11px] font-semibold tracking-wider uppercase text-success-600">Phân lớp dữ liệu Biểu hiện Gene có giải thích</p>
             </div>
           </div>

@@ -71,7 +71,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <GitMerge size={20} />
             </div>
-            <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">
+            <h2 className="text-xl font-bold text-neutral-800 tracking-tight group-hover:text-success-700 transition-colors">
               Chia Dữ liệu (Train/Test)
             </h2>
           </div>
@@ -86,35 +86,35 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
               <Panel padding="lg" className="space-y-3">
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Tổng số mẫu ban đầu</span>
-                  <span className="text-neutral-900 font-bold font-mono">
+                  <span className="text-neutral-800 font-bold font-mono">
                     {Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)}
                   </span>
                 </div>
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Số mẫu sau khi loại lớp hiếm</span>
-                  <span className="text-neutral-900 font-bold font-mono">{stats.n_samples_total}</span>
+                  <span className="text-neutral-800 font-bold font-mono">{stats.n_samples_total}</span>
                 </div>
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Tổng số lớp ban đầu</span>
-                  <span className="text-neutral-900 font-bold font-mono">{allLabels.length}</span>
+                  <span className="text-neutral-800 font-bold font-mono">{allLabels.length}</span>
                 </div>
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Số lớp sau khi loại lớp hiếm</span>
-                  <span className="text-neutral-900 font-bold font-mono">{stats.class_labels.length}</span>
+                  <span className="text-neutral-800 font-bold font-mono">{stats.class_labels.length}</span>
                 </div>
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Ngưỡng loại lớp hiếm</span>
-                  <span className="text-neutral-900 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
+                  <span className="text-neutral-800 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
                 </div>
               </Panel>
               <Panel padding="lg" className="space-y-3">
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Huấn luyện / Kiểm thử</span>
-                  <span className="text-neutral-900 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
+                  <span className="text-neutral-800 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
                 </div>
                 <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium">Tỷ lệ test_size</span>
-                  <span className="text-neutral-900 font-bold font-mono">{stats.test_size}</span>
+                  <span className="text-neutral-800 font-bold font-mono">{stats.test_size}</span>
                 </div>
                 <div className="flex flex-col py-2 border-b border-neutral-200/60">
                   <span className="text-neutral-600 font-medium mb-1.5">Số lớp ({allLabels.length})</span>

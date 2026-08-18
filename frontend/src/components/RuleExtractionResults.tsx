@@ -194,7 +194,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
           <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
             <Bolt1 size={20} />
           </div>
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
+          <h2 className="text-xl font-bold text-neutral-800 tracking-tight">
             Kết quả Trích xuất Luật sinh học
           </h2>
         </div>
@@ -244,7 +244,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             >
               <div className="flex items-center gap-2">
                 <GitMerge size={20} className="text-success-600" />
-                <h3 className="font-bold text-neutral-900 text-lg">Danh sách Luật Trích xuất ({rules.length})</h3>
+                <h3 className="font-bold text-neutral-800 text-lg">Danh sách Luật Trích xuất ({rules.length})</h3>
               </div>
               <button className="text-neutral-600 p-1 hover:bg-success-100 rounded-full transition-colors">
                 {isRulesCollapsed ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
@@ -328,7 +328,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
                                     <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-neutral-100">
                                       {metricEntries.map(([label, val]) => (
                                         <span key={label} className="text-xs px-2 py-1 bg-neutral-50 border border-neutral-200 rounded-md text-neutral-600 font-mono text-center truncate">
-                                          {label}: <span className="text-neutral-900 font-bold">{typeof val === 'number' ? val.toFixed(2) : String(val)}</span>
+                                          {label}: <span className="text-neutral-800 font-bold">{typeof val === 'number' ? val.toFixed(2) : String(val)}</span>
                                         </span>
                                       ))}
                                     </div>
@@ -360,7 +360,7 @@ export default function RuleExtractionResults({ datasetId, fsMethod, model, runI
             >
               <div className="flex items-center gap-2">
                 <FileText size={20} className="text-brand-600" />
-                <h3 className="font-bold text-neutral-900 text-lg">Gene xuất hiện trong Danh sách Luật ({genes.length})</h3>
+                <h3 className="font-bold text-neutral-800 text-lg">Gene xuất hiện trong Danh sách Luật ({genes.length})</h3>
               </div>
               <button className="text-neutral-600 p-1 hover:bg-brand-100 rounded-full transition-colors">
                 {isGenesCollapsed ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
