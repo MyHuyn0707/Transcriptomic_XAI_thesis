@@ -33,7 +33,7 @@ export default function WizardStep({ number, title, active, ready, onOpen, child
         >
           <span className="font-bold text-sm">{number}</span>
         </button>
-        <h2 className="flex-1 text-base font-semibold text-neutral-900 group-hover:text-brand-700 transition-colors">{title}</h2>
+        <h2 className="flex-1 text-lg font-semibold text-neutral-800 group-hover:text-brand-700 transition-colors">{title}</h2>
         <span className="text-neutral-600 group-hover:text-brand-600 transition-colors">
           {active ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </span>

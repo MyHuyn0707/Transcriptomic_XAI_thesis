@@ -264,7 +264,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
           <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
             <GitMerge size={20} />
           </div>
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
+          <h2 className="text-xl font-bold text-neutral-800 tracking-tight group-hover:text-brand-700 transition-colors truncate">Tổng Quan Mô Hình</h2>
         </div>
         <button className="p-2 rounded-full hover:bg-brand-50 text-neutral-600 hover:text-brand-600 transition-colors shrink-0">
           {isModelOverviewCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
@@ -323,7 +323,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                   >
                     <div className="flex items-center gap-2">
                       <Gear1 className="text-brand-600" size={20} />
-                      <h3 className="text-base font-semibold text-neutral-900 group-hover/cfg:text-brand-700 transition-colors">Tham số cấu hình</h3>
+                      <h3 className="text-base font-semibold text-neutral-800 group-hover/cfg:text-brand-700 transition-colors">Tham số cấu hình</h3>
                     </div>
                     <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-600 transition-colors shrink-0">
                       {isModelConfigCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
@@ -332,7 +332,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                   {!isModelConfigCollapsed && (
                     <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
-                        <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2 shrink-0">
+                        <h4 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2 shrink-0">
                           <span className="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
                           Siêu tham số mô hình ({modelType === 'rf' ? 'Random Forest' : 'Decision Tree'})
                         </h4>
@@ -340,7 +340,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                           {modelStats.hyperparams ? Object.entries(modelStats.hyperparams).map(([k, v]) => (
                             <div key={k} className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
                               <span className="text-neutral-600 text-sm font-mono">{k}</span>
-                              <span className="text-neutral-900 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
+                              <span className="text-neutral-800 font-medium text-sm font-mono">{v === null ? 'null' : String(v)}</span>
                             </div>
                           )) : (
                             <p className="text-sm text-neutral-600 italic">Không có dữ liệu.</p>
@@ -348,7 +348,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                         </div>
                       </div>
                       <div className="bg-neutral-50 rounded-xl p-5 border border-neutral-200 h-full flex flex-col">
-                        <h4 className="text-sm font-bold text-neutral-900 mb-4 flex items-center gap-2 shrink-0">
+                        <h4 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2 shrink-0">
                           <span className="w-1.5 h-4 bg-info-500 rounded-full inline-block"></span>
                           Cấu hình Lọc Luật
                         </h4>
@@ -356,7 +356,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
                           {Object.entries(filterDisplay).map(([k, v]) => (
                             <div key={k} className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
                               <span className="text-neutral-600 text-sm font-mono">{k}</span>
-                              <span className="text-neutral-900 font-medium text-sm font-mono">{v == null ? '—' : String(v)}</span>
+                              <span className="text-neutral-800 font-medium text-sm font-mono">{v == null ? '—' : String(v)}</span>
                             </div>
                           ))}
                         </div>
@@ -376,7 +376,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
               >
                 <div className="flex items-center gap-2">
                   <Table2 className="text-brand-600" size={20} />
-                  <h3 className="text-base font-semibold text-neutral-900 group-hover/cm:text-brand-700 transition-colors">Ma trận nhầm lẫn</h3>
+                  <h3 className="text-base font-semibold text-neutral-800 group-hover/cm:text-brand-700 transition-colors">Ma trận nhầm lẫn</h3>
                 </div>
                 <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-600 transition-colors shrink-0">
                   {isConfusionMatrixCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
@@ -397,7 +397,7 @@ export function ModelOverviewPanel({ state, dispatch }: Props) {
               >
                 <div className="flex items-center gap-2">
                   <FileText className="text-brand-600" size={20} />
-                  <h3 className="text-base font-semibold text-neutral-900 group-hover/cr:text-brand-700 transition-colors">Chi tiết Phân Loại</h3>
+                  <h3 className="text-base font-semibold text-neutral-800 group-hover/cr:text-brand-700 transition-colors">Chi tiết Phân Loại</h3>
                 </div>
                 <button className="p-1.5 rounded-full hover:bg-brand-50 text-neutral-600 transition-colors shrink-0">
                   {isClassificationReportCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}

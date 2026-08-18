@@ -3,7 +3,6 @@ import { Database, AlertTriangle } from "lucide-react";
 import { ChevronDown, ChevronUp, Link1AngularRight, InfoCircle } from "@tailgrids/icons";
 import { api, ClassContent, ContentInfo, OriginInfo, OverviewData, Reference } from "../lib/api";
 import { PALETTE, DROPPED_COLOR } from "../lib/palette";
-import { cn } from "../lib/utils";
 import CollapsibleCard from "./ui/CollapsibleCard";
 import Panel from "./ui/Panel";
 import StatTile from "./ui/StatTile";
@@ -100,7 +99,7 @@ export default function DatasetOverview({
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-xl font-bold text-neutral-900 tracking-tight">Tổng quan dữ liệu</h2>
+            <h2 className="text-xl font-bold text-neutral-800 tracking-tight">Tổng quan dữ liệu</h2>
           </div>
           <div className="mt-4 flex items-start gap-2.5 bg-warning-50 border border-warning-200 rounded-lg p-4 text-sm text-warning-800 leading-relaxed">
             <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
@@ -150,7 +149,7 @@ export default function DatasetOverview({
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-success-700 transition-colors">
+            <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-success-700 transition-colors">
               Tổng quan dữ liệu
             </h2>
           </div>
@@ -187,7 +186,7 @@ export default function DatasetOverview({
                   const headline = content.title_vi || enTitle;
                   return (
                     <div>
-                      <h2 className="text-xl text-pretty font-bold text-neutral-900 leading-snug">
+                      <h2 className="text-xl text-pretty font-bold text-neutral-800 leading-snug">
                         {headline || "Tiêu đề không khả dụng"}
                       </h2>
                       {content.title_vi && enTitle && (
@@ -209,7 +208,7 @@ export default function DatasetOverview({
                 {/* Dataset description — concise summary */}
                 {content.description_vi && (
                   <div>
-                    <FieldLabel>Mô tả tập dữ liệu</FieldLabel>
+                    <FieldLabel className="text-sm font-semibold tracking-wider">Mô tả tập dữ liệu</FieldLabel>
                     <p className="text-base text-neutral-700 leading-relaxed mt-1.5">{content.description_vi}</p>
                   </div>
                 )}
@@ -222,15 +221,15 @@ export default function DatasetOverview({
                     const asset = assetId ? overview.media_assets?.[assetId] : undefined;
                     return (
                       <CollapsibleCard title={diseaseContext.ui_title_vi || "Bối cảnh bệnh lý"}>
-                        <div className={cn("gap-5", asset?.url ? "grid grid-cols-1 sm:grid-cols-[220px_1fr]" : "")}>
+                        <div className="space-y-5">
                           {asset?.url && (
-                            <figure className="shrink-0">
+                            <figure>
                               <img
                                 src={asset.url}
                                 alt={asset.alt_text_vi || asset.title_vi || ""}
-                                className="w-full sm:w-[220px] h-auto rounded-lg border border-neutral-200 shadow-sm object-cover"
+                                className="w-full max-w-xs h-auto rounded-lg border border-neutral-200 shadow-xs object-cover"
                               />
-                              <figcaption className="mt-2 text-xs text-neutral-600 leading-snug">
+                              <figcaption className="mt-2 text-sm text-neutral-500 leading-snug">
                                 {asset.caption_vi}
                                 {asset.credit && <span className="block mt-0.5">Ảnh: {asset.credit}</span>}
                                 {asset.source_page_url && (
@@ -238,7 +237,7 @@ export default function DatasetOverview({
                                     href={asset.source_page_url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-brand-600 hover:underline block mt-0.5"
+                                    className="text-brand-700 underline block mt-0.5"
                                   >
                                     Nguồn: {asset.source_publisher || "NCI"}
                                   </a>
@@ -246,21 +245,23 @@ export default function DatasetOverview({
                               </figcaption>
                             </figure>
                           )}
-                          <Panel padding="md" className="space-y-3 min-w-0">
+                          <div className="space-y-3">
                             {primaryEntity && (
-                              <p className="text-sm text-neutral-800 leading-relaxed">{primaryEntity.description_vi}</p>
+                              <p className="text-base text-neutral-700 leading-relaxed">
+                                {primaryEntity.description_vi}
+                              </p>
                             )}
                             {diseaseContext.dataset_relationship_vi && (
-                              <p className="text-sm text-neutral-700 leading-relaxed italic">
+                              <p className="text-base text-neutral-700 leading-relaxed">
                                 {diseaseContext.dataset_relationship_vi}
                               </p>
                             )}
                             {asset && diseaseContext.media_disclaimer_vi && (
-                              <p className="text-xs text-neutral-600 leading-relaxed border-t border-neutral-200 pt-2">
-                                {diseaseContext.media_disclaimer_vi}
+                              <p className="text-[.6875rem] text-neutral-500 leading-relaxed mt-4 pt-3 border-t border-neutral-100 italic">
+                                DISCLAIMER: {diseaseContext.media_disclaimer_vi}
                               </p>
                             )}
-                          </Panel>
+                          </div>
                         </div>
                       </CollapsibleCard>
                     );
@@ -270,45 +271,43 @@ export default function DatasetOverview({
                     where the data FILE was downloaded (dataset_provenance, below) */}
                 {datasetStudy && (
                   <CollapsibleCard title="Nghiên cứu gốc (đối chiếu ArrayExpress & NCBI GEO)">
-                    <div className="space-y-5 text-sm">
+                    <div className="space-y-5">
                       {datasetStudy.original_study_title_en && (
                         <div>
-                          <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1">
+                          <FieldLabel className="text-sm font-semibold tracking-wider">
                             Tiêu đề nghiên cứu gốc
-                          </span>
-                          <span className="text-neutral-800 italic">{datasetStudy.original_study_title_en}</span>
-                          {datasetStudy.arrayexpress_accession && (
-                            <span className="text-neutral-600 text-xs font-mono ml-2">
-                              ({datasetStudy.arrayexpress_accession})
-                            </span>
-                          )}
+                          </FieldLabel>
+                          <p className="text-neutral-700">
+                            {datasetStudy.original_study_title_en}
+                            {datasetStudy.arrayexpress_accession && (
+                              <span className="text-sm font-mono ml-2">({datasetStudy.arrayexpress_accession})</span>
+                            )}
+                          </p>
                         </div>
                       )}
                       {datasetStudy.study_objective_vi && (
                         <div>
-                          <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1">
-                            Mục tiêu nghiên cứu
-                          </span>
-                          <span className="text-neutral-800 leading-relaxed">{datasetStudy.study_objective_vi}</span>
+                          <FieldLabel className="text-sm font-semibold tracking-wider">Mục tiêu nghiên cứu</FieldLabel>
+                          <p className="text-neutral-700 leading-relaxed">{datasetStudy.study_objective_vi}</p>
                         </div>
                       )}
                       {datasetStudy.original_design_vi && (
                         <div>
-                          <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1">
+                          <FieldLabel className="text-sm font-semibold tracking-wider">
                             Thiết kế nghiên cứu gốc
-                          </span>
-                          <span className="text-neutral-800 leading-relaxed">{datasetStudy.original_design_vi}</span>
+                          </FieldLabel>
+                          <p className="text-neutral-700 leading-relaxed">{datasetStudy.original_design_vi}</p>
                         </div>
                       )}
                     </div>
                     {datasetStudy.local_ml_relation_vi && (
-                      <div className="mt-5 pt-5 border-t border-neutral-100">
+                      <div className="mt-5">
                         <Panel surface="info" padding="md" className="flex gap-2.5">
                           <InfoCircle size={16} className="text-info-500 shrink-0 mt-0.5" />
                           <div>
-                            <span className="text-info-700 text-xs uppercase tracking-wider font-semibold block mb-1">
+                            <p className="text-info-700 text-xs uppercase tracking-widest font-bold mb-1">
                               Liên hệ với bài toán học máy ở đây
-                            </span>
+                            </p>
                             <span className="text-neutral-800 leading-relaxed text-sm">
                               {datasetStudy.local_ml_relation_vi}
                             </span>
@@ -317,11 +316,9 @@ export default function DatasetOverview({
                       </div>
                     )}
                     {datasetProvenance?.download_provider?.name && (
-                      <p className="text-xs text-neutral-600 mt-4 pt-3 border-t border-neutral-100">
+                      <p className="text-[.6875rem] text-neutral-600 mt-4 pt-3 border-t border-neutral-100">
                         Nguồn tải file dữ liệu:{" "}
-                        <span className="font-semibold text-neutral-600">
-                          {datasetProvenance.download_provider.name}
-                        </span>
+                        <span className="font-semibold">{datasetProvenance.download_provider.name}</span>
                         {datasetProvenance.provenance_note_vi && ` — ${datasetProvenance.provenance_note_vi}`}
                       </p>
                     )}
@@ -335,13 +332,13 @@ export default function DatasetOverview({
                 {Object.keys(classesContent).length > 0 && (
                   <CollapsibleCard title="Đặc tính Sinh học các Phân lớp">
                     {content.dataset_note_vi && (
-                      <div className="bg-warning-50 border border-warning-200 rounded-lg p-3.5 text-sm text-warning-800 leading-relaxed mb-4 flex gap-2.5">
+                      <Panel surface="warning" padding="md" className="mb-4 flex gap-2.5">
                         <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-semibold">Lưu ý: </span>
-                          {content.dataset_note_vi}
+                          <p className="text-warning-800 text-xs uppercase tracking-widest font-bold mb-1">Lưu ý</p>
+                          <span className="text-warning-800 leading-relaxed text-sm">{content.dataset_note_vi}</span>
                         </div>
-                      </div>
+                      </Panel>
                     )}
                     {(() => {
                       const entries = Object.entries(classesContent);
@@ -352,26 +349,18 @@ export default function DatasetOverview({
                       const classCard = (label: string, cls: ClassContent, color: string) => (
                         <div
                           key={label}
-                          className="bg-white p-4 rounded-lg border border-neutral-200 shadow-sm border-l-4 flex flex-col items-start text-left h-full"
+                          className="bg-white p-4 rounded-lg border border-neutral-200 shadow-xs border-l-4 flex flex-col items-start text-left h-full"
                           style={{ borderLeftColor: color }}
                         >
-                          <div className="flex items-start gap-2 mb-2 w-full">
-                            <span
-                              className="w-2 h-2 rounded-full inline-block mt-1.5 shrink-0"
-                              style={{ backgroundColor: color }}
-                            ></span>
-                            <div className="flex flex-col items-start text-left">
-                              <h4 className="font-bold text-neutral-900 leading-tight text-left">
-                                {cls.display_name_vi || label}
-                              </h4>
-                              {cls.display_name_vi && (
-                                <span className="text-neutral-600 text-xs uppercase tracking-wide font-semibold text-left">
-                                  {label}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-sm text-neutral-700 leading-relaxed text-left">{cls.description_vi}</p>
+                          <h4 className="font-bold text-neutral-800 leading-relaxed text-left">
+                            {cls.display_name_vi || label}
+                          </h4>
+                          {cls.display_name_vi && (
+                            <FieldLabel className="text-xs font-semibold tracking-wider">{label}</FieldLabel>
+                          )}
+                          <p className="text-sm text-neutral-700 leading-relaxed text-left mt-2">
+                            {cls.description_vi}
+                          </p>
                         </div>
                       );
                       return (
@@ -386,37 +375,25 @@ export default function DatasetOverview({
                               a single grid cell would look lopsided when there's an odd
                               count left over after the active-classes 2-column grid. */}
                           {excluded.length > 0 && (
-                            <div
-                              className={cn("space-y-3", active.length > 0 && "mt-4 pt-4 border-t border-neutral-100")}
-                            >
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                               {excluded.map(([label, cls]) => (
                                 <div
                                   key={label}
-                                  className="bg-warning-50 p-4 rounded-lg border border-warning-200 border-l-4 flex flex-col items-start text-left"
+                                  className="bg-white p-4 rounded-lg border border-neutral-200 shadow-xs border-l-4 flex flex-col items-start text-left"
                                   style={{ borderLeftColor: DROPPED_COLOR }}
                                 >
-                                  <div className="flex items-start gap-2 mb-2 w-full">
-                                    <span
-                                      className="w-2 h-2 rounded-full inline-block mt-1.5 shrink-0"
-                                      style={{ backgroundColor: DROPPED_COLOR }}
-                                    ></span>
-                                    <div className="flex flex-col items-start text-left">
-                                      <h4 className="font-bold text-neutral-900 leading-tight text-left">
-                                        {cls.display_name_vi || label}
-                                      </h4>
-                                      {cls.display_name_vi && (
-                                        <span className="text-neutral-600 text-xs uppercase tracking-wide font-semibold text-left">
-                                          {label}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <p className="text-sm text-neutral-700 leading-relaxed text-left mb-2.5">
+                                  <h4 className="font-bold text-neutral-800 leading-relaxed text-left">
+                                    {cls.display_name_vi || label}
+                                  </h4>
+                                  {cls.display_name_vi && (
+                                    <FieldLabel className="text-xs font-semibold tracking-wider">{label}</FieldLabel>
+                                  )}
+                                  <p className="text-sm text-neutral-700 leading-relaxed text-left mt-2 mb-2.5">
                                     {cls.description_vi}
                                   </p>
                                   <div className="w-full flex items-start gap-1.5 text-warning-700">
                                     <AlertTriangle size={13} className="shrink-0 mt-0.5 text-warning-500" />
-                                    <p className="text-xs leading-relaxed text-left">
+                                    <p className="text-xs leading-relaxed text-left text-warning-800">
                                       Bị loại khỏi tập huấn luyện do quá ít mẫu.
                                     </p>
                                   </div>
