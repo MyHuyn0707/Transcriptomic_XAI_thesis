@@ -45,7 +45,7 @@ export default function FilePicker({ value, onChange, accept, disabled, placehol
           <FileText size={18} className="text-brand-600 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-neutral-800 truncate" title={value.name}>{value.name}</p>
-            <p className="text-xs text-neutral-500">{formatBytes(value.size)}</p>
+            <p className="text-xs text-neutral-600">{formatBytes(value.size)}</p>
           </div>
           <button
             type="button"
@@ -78,7 +78,7 @@ export default function FilePicker({ value, onChange, accept, disabled, placehol
         >
           <UploadCloud size={20} className="text-neutral-400" />
           <span className="text-sm text-neutral-600">{placeholder}</span>
-          {accept && <span className="text-xs text-neutral-500">{accept}</span>}
+          {accept && <span className="text-xs text-neutral-600">{accept}</span>}
         </button>
       )}
     </div>

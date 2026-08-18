@@ -27,7 +27,7 @@ export default function WizardStep({ number, title, active, ready, onOpen, child
             // else in the app (DatasetOverview, FeatureExtractionOverview,
             // the right-column panel headers) — this was the one place
             // still using its own larger, one-off w-12 h-12.
-            "w-10 h-10 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-sm z-10 transition-colors",
+            "w-10 h-10 shrink-0 bg-white border-2 rounded-full flex items-center justify-center shadow-xs z-10 transition-colors",
             ready ? "border-brand-500 text-brand-600 hover:bg-brand-50" : "border-neutral-200 text-neutral-600 cursor-not-allowed",
           )}
         >

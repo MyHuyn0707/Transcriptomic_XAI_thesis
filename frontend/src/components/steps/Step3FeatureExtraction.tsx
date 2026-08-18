@@ -240,7 +240,7 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
           disabled={isFsLoading || !splitStats || !selectedDataset?.fs_models[fsMethodKey]}
           className="flex-1"
         >
-          <FileText size={16} className="text-neutral-500" />
+          <FileText size={16} className="text-neutral-600" />
           Tải kết quả có sẵn
         </Button>
       </div>

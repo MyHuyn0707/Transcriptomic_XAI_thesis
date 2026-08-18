@@ -114,13 +114,13 @@ export default function Step5Testing({ state, dispatch }: Props) {
          <div className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm">
            <button
              onClick={() => dispatch({ type: 'test_mode_changed', mode: 'sample' })}
-             className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'sample' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
+             className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'sample' ? "bg-white shadow-xs text-brand-700 font-medium" : "text-neutral-600")}
            >
              <ListChecks size={14} /> Chọn mẫu có sẵn
            </button>
            <button
              onClick={() => dispatch({ type: 'test_mode_changed', mode: 'upload' })}
-             className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'upload' ? "bg-white shadow-sm text-brand-700 font-medium" : "text-neutral-600")}
+             className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'upload' ? "bg-white shadow-xs text-brand-700 font-medium" : "text-neutral-600")}
            >
              <UploadCloud size={14} /> Tải lên file
            </button>
@@ -147,7 +147,7 @@ export default function Step5Testing({ state, dispatch }: Props) {
            <select
              value={testSampleId}
              onChange={(e) => dispatch({ type: 'test_sample_selected', sampleId: e.target.value })}
-             className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-sm"
+             className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-xs"
            >
              <option value="">-- Chọn mẫu bệnh phẩm (test set thật) --</option>
              {testSamples.map(s => (
@@ -201,7 +201,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
           <div className="w-10 h-10 shrink-0 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
             <Activity size={20} />
           </div>
-          <h2 className="text-xl font-bold text-neutral-800 tracking-tight group-hover:text-success-700 transition-colors">Kết quả Thực nghiệm</h2>
+          <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-success-700 transition-colors">Kết quả Thực nghiệm</h2>
         </div>
         <button className="p-2 rounded-full hover:bg-success-50 text-neutral-600 hover:text-success-600 transition-colors shrink-0">
           {isTestResultsCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
@@ -212,7 +212,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
       <div className="w-full">
         {testResults ? (
           testResults.classification === 'Loi' ? (
-          <div className="bg-white p-6 rounded-2xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 border border-danger-200 h-full">
+          <div className="bg-white p-6 rounded-2xl shadow-xs animate-in fade-in slide-in-from-right-4 duration-500 border border-danger-200 h-full">
             <div className="flex items-center gap-3 mb-4 pb-4 border-b border-neutral-200">
               <AlertTriangle className="text-danger-500" size={24} />
               <h3 className="text-lg font-bold text-neutral-800">Lỗi khi thực nghiệm</h3>
@@ -222,7 +222,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
             </p>
           </div>
           ) : (
-          <div className="bg-white p-6 rounded-2xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-500 border border-neutral-200 h-full">
+          <div className="bg-white p-6 rounded-2xl shadow-xs animate-in fade-in slide-in-from-right-4 duration-500 border border-neutral-200 h-full">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-neutral-200">
               <CheckCircle1 className="text-brand-600" size={24} />
               <h3 className="text-lg font-bold text-neutral-800">Báo cáo Phân loại</h3>
@@ -542,7 +542,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
           )
         ) : (
           <div className="h-full bg-neutral-50 border border-neutral-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-neutral-600 p-8 text-center min-h-[300px]">
-             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-neutral-200 shadow-sm">
+             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-neutral-200 shadow-xs">
                <Activity size={24} className="text-neutral-400" />
              </div>
              <p className="text-sm max-w-sm font-medium text-neutral-600">

@@ -62,7 +62,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100 transition-all duration-300">
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-success-100 transition-all duration-300">
         <div
           className="flex items-center justify-between cursor-pointer group"
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -71,7 +71,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <GitMerge size={20} />
             </div>
-            <h2 className="text-xl font-bold text-neutral-800 tracking-tight group-hover:text-success-700 transition-colors">
+            <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-success-700 transition-colors">
               Chia Dữ liệu (Train/Test)
             </h2>
           </div>

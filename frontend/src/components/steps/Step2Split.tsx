@@ -122,7 +122,7 @@ export default function Step2Split({ state, dispatch }: Props) {
           title={selectedDataset?.is_temp ? 'Dataset tải lên chưa từng qua xử lý offline nên không có số liệu chia dữ liệu cache — dùng "Thực hiện lại".' : undefined}
           className="flex-1"
         >
-          <FileText size={16} className="text-neutral-500" />
+          <FileText size={16} className="text-neutral-600" />
           Tải dữ liệu có sẵn
         </Button>
       </div>
