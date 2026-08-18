@@ -11,7 +11,7 @@ interface FieldLabelProps {
  * captions and metadata rows throughout the app. */
 export default function FieldLabel({ as: Tag = 'span', className, children }: FieldLabelProps) {
   return (
-    <Tag className={cn('text-[10px] font-bold uppercase tracking-wider text-neutral-600', className)}>
+    <Tag className={cn('text-[.6875rem] font-bold uppercase tracking-widest text-neutral-500', className)}>
       {children}
     </Tag>
   );
