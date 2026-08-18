@@ -140,7 +140,7 @@ export default function DatasetOverview({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-success-100 transition-all duration-300">
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200 transition-all duration-300">
         <div
           className="flex items-center justify-between cursor-pointer group"
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -149,7 +149,7 @@ export default function DatasetOverview({
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-xl font-bold text-neutral-900 tracking-tight group-hover:text-success-700 transition-colors">
+            <h2 className="text-lg font-semibold text-neutral-900 group-hover:text-success-700 transition-colors">
               Tổng quan dữ liệu
             </h2>
           </div>
@@ -173,32 +173,33 @@ export default function DatasetOverview({
                     attention). Rare-class-drop stats, train/test split,
                     class-distribution charts and per-class biology now live in
                     Bước 2 "Xử lý & Chia Dữ liệu" (DatasetSplit). */}
-                <Panel padding="lg" className="space-y-3">
-                  <div>
-                    <span className="text-neutral-600 font-medium text-sm">Tiêu đề</span>
-                    {content.title_vi && (
-                      <p className="text-neutral-900 font-semibold leading-relaxed mt-1">{content.title_vi}</p>
-                    )}
-                    {/* dataset_study.original_study_title_en (cross-checked against ArrayExpress+GEO)
-                        is populated for every dataset, CuMiDa included — origin.title only comes
-                        from the annotation report's "Title" line, which CuMiDa reports don't have. */}
-                    {(datasetStudy?.original_study_title_en || origin.title) && (
-                      <p className="text-neutral-600 text-xs leading-relaxed mt-1">
-                        {datasetStudy?.original_study_title_en || origin.title}
-                      </p>
-                    )}
-                    {!content.title_vi && !datasetStudy?.original_study_title_en && !origin.title && (
-                      <p className="text-neutral-900 font-semibold mt-1">—</p>
-                    )}
-                  </div>
-                </Panel>
+                {/* dataset_study.original_study_title_en (cross-checked against ArrayExpress+GEO)
+                    is populated for every dataset, CuMiDa included — origin.title only comes
+                    from the annotation report's "Title" line, which CuMiDa reports don't have.
+                    Largest text always shows something, falling back vi -> en -> a plain
+                    "unavailable" label instead of ever rendering blank; the EN line only
+                    shows as a subtitle when VI got to be the headline and EN also exists —
+                    otherwise EN itself is already the headline and repeating it would be
+                    redundant. */}
+                {(() => {
+                  const enTitle = datasetStudy?.original_study_title_en || origin.title;
+                  const headline = content.title_vi || enTitle;
+                  return (
+                    <div>
+                      <h2 className="text-xl text-pretty font-bold text-neutral-900 leading-snug">
+                        {headline || "Tiêu đề không khả dụng"}
+                      </h2>
+                      {content.title_vi && enTitle && (
+                        <p className="text-neutral-600 text-md leading-relaxed mt-1">– {enTitle}</p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-2 gap-3">
                   {origin.geo_accession && <StatTile label="GEO" value={origin.geo_accession} />}
                   {content.organism && <StatTile label="Organism" value={content.organism} />}
-                  {origin.samples_kept != null && (
-                    <StatTile label="Tổng số mẫu ban đầu" value={origin.samples_kept} />
-                  )}
+                  {origin.samples_kept != null && <StatTile label="Tổng số mẫu ban đầu" value={origin.samples_kept} />}
                   {overview.raw_class_counts && (
                     <StatTile label="Tổng số lớp ban đầu" value={Object.keys(overview.raw_class_counts).length} />
                   )}
