@@ -41,7 +41,7 @@ export default function WizardStep({ number, title, active, ready, onOpen, child
       {/* Content row — its own full-width row below the header, instead of
           a second column indented past the number circle, so every step's
           card fills the whole sidebar width. */}
-      <div className={cn("bg-white p-5 rounded-2xl shadow-sm border border-neutral-200 relative overflow-hidden", !active && "hidden")}>
+      <div className={cn("bg-white p-5 rounded-2xl shadow-xs border border-neutral-200 relative overflow-hidden", !active && "hidden")}>
         {!ready && <div className="absolute inset-0 z-20 bg-neutral-50/50"></div>}
         {children}
       </div>
