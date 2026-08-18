@@ -11,6 +11,8 @@ import { RadioInput } from '../tailgrids/core/radio-input';
 import { Input } from '../tailgrids/core/input';
 import StatusLine from '../ui/StatusLine';
 import FilePicker from '../ui/FilePicker';
+import FieldLabel from '../ui/FieldLabel';
+import StatTile from '../ui/StatTile';
 import RunHistoryList from '../RunHistoryList';
 
 interface Props {
@@ -143,26 +145,14 @@ export default function Step1Dataset({ state, dispatch }: Props) {
             {selectedDataset && (
               <div className="mt-4 space-y-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Mã dataset</span>
+                  <FieldLabel>Mã dataset</FieldLabel>
                   <span className="font-mono text-xs text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Nền tảng vi mảng</p>
-                    <p className="text-lg font-bold text-neutral-900 mt-0.5 truncate">{selectedDataset.platform}</p>
-                  </div>
-                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Mẫu bệnh phẩm</p>
-                    <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_samples}</p>
-                  </div>
-                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Đặc trưng</p>
-                    <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_features?.toLocaleString()}</p>
-                  </div>
-                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Số lớp</p>
-                    <p className="text-lg font-bold text-neutral-900 mt-0.5">{selectedDataset.n_classes}</p>
-                  </div>
+                  <StatTile label="Nền tảng vi mảng" value={selectedDataset.platform} truncate />
+                  <StatTile label="Mẫu bệnh phẩm" value={selectedDataset.n_samples} />
+                  <StatTile label="Đặc trưng" value={selectedDataset.n_features?.toLocaleString()} />
+                  <StatTile label="Số lớp" value={selectedDataset.n_classes} />
                 </div>
               </div>
             )}
