@@ -15,7 +15,7 @@ interface ConfigRowProps {
 export default function ConfigRow({ label, value, mono = true, labelMono = false, valueClassName }: ConfigRowProps) {
   return (
     <div className="flex justify-between gap-3 py-2 border-b border-neutral-200 border-dashed">
-      <span className={cn('text-neutral-600 text-sm', labelMono && 'font-mono')}>{label}</span>
+      <span className={cn('text-neutral-800 text-sm', labelMono && 'font-mono')}>{label}</span>
       <span className={cn('text-neutral-800 font-medium text-sm', mono && 'font-mono', valueClassName)}>{value}</span>
     </div>
   );
