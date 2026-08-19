@@ -148,7 +148,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                   <FieldLabel>Mã dataset</FieldLabel>
                   <span className="font-mono text-sm text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid md:grid-cols-2 gap-3">
                   <StatTile label="Nền tảng vi mảng" value={selectedDataset.platform} truncate mono />
                   <StatTile label="Mẫu bệnh phẩm" value={selectedDataset.n_samples} mono />
                   <StatTile label="Đặc trưng" value={selectedDataset.n_features?.toLocaleString()} mono />
