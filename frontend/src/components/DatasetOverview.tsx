@@ -267,7 +267,7 @@ export default function DatasetOverview({
                     <div className="space-y-5">
                       {datasetStudy.original_study_title_en && (
                         <div>
-                          <FieldLabel className="text-sm font-bold tracking-wider text-neutral-800">
+                          <FieldLabel className="text-base font-bold tracking-normal text-neutral-800 first-letter:uppercase lowercase">
                             Tiêu đề nghiên cứu gốc
                           </FieldLabel>
                           <p className="text-neutral-700 leading-relaxed">
@@ -280,7 +280,7 @@ export default function DatasetOverview({
                       )}
                       {datasetStudy.study_objective_vi && (
                         <div>
-                          <FieldLabel className="text-sm font-bold tracking-wider text-neutral-800">
+                          <FieldLabel className="text-base font-bold tracking-normal text-neutral-800 first-letter:uppercase lowercase">
                             Mục tiêu nghiên cứu
                           </FieldLabel>
                           <p className="text-neutral-700 leading-relaxed">{datasetStudy.study_objective_vi}</p>
@@ -288,7 +288,7 @@ export default function DatasetOverview({
                       )}
                       {datasetStudy.original_design_vi && (
                         <div>
-                          <FieldLabel className="text-sm font-bold tracking-wider text-neutral-800">
+                          <FieldLabel className="text-base font-bold tracking-normal text-neutral-800 first-letter:uppercase lowercase">
                             Thiết kế nghiên cứu gốc
                           </FieldLabel>
                           <p className="text-neutral-700 leading-relaxed">{datasetStudy.original_design_vi}</p>
@@ -351,7 +351,7 @@ export default function DatasetOverview({
                             {cls.display_name_vi || label}
                           </h4>
                           {cls.display_name_vi && (
-                            <FieldLabel className="text-xs font-bold tracking-wider text-neutral-500/90 break-all">
+                            <FieldLabel className="text-[0.6875rem] font-bold tracking-wider text-neutral-500/90 break-all">
                               {label}
                             </FieldLabel>
                           )}

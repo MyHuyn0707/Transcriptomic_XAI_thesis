@@ -45,29 +45,29 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
           <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="rounded-xl p-4 border border-neutral-200 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-info-100 text-info-600 flex items-center justify-center">
+                <div className="min-w-10 min-h-10 rounded-full bg-info-100 text-info-600 flex items-center justify-center">
                   <FileText size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">Đặc trưng ban đầu</p>
+                  <p className="text-[0.6875rem] text-neutral-500 font-bold uppercase tracking-wider">Đặc trưng ban đầu</p>
                   <p className="text-xl font-bold text-neutral-800 font-mono">{(stats.n_original_features ?? 0).toLocaleString()}</p>
                 </div>
               </div>
               <div className="rounded-xl p-4 border border-neutral-200 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-success-100 text-success-600 flex items-center justify-center">
+                <div className="min-w-10 min-h-10 rounded-full bg-success-100 text-success-600 flex items-center justify-center">
                   <CheckCircle1 size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">Đã chọn</p>
+                  <p className="text-[0.6875rem] text-neutral-500 font-bold uppercase tracking-wider">Đã chọn</p>
                   <p className="text-xl font-bold text-neutral-800 font-mono">{stats.n_selected_features}</p>
                 </div>
               </div>
               <div className="rounded-xl p-4 border border-neutral-200 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-warning-100 text-warning-600 flex items-center justify-center">
+                <div className="min-w-10 min-h-10 rounded-full bg-warning-100 text-warning-600 flex items-center justify-center">
                   <ClockThree size={20} />
                 </div>
                 <div>
-                  <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">Thời gian chạy</p>
+                  <p className="text-[0.6875rem] text-neutral-500 font-bold uppercase tracking-wider">Thời gian chạy</p>
                   <p className="text-xl font-bold text-neutral-800 font-mono">{(stats.runtime_seconds ?? 0).toFixed(0)} giây</p>
                 </div>
               </div>
@@ -76,7 +76,7 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Cấu hình */}
               <div className="rounded-xl border border-neutral-200 p-5">
-                <h3 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2">
+                <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-brand-500 rounded-full inline-block"></span>
                   Tham số cấu hình
                 </h3>
@@ -112,7 +112,7 @@ export default function FeatureExtractionOverview({ stats, collapseSignal }: Pro
 
               {/* Kết quả */}
               <div className="rounded-xl border border-neutral-200 p-5">
-                <h3 className="text-sm font-bold text-neutral-800 mb-4 flex items-center gap-2">
+                <h3 className="text-base font-bold text-neutral-800 mb-4 flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-info-500 rounded-full inline-block"></span>
                   Kết quả phân tích
                 </h3>
