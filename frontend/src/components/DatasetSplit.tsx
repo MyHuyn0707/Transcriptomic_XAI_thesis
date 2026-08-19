@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { GitMerge, AlertTriangle } from 'lucide-react';
-import { ChevronDown, ChevronUp } from '@tailgrids/icons';
-import { api, ContentInfo, SplitStats } from '../lib/api';
-import { PALETTE, DROPPED_COLOR } from '../lib/palette';
-import StatTile from './ui/StatTile';
+import React, { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { AlertTriangle, GitMerge } from "lucide-react";
+import { ChevronDown, ChevronUp } from "@tailgrids/icons";
+import { api, ContentInfo, SplitStats } from "../lib/api";
+import { PALETTE, DROPPED_COLOR } from "../lib/palette";
+import StatTile from "./ui/StatTile";
+import Panel from "./ui/Panel";
+import FieldLabel from "./ui/FieldLabel";
 
 /** Right-column display for Bước 2 "Xử lý & Chia Dữ liệu" — moved out of
  * DatasetOverview so that component keeps only the dataset-identity content
@@ -12,7 +14,15 @@ import StatTile from './ui/StatTile';
  * rare-class-drop + train/test split lives here, driven by whatever stats
  * (cached overview OR a live /split/preview) the parent last loaded.
  */
-export default function DatasetSplit({ datasetId, stats, collapseSignal }: { datasetId: string, stats: SplitStats | null, collapseSignal?: boolean }) {
+export default function DatasetSplit({
+  datasetId,
+  stats,
+  collapseSignal,
+}: {
+  datasetId: string;
+  stats: SplitStats | null;
+  collapseSignal?: boolean;
+}) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [content, setContent] = useState<ContentInfo>({});
 
@@ -24,10 +34,17 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
     if (!datasetId) return;
     let ignore = false;
     setContent({});
-    api.getOverview(datasetId)
-      .then(o => { if (!ignore) setContent(o.content || {}); })
-      .catch(() => { if (!ignore) setContent({}); });
-    return () => { ignore = true; };
+    api
+      .getOverview(datasetId)
+      .then((o) => {
+        if (!ignore) setContent(o.content || {});
+      })
+      .catch(() => {
+        if (!ignore) setContent({});
+      });
+    return () => {
+      ignore = true;
+    };
   }, [datasetId]);
 
   if (!datasetId || !stats) return null;
@@ -62,7 +79,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white p-6 rounded-2xl shadow-xs border border-success-100 transition-all duration-300">
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200 transition-all duration-300">
         <div
           className="flex items-center justify-between cursor-pointer group"
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -83,55 +100,109 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
         {!isCollapsed && (
           <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="grid grid-cols-2 gap-3 content-start">
-                <StatTile mono label="Tổng số mẫu ban đầu" value={Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)} />
-                <StatTile mono label="Số mẫu sau khi loại lớp hiếm" value={stats.n_samples_total} />
-                <StatTile mono label="Tổng số lớp ban đầu" value={allLabels.length} />
-                <StatTile mono label="Số lớp sau khi loại lớp hiếm" value={stats.class_labels.length} />
-                <StatTile mono label="Ngưỡng loại lớp hiếm" value={`< ${stats.min_samples_per_class} mẫu`} />
+              <div className="grid grid-cols-1 gap-3 content-start">
+                <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                  <FieldLabel as="span" className="text-neutral-500">
+                    Tổng số mẫu ban đầu
+                  </FieldLabel>
+                  <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">
+                    {Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)}
+                  </span>
+                </div>
+                <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                  <FieldLabel as="span" className="text-neutral-500">
+                    Số mẫu sau khi loại lớp hiếm
+                  </FieldLabel>
+                  <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">{stats.n_samples_total}</span>
+                </div>
+                <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                  <FieldLabel as="span" className="text-neutral-500">
+                    Tổng số lớp ban đầu
+                  </FieldLabel>
+                  <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">{allLabels.length}</span>
+                </div>
+                <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                  <FieldLabel as="span" className="text-neutral-500">
+                    Số lớp sau khi loại lớp hiếm
+                  </FieldLabel>
+                  <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">
+                    {stats.class_labels.length}
+                  </span>
+                </div>
               </div>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <StatTile mono label="Huấn luyện / Kiểm thử" value={`${stats.n_train} / ${stats.n_test}`} />
-                  <StatTile mono label="Tỷ lệ test_size" value={stats.test_size} />
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                    <FieldLabel as="span" className="text-neutral-500">
+                      Ngưỡng loại lớp hiếm
+                    </FieldLabel>
+                    <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">
+                      {`< ${stats.min_samples_per_class} mẫu`}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-neutral-600 font-medium text-sm mb-1.5 block">Số lớp ({allLabels.length})</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {allLabels.map((label, idx) => {
-                      const dropped = droppedSet.has(label);
-                      const color = dropped ? DROPPED_COLOR : PALETTE[idx % PALETTE.length];
-                      return (
-                        <div
-                          key={label}
-                          className="flex flex-col items-center bg-white border rounded-lg px-2 py-1 leading-tight"
-                          style={{ borderColor: color + '55' }}
-                          title={dropped ? 'Bị loại do quá ít mẫu' : undefined}
-                        >
-                          <span className="text-xs font-semibold flex items-center gap-1" style={{ color }}>
-                            {dropped && <AlertTriangle size={10} />}
-                            {vieName(label) || label}
-                          </span>
-                          {vieName(label) && (
-                            <span className="text-xs text-neutral-600 font-mono">{label}</span>
-                          )}
-                        </div>
-                      );
-                    })}
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                    <FieldLabel as="span" className="text-neutral-500">
+                      Huấn luyện / Kiểm thử
+                    </FieldLabel>
+                    <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">{`${stats.n_train} / ${stats.n_test}`}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="rounded-lg border border-neutral-200 px-3 py-2.5 flex justify-between items-center">
+                    <FieldLabel as="span" className="text-neutral-500">
+                      Tỷ lệ test_size
+                    </FieldLabel>
+                    <span className="text-lg font-mono font-bold text-neutral-800 mt-0.5">{stats.test_size}</span>
                   </div>
                 </div>
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-2.5">
+              <FieldLabel className="text-sm font-bold text-neutral-800">Số lớp ({allLabels.length})</FieldLabel>
+              <div className="grid md:grid-cols-3 gap-2.5">
+                {allLabels.map((label, idx) => {
+                  const dropped = droppedSet.has(label);
+                  const color = dropped ? DROPPED_COLOR : PALETTE[idx % PALETTE.length];
+                  return (
+                    <Panel key={label} padding="sm" title={dropped ? "Bị loại do quá ít mẫu" : undefined}>
+                      <FieldLabel>
+                        <span className="inline-flex items-center gap-1 break-all" style={{ color }}>
+                          {label}
+                        </span>
+                      </FieldLabel>
+                      <p className="text-base text-neutral-800 mt-0.5">{vieName(label) || label}</p>
+                      {dropped && (
+                        <Panel surface="warning" padding="xs" className="flex gap-2.5 mt-2">
+                          <AlertTriangle size={13} className="shrink-0 mt-0.5 text-warning-700" />
+                          <p className="text-xs leading-relaxed text-left text-warning-800">
+                            Bị loại khỏi tập huấn luyện do quá ít mẫu.
+                          </p>
+                        </Panel>
+                      )}
+                    </Panel>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               <div className="h-72 border border-neutral-100 rounded-xl p-4 pt-6 relative">
-                <h3 className="absolute -top-3 left-4 bg-white px-2 text-sm font-semibold text-neutral-700">Phân phối các lớp</h3>
+                <h3 className="absolute -top-3 left-4 bg-white px-2 text-sm font-semibold text-neutral-700">
+                  Phân phối các lớp
+                </h3>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={classDistributionData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                  <BarChart
+                    data={classDistributionData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" />
                     <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11 }} />
-                    <Tooltip cursor={{fill: 'transparent'}} />
+                    <Tooltip cursor={{ fill: "transparent" }} />
                     <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                       {classDistributionData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -151,7 +222,9 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                     <span className="flex items-center gap-1.5">
                       <span
                         className="w-3 h-3 rounded-sm inline-block border border-neutral-400"
-                        style={{ backgroundImage: 'repeating-linear-gradient(45deg, #94a3b8 0 2px, transparent 2px 4px)' }}
+                        style={{
+                          backgroundImage: "repeating-linear-gradient(45deg, #94a3b8 0 2px, transparent 2px 4px)",
+                        }}
                       />
                       Test
                     </span>
@@ -169,7 +242,8 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                           key={`hatch-def-${index}`}
                           id={`test-hatch-${index}`}
                           patternUnits="userSpaceOnUse"
-                          width="6" height="6"
+                          width="6"
+                          height="6"
                           patternTransform="rotate(45)"
                         >
                           <rect width="6" height="6" fill={entry.color} />
@@ -180,7 +254,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                     <YAxis />
-                    <Tooltip cursor={{fill: '#f1f5f9'}} />
+                    <Tooltip cursor={{ fill: "#f1f5f9" }} />
                     <Bar dataKey="Train" name="Train" radius={[4, 4, 0, 0]}>
                       {splitData.map((entry, index) => (
                         <Cell key={`train-${index}`} fill={entry.color} />
@@ -188,7 +262,12 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                     </Bar>
                     <Bar dataKey="Test" name="Test" radius={[4, 4, 0, 0]}>
                       {splitData.map((entry, index) => (
-                        <Cell key={`test-${index}`} fill={`url(#test-hatch-${index})`} stroke={entry.color} strokeWidth={1} />
+                        <Cell
+                          key={`test-${index}`}
+                          fill={`url(#test-hatch-${index})`}
+                          stroke={entry.color}
+                          strokeWidth={1}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
