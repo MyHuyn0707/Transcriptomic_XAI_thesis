@@ -208,7 +208,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 variant="primary" appearance="fill"
                 onClick={handleUploadInspect}
                 disabled={!uploadFile1 || isUploadInspecting || isUploadBuilding}
-                className="w-full"
+                className="w-full text-base"
               >
                 {isUploadInspecting ? <Reload size={16} className="animate-spin" /> : <ScanSearch size={16} className="text-neutral-600" />}
                 Phân tích
