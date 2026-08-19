@@ -35,7 +35,7 @@ export default function RunHistoryList({
 
   return (
     <div className="mt-4">
-      <div className="flex items-center gap-2 text-base font-semibold text-neutral-600 mb-2">
+      <div className="flex items-center gap-2 text-sm font-semibold text-neutral-600 mb-2">
         <History size={14} /> {title} ({runs.length})
       </div>
       <div className="space-y-1.5 max-h-40 overflow-y-auto">
@@ -49,7 +49,7 @@ export default function RunHistoryList({
               disabled={disabled || !available}
               title={!available ? unavailableTitle : undefined}
               className={cn(
-                "w-full text-left text-base px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
+                "w-full text-left text-sm px-3 py-2 rounded-lg border transition-colors flex items-center justify-between gap-2",
                 run.status === 'error'
                   ? "border-danger-100 bg-danger-50 text-danger-600"
                   : !available

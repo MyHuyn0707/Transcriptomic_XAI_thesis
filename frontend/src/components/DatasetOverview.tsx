@@ -12,36 +12,25 @@ import FieldLabel from "./ui/FieldLabel";
  * "Thu gọn/Mở rộng" toggle since the list can get long (many NCI sources)
  * and shouldn't force the whole annotation card to scroll. */
 function ReferencesList({ referenceList, disclaimer }: { referenceList: Reference[]; disclaimer?: string }) {
-  const [open, setOpen] = useState(true);
   return (
     <div className="mt-5 pt-4 border-t border-neutral-100">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] uppercase tracking-wider text-neutral-600 font-bold">Nguồn tham khảo</p>
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 transition-colors"
-        >
-          {open ? "Thu gọn" : "Mở rộng"}
-          {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        </button>
+        <p className="text-xs uppercase tracking-wider text-neutral-800 font-bold">Nguồn tham khảo</p>
       </div>
-      {open && (
-        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-          <ul className="space-y-1">
-            {referenceList.map((ref) => (
-              <li key={ref.url} className="text-xs text-neutral-600 flex items-center gap-1.5">
-                <Link1AngularRight size={11} className="shrink-0 text-neutral-600" />
-                <a href={ref.url} target="_blank" rel="noreferrer" className="hover:text-brand-600 hover:underline">
-                  {ref.title}
-                </a>
-                <span className="text-neutral-400">·</span>
+      <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+        <ul className="space-y-1.5">
+          {referenceList.map((ref) => (
+            <li key={ref.url} className="text-xs text-neutral-600 flex items-center gap-2">
+              <Link1AngularRight size={11} className="shrink-0 text-neutral-600" />
+              <a href={ref.url} target="_blank" rel="noreferrer" className="hover:text-brand-600 underline">
+                {ref.title}&nbsp;&nbsp;<span className="text-neutral-400">·</span>&nbsp;&nbsp;
                 <span>{ref.publisher}</span>
-              </li>
-            ))}
-          </ul>
-          {disclaimer && <p className="text-xs text-neutral-600 italic mt-3">{disclaimer}</p>}
-        </div>
-      )}
+              </a>
+            </li>
+          ))}
+        </ul>
+        {disclaimer && <p className="text-xs text-neutral-600 italic mt-3">DISCLAIMER: {disclaimer}</p>}
+      </div>
     </div>
   );
 }
@@ -94,21 +83,23 @@ export default function DatasetOverview({
   if (isTemp) {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="bg-white p-6 rounded-2xl shadow-xs border border-neutral-200 transition-all duration-300">
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
               <Database size={20} />
             </div>
-            <h2 className="text-lg font-semibold text-neutral-800">Tổng quan dữ liệu</h2>
+            <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-success-700 transition-colors">
+              Tổng quan dữ liệu
+            </h2>
           </div>
-          <div className="mt-4 flex items-start gap-2.5 bg-warning-50 border border-warning-200 rounded-lg p-4 text-sm text-warning-800 leading-relaxed">
-            <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
-            <p>
+          <Panel surface="warning" padding="md" className="my-5 flex gap-2.5">
+            <AlertTriangle size={16} className="text-warning-800 shrink-0 mt-0.5" />
+            <p className="text-sm text-warning-800">
               Dataset này được tải lên trong phiên làm việc hiện tại và chưa qua kiểm duyệt hoặc tìm kiếm thông tin chi
               tiết (nghiên cứu gốc, chú giải sinh học, hình ảnh minh họa), nên tạm thời chưa có thông tin tổng quan để
               hiển thị.
             </p>
-          </div>
+          </Panel>
         </div>
       </div>
     );
@@ -197,18 +188,20 @@ export default function DatasetOverview({
                 })()}
 
                 <div className="grid grid-cols-2 gap-3">
-                  {origin.geo_accession && <StatTile label="GEO" value={origin.geo_accession} />}
-                  {content.organism && <StatTile label="Organism" value={content.organism} />}
-                  {origin.samples_kept != null && <StatTile label="Tổng số mẫu ban đầu" value={origin.samples_kept} />}
+                  {origin.geo_accession && <StatTile mono label="GEO" value={origin.geo_accession} />}
+                  {content.organism && <StatTile mono label="Organism" value={content.organism} />}
+                  {origin.samples_kept != null && (
+                    <StatTile mono label="Tổng số mẫu ban đầu" value={origin.samples_kept} />
+                  )}
                   {overview.raw_class_counts && (
-                    <StatTile label="Tổng số lớp ban đầu" value={Object.keys(overview.raw_class_counts).length} />
+                    <StatTile mono label="Tổng số lớp ban đầu" value={Object.keys(overview.raw_class_counts).length} />
                   )}
                 </div>
 
                 {/* Dataset description — concise summary */}
                 {content.description_vi && (
                   <div>
-                    <FieldLabel className="text-sm font-semibold tracking-wider">Mô tả tập dữ liệu</FieldLabel>
+                    <FieldLabel className="text-sm font-bold text-neutral-800">Mô tả tập dữ liệu</FieldLabel>
                     <p className="text-base text-neutral-700 leading-relaxed mt-1.5">{content.description_vi}</p>
                   </div>
                 )}
@@ -257,7 +250,7 @@ export default function DatasetOverview({
                               </p>
                             )}
                             {asset && diseaseContext.media_disclaimer_vi && (
-                              <p className="text-[.6875rem] text-neutral-500 leading-relaxed mt-4 pt-3 border-t border-neutral-100 italic">
+                              <p className="text-xs text-neutral-500 leading-relaxed mt-4 pt-3 border-t border-neutral-100 italic">
                                 DISCLAIMER: {diseaseContext.media_disclaimer_vi}
                               </p>
                             )}
@@ -274,10 +267,10 @@ export default function DatasetOverview({
                     <div className="space-y-5">
                       {datasetStudy.original_study_title_en && (
                         <div>
-                          <FieldLabel className="text-sm font-semibold tracking-wider">
+                          <FieldLabel className="text-sm font-bold tracking-wider text-neutral-800">
                             Tiêu đề nghiên cứu gốc
                           </FieldLabel>
-                          <p className="text-neutral-700">
+                          <p className="text-neutral-700 leading-relaxed">
                             {datasetStudy.original_study_title_en}
                             {datasetStudy.arrayexpress_accession && (
                               <span className="text-sm font-mono ml-2">({datasetStudy.arrayexpress_accession})</span>
@@ -287,13 +280,15 @@ export default function DatasetOverview({
                       )}
                       {datasetStudy.study_objective_vi && (
                         <div>
-                          <FieldLabel className="text-sm font-semibold tracking-wider">Mục tiêu nghiên cứu</FieldLabel>
+                          <FieldLabel className="text-sm font-bold tracking-wider text-neutral-800">
+                            Mục tiêu nghiên cứu
+                          </FieldLabel>
                           <p className="text-neutral-700 leading-relaxed">{datasetStudy.study_objective_vi}</p>
                         </div>
                       )}
                       {datasetStudy.original_design_vi && (
                         <div>
-                          <FieldLabel className="text-sm font-semibold tracking-wider">
+                          <FieldLabel className="text-sm font-bold tracking-wider text-neutral-800">
                             Thiết kế nghiên cứu gốc
                           </FieldLabel>
                           <p className="text-neutral-700 leading-relaxed">{datasetStudy.original_design_vi}</p>
@@ -303,12 +298,12 @@ export default function DatasetOverview({
                     {datasetStudy.local_ml_relation_vi && (
                       <div className="mt-5">
                         <Panel surface="info" padding="md" className="flex gap-2.5">
-                          <InfoCircle size={16} className="text-info-500 shrink-0 mt-0.5" />
+                          <InfoCircle size={16} className="text-info-700 shrink-0 mt-0.5" />
                           <div>
-                            <p className="text-info-700 text-xs uppercase tracking-widest font-bold mb-1">
+                            <p className="text-info-700 text-xs uppercase tracking-wider font-bold mb-1">
                               Liên hệ với bài toán học máy ở đây
                             </p>
-                            <span className="text-neutral-800 leading-relaxed text-sm">
+                            <span className="text-info-700 leading-relaxed text-sm">
                               {datasetStudy.local_ml_relation_vi}
                             </span>
                           </div>
@@ -316,9 +311,9 @@ export default function DatasetOverview({
                       </div>
                     )}
                     {datasetProvenance?.download_provider?.name && (
-                      <p className="text-[.6875rem] text-neutral-600 mt-4 pt-3 border-t border-neutral-100">
+                      <p className="text-xs text-neutral-600 mt-4 pt-3 border-t border-neutral-100">
                         Nguồn tải file dữ liệu:{" "}
-                        <span className="font-semibold">{datasetProvenance.download_provider.name}</span>
+                        <span className="font-bold text-neutral-800">{datasetProvenance.download_provider.name}</span>
                         {datasetProvenance.provenance_note_vi && ` — ${datasetProvenance.provenance_note_vi}`}
                       </p>
                     )}
@@ -330,12 +325,12 @@ export default function DatasetOverview({
                     "Phân phối các lớp" chart exactly (both index PALETTE by position in
                     raw_class_counts), so a class keeps the same color across both steps. */}
                 {Object.keys(classesContent).length > 0 && (
-                  <CollapsibleCard title="Đặc tính Sinh học các Phân lớp">
+                  <CollapsibleCard title="Đặc tính sinh học các phân lớp">
                     {content.dataset_note_vi && (
-                      <Panel surface="warning" padding="md" className="mb-4 flex gap-2.5">
-                        <AlertTriangle size={16} className="text-warning-500 shrink-0 mt-0.5" />
+                      <Panel surface="warning" padding="md" className="mb-5 flex gap-2.5">
+                        <AlertTriangle size={16} className="text-warning-800 shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-warning-800 text-xs uppercase tracking-widest font-bold mb-1">Lưu ý</p>
+                          <p className="text-warning-800 text-xs uppercase tracking-wider font-bold mb-1">Lưu ý</p>
                           <span className="text-warning-800 leading-relaxed text-sm">{content.dataset_note_vi}</span>
                         </div>
                       </Panel>
@@ -349,14 +344,16 @@ export default function DatasetOverview({
                       const classCard = (label: string, cls: ClassContent, color: string) => (
                         <div
                           key={label}
-                          className="bg-white p-4 rounded-lg border border-neutral-200 shadow-xs border-l-4 flex flex-col items-start text-left h-full"
+                          className="bg-white p-4 rounded-lg border border-neutral-200 shadow-xs border-l-3 flex flex-col items-start text-left h-full"
                           style={{ borderLeftColor: color }}
                         >
-                          <h4 className="font-bold text-neutral-800 leading-relaxed text-left">
+                          <h4 className="font-bold text-neutral-800 leading-snug text-left text-pretty mb-1">
                             {cls.display_name_vi || label}
                           </h4>
                           {cls.display_name_vi && (
-                            <FieldLabel className="text-xs font-semibold tracking-wider">{label}</FieldLabel>
+                            <FieldLabel className="text-xs font-bold tracking-wider text-neutral-500/90 break-all">
+                              {label}
+                            </FieldLabel>
                           )}
                           <p className="text-sm text-neutral-700 leading-relaxed text-left mt-2">
                             {cls.description_vi}
@@ -379,24 +376,26 @@ export default function DatasetOverview({
                               {excluded.map(([label, cls]) => (
                                 <div
                                   key={label}
-                                  className="bg-white p-4 rounded-lg border border-neutral-200 shadow-xs border-l-4 flex flex-col items-start text-left"
+                                  className="bg-white p-4 rounded-lg border border-neutral-200 shadow-xs border-l-3 flex flex-col items-start text-left"
                                   style={{ borderLeftColor: DROPPED_COLOR }}
                                 >
-                                  <h4 className="font-bold text-neutral-800 leading-relaxed text-left">
+                                  <h4 className="font-bold text-neutral-800 leading-snug text-left text-pretty mb-1">
                                     {cls.display_name_vi || label}
                                   </h4>
                                   {cls.display_name_vi && (
-                                    <FieldLabel className="text-xs font-semibold tracking-wider">{label}</FieldLabel>
+                                    <FieldLabel className="text-xs font-bold tracking-wider text-neutral-500/90 break-all">
+                                      {label}
+                                    </FieldLabel>
                                   )}
                                   <p className="text-sm text-neutral-700 leading-relaxed text-left mt-2 mb-2.5">
                                     {cls.description_vi}
                                   </p>
-                                  <div className="w-full flex items-start gap-1.5 text-warning-700">
-                                    <AlertTriangle size={13} className="shrink-0 mt-0.5 text-warning-500" />
+                                  <Panel surface="warning" padding="xs" className="flex gap-2.5">
+                                    <AlertTriangle size={13} className="shrink-0 mt-0.5 text-warning-700" />
                                     <p className="text-xs leading-relaxed text-left text-warning-800">
                                       Bị loại khỏi tập huấn luyện do quá ít mẫu.
                                     </p>
-                                  </div>
+                                  </Panel>
                                 </div>
                               ))}
                             </div>
@@ -422,10 +421,10 @@ export default function DatasetOverview({
                         valueClassName="text-success-600"
                         value={
                           <>
-                            {origin.probes_with_gene_symbol?.toLocaleString()}
-                            <span className="block text-xs font-normal text-neutral-600 mt-1">
-                              từ annotation file: {origin.probes_from_annotation_file?.toLocaleString()} · MyGene.info:{" "}
-                              {origin.probes_from_mygene?.toLocaleString()}
+                            {origin.probes_with_gene_symbol?.toLocaleString()}{" "}
+                            <span className="text-xs font-normal text-neutral-600">
+                              (từ annotation file: {origin.probes_from_annotation_file?.toLocaleString()} · MyGene.info:{" "}
+                              {origin.probes_from_mygene?.toLocaleString()})
                             </span>
                           </>
                         }
@@ -436,7 +435,11 @@ export default function DatasetOverview({
                         valueClassName="text-danger-500"
                         value={origin.probes_without_gene_symbol?.toLocaleString()}
                       />
-                      <StatTile label="AFFX control đã loại" value={origin.affx_control_removed?.toLocaleString()} mono />
+                      <StatTile
+                        label="AFFX control đã loại"
+                        value={origin.affx_control_removed?.toLocaleString()}
+                        mono
+                      />
                       <StatTile
                         label="Probes / Genes duy nhất"
                         mono
@@ -448,7 +451,9 @@ export default function DatasetOverview({
                         value={
                           <>
                             {origin.samples_kept?.toLocaleString()}{" "}
-                            <span className="text-sm font-normal text-neutral-600">(NA dropped: {origin.na_dropped})</span>
+                            <span className="text-xs font-normal text-neutral-600">
+                              (NA dropped: {origin.na_dropped})
+                            </span>
                           </>
                         }
                       />

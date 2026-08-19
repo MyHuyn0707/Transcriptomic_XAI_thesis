@@ -149,10 +149,10 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                   <span className="font-mono text-sm text-neutral-700 truncate" title={selectedDataset.id}>{selectedDataset.id}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <StatTile label="Nền tảng vi mảng" value={selectedDataset.platform} truncate />
-                  <StatTile label="Mẫu bệnh phẩm" value={selectedDataset.n_samples} />
-                  <StatTile label="Đặc trưng" value={selectedDataset.n_features?.toLocaleString()} />
-                  <StatTile label="Số lớp" value={selectedDataset.n_classes} />
+                  <StatTile label="Nền tảng vi mảng" value={selectedDataset.platform} truncate mono />
+                  <StatTile label="Mẫu bệnh phẩm" value={selectedDataset.n_samples} mono />
+                  <StatTile label="Đặc trưng" value={selectedDataset.n_features?.toLocaleString()} mono />
+                  <StatTile label="Số lớp" value={selectedDataset.n_classes} mono />
                 </div>
               </div>
             )}
@@ -180,12 +180,12 @@ export default function Step1Dataset({ state, dispatch }: Props) {
               </div>
 
               <div>
-                <label className="text-base text-neutral-600 font-medium block mb-1">Tên thư mục lưu trữ</label>
+                <label className="text-sm text-neutral-600 font-medium block mb-1">Tên thư mục lưu trữ</label>
                 <Input value={uploadTissue} onChange={e => setUploadTissue(e.target.value)} className="w-full text-sm" />
               </div>
 
               <div>
-                <label className="text-base text-neutral-600 font-medium block mb-1">
+                <label className="text-sm text-neutral-600 font-medium block mb-1">
                   {uploadSource === 'geo' ? 'File series matrix' : 'File probe CuMiDa'}
                 </label>
                 <FilePicker
@@ -195,7 +195,7 @@ export default function Step1Dataset({ state, dispatch }: Props) {
                 />
               </div>
               <div>
-                <label className="text-base text-neutral-600 font-medium block mb-1">
+                <label className="text-sm text-neutral-600 font-medium block mb-1">
                   File annotation {uploadSource === 'geo' ? 'GPL' : 'CuMiDa'} (không bắt buộc)
                 </label>
                 <FilePicker
