@@ -37,11 +37,16 @@ export async function trainModel(page: Page) {
   await page.getByRole('button', { name: 'Huấn luyện lại' }).click();
 }
 
-/** @param sampleId the GEO sample_id — also the <option value>, so this
- * matches regardless of the "(nhãn thật: ...)" label text next to it. */
+/** @param sampleId the GEO sample_id, which the option's visible text starts
+ * with ("{sampleId} (nhãn thật: ...)") — Bước 5's sample picker is Tailgrids'
+ * custom Select (react-aria-components combobox), not a native <select>, so
+ * this drives it the way a real user would — open the trigger, click the
+ * option — instead of Playwright's selectOption (which only targets native
+ * <select>). */
 export async function predictSample(page: Page, sampleId: string) {
   await openStep(page, 'Kiểm Thử (Thực Nghiệm)');
-  await page.getByRole('combobox').last().selectOption(sampleId);
+  await page.getByRole('button', { name: 'Mẫu bệnh phẩm' }).click();
+  await page.getByRole('option', { name: new RegExp(`^${sampleId}`) }).click();
   await page.getByRole('button', { name: 'Dự Đoán Kết Quả' }).click();
 }
 
