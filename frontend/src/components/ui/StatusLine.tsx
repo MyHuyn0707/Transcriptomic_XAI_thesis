@@ -29,7 +29,7 @@ export default function StatusLine({ log, loading, className }: StatusLineProps)
   const toneClass = isError ? 'text-danger-600' : isSuccess ? 'text-success-600' : 'text-neutral-600';
 
   return (
-    <div className={cn('flex items-center gap-2 text-xs mt-3', toneClass, className)} title={lastLine}>
+    <div className={cn('flex items-center gap-2 text-sm mt-3', toneClass, className)} title={lastLine}>
       <Icon size={14} className={cn('shrink-0', loading && 'animate-spin')} />
       <span className="truncate">{text}</span>
     </div>

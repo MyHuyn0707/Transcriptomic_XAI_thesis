@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { FileText, Reload, Play } from '@tailgrids/icons';
 import { api, RunRecord, SplitStats } from '../../lib/api';
 import { WorkspaceAction, WorkspaceState } from '../../state/types';
 import { errorMessage } from '../../lib/utils';
 import { Button } from '../tailgrids/core/button';
+import { Input } from '../tailgrids/core/input';
 import Panel from '../ui/Panel';
-import { Badge } from '../tailgrids/core/badge';
 import StatusLine from '../ui/StatusLine';
 import RunHistoryList from '../RunHistoryList';
 
@@ -89,28 +90,22 @@ export default function Step2Split({ state, dispatch }: Props) {
 
   return (
     <fieldset disabled={splitSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
-      <Panel className="mb-5 text-sm">
-        <div className="flex justify-between items-center mb-3">
-          <span className="font-semibold text-neutral-800">Cấu hình chia dữ liệu</span>
-          <Badge color="primary">Tùy chỉnh</Badge>
+      <div className="space-y-3 mb-5">
+        <div>
+          <label className="text-sm text-neutral-600 font-medium block mb-1">min_samples_per_class</label>
+          <Input type="number" min={2} value={splitInputs.min_samples_per_class} onChange={e => dispatch({ type: 'split_inputs_changed', inputs: { ...splitInputs, min_samples_per_class: Number(e.target.value) } })} className="w-full text-sm" />
         </div>
-        <div className="grid grid-cols-1 gap-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-neutral-600">min_samples_per_class</span>
-            <input type="number" min={2} value={splitInputs.min_samples_per_class} onChange={e => dispatch({ type: 'split_inputs_changed', inputs: { ...splitInputs, min_samples_per_class: Number(e.target.value) } })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-neutral-600">test_size</span>
-            <input type="number" step="0.01" min={0.05} max={0.5} value={splitInputs.test_size} onChange={e => dispatch({ type: 'split_inputs_changed', inputs: { ...splitInputs, test_size: Number(e.target.value) } })} className="w-24 px-2 py-1 text-right font-mono text-brand-700 font-semibold bg-white border border-neutral-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
-          </div>
+        <div>
+          <label className="text-sm text-neutral-600 font-medium block mb-1">test_size</label>
+          <Input type="number" step="0.01" min={0.05} max={0.5} value={splitInputs.test_size} onChange={e => dispatch({ type: 'split_inputs_changed', inputs: { ...splitInputs, test_size: Number(e.target.value) } })} className="w-full text-sm" />
         </div>
-      </Panel>
+      </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3">
         <Button
           onClick={() => handleSplitAction('retrain')}
           disabled={isSplitLoading || !datasetId}
-          className="flex-1"
+          className="w-full"
         >
           {isSplitLoading ? <Reload size={16} className="animate-spin" /> : <Play size={16} />}
           Thực hiện lại
@@ -120,16 +115,19 @@ export default function Step2Split({ state, dispatch }: Props) {
           onClick={() => handleSplitAction('load')}
           disabled={isSplitLoading || !datasetId || selectedDataset?.is_temp}
           title={selectedDataset?.is_temp ? 'Dataset tải lên chưa từng qua xử lý offline nên không có số liệu chia dữ liệu cache — dùng "Thực hiện lại".' : undefined}
-          className="flex-1"
+          className="w-full"
         >
           <FileText size={16} className="text-neutral-600" />
           Tải dữ liệu có sẵn
         </Button>
       </div>
       {selectedDataset?.is_temp && (
-        <p className="text-xs text-warning-600 mt-2">
-          Dataset tải lên chưa có số liệu chia dữ liệu cache — chỉ dùng được "Thực hiện lại".
-        </p>
+        <Panel surface="warning" padding="xs" className="mt-3 flex gap-2.5">
+          <AlertTriangle size={14} className="text-warning-800 shrink-0 mt-0.5" />
+          <p className="text-xs text-warning-800 leading-relaxed">
+            Dataset tải lên chưa có số liệu chia dữ liệu cache — chỉ dùng được "Thực hiện lại".
+          </p>
+        </Panel>
       )}
 
       {splitLog && <StatusLine log={splitLog} loading={isSplitLoading} />}
