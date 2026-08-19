@@ -11,7 +11,7 @@ interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const SURFACE_CLASSES: Record<PanelSurface, string> = {
   neutral: 'bg-neutral-50/20 border-neutral-200',
-  brand: 'bg-brand-50/50 border-brand-100',
+  brand: 'bg-brand-50/40 border-brand-500',
   success: 'bg-success-50/50 border-success-100',
   warning: 'bg-warning-50/60 border-warning-600',
   danger: 'bg-danger-50/50 border-danger-200',

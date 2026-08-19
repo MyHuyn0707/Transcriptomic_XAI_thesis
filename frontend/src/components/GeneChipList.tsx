@@ -1,5 +1,4 @@
 import React from 'react';
-import Panel from './ui/Panel';
 
 interface GeneChipListProps {
   title: string;
@@ -14,7 +13,7 @@ interface GeneChipListProps {
 export default function GeneChipList({ title, genes, onJumpToGene, className }: GeneChipListProps) {
   if (genes.length === 0) return null;
   return (
-    <Panel padding="lg" className={className}>
+    <div className={className}>
       <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 mb-4">{title}</h4>
       <div className="flex flex-wrap gap-2">
         {genes.map(gene => (
@@ -28,6 +27,6 @@ export default function GeneChipList({ title, genes, onJumpToGene, className }: 
           </button>
         ))}
       </div>
-    </Panel>
+    </div>
   );
 }

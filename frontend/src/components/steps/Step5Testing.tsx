@@ -6,8 +6,11 @@ import { classColor } from '../../lib/palette';
 import { displayLabel } from '../../lib/metrics';
 import { api, PredictResponse } from '../../lib/api';
 import { canonicalClassLabels, fsMethodKeyOf, WorkspaceAction, WorkspaceState } from '../../state/types';
-import { Button } from '../tailgrids/core/button';
+import { Button, buttonStyles } from '../tailgrids/core/button';
+import { TabRoot, TabList, TabTrigger, TabContent } from '../tailgrids/core/tabs';
+import { Select, SelectContent, SelectIndicator, SelectItem, SelectTrigger, SelectValue } from '../tailgrids/core/select';
 import Panel from '../ui/Panel';
+import FilePicker from '../ui/FilePicker';
 import VoteBar from '../VoteBar';
 import GeneChipList from '../GeneChipList';
 
@@ -111,60 +114,73 @@ export default function Step5Testing({ state, dispatch }: Props) {
   return (
     <fieldset disabled={isTesting} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
       <div className="flex flex-col gap-4">
-         <div className="flex gap-2 p-1 bg-neutral-100 rounded-lg text-sm">
-           <button
-             onClick={() => dispatch({ type: 'test_mode_changed', mode: 'sample' })}
-             className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'sample' ? "bg-white shadow-xs text-brand-700 font-medium" : "text-neutral-600")}
-           >
-             <ListChecks size={14} /> Chọn mẫu có sẵn
-           </button>
-           <button
-             onClick={() => dispatch({ type: 'test_mode_changed', mode: 'upload' })}
-             className={cn("flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors", testMode === 'upload' ? "bg-white shadow-xs text-brand-700 font-medium" : "text-neutral-600")}
-           >
-             <UploadCloud size={14} /> Tải lên file
-           </button>
-         </div>
+        <TabRoot
+          value={testMode}
+          onValueChange={(mode) => dispatch({ type: 'test_mode_changed', mode: mode as 'sample' | 'upload' })}
+          className="border-0 rounded-none max-w-full [&>div:first-child]:border-none! [&>div:first-child]:p-0!"
+        >
+          <TabList className="!p-0 !border-0 mb-4 overflow-visible flex-wrap">
+            <TabTrigger value="sample" icon={<ListChecks size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
+              Chọn mẫu có sẵn
+            </TabTrigger>
+            <TabTrigger value="upload" icon={<UploadCloud size={14} className="shrink-0" />} className="flex-1 justify-center whitespace-normal text-center">
+              Tải lên file
+            </TabTrigger>
+          </TabList>
 
-         {/* Download the exact held-out test set (test_set.csv +
-             manifest.csv + samples/*.json) — for transparency
-             (audit which rows were held out) and for re-testing
-             via "Tải lên file" above. Works for both a cached
-             dataset and a fresh upload / custom "Thực hiện lại"
-             split (backend recomputes live when there's no cache
-             yet) — the URL already carries the current splitParams. */}
-         {datasetId && (
-           <a
-             href={api.getTestSetDownloadUrl(datasetId, fsMethodKey, splitParams)}
-             download
-             className="w-full py-2 border border-neutral-200 hover:bg-neutral-50 text-neutral-700 rounded-lg flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"
-           >
-             <Download1 size={14} /> Tải xuống test set (ZIP) — minh bạch dữ liệu đánh giá
-           </a>
-         )}
+          {/* Download the exact held-out test set (test_set.csv +
+              manifest.csv + samples/*.json) — for transparency
+              (audit which rows were held out) and for re-testing
+              via "Tải lên file" above. Works for both a cached
+              dataset and a fresh upload / custom "Thực hiện lại"
+              split (backend recomputes live when there's no cache
+              yet) — the URL already carries the current splitParams. */}
+          {datasetId && (
+            <a
+              href={api.getTestSetDownloadUrl(datasetId, fsMethodKey, splitParams)}
+              download
+              title="Minh bạch dữ liệu đánh giá — tải toàn bộ test set đã dùng"
+              className={cn(buttonStyles({ variant: 'primary', appearance: 'outline', size: 'sm' }), 'w-full mb-4')}
+            >
+              <Download1 size={16} /> Tải xuống test set (ZIP)
+            </a>
+          )}
 
-         {testMode === 'sample' ? (
-           <select
-             value={testSampleId}
-             onChange={(e) => dispatch({ type: 'test_sample_selected', sampleId: e.target.value })}
-             className="w-full bg-neutral-50 border border-neutral-200 text-neutral-800 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors shadow-xs"
-           >
-             <option value="">-- Chọn mẫu bệnh phẩm (test set thật) --</option>
-             {testSamples.map(s => (
-               <option key={s.sample_id} value={s.sample_id}>{s.sample_id} (nhãn thật: {s.true_label})</option>
-             ))}
-           </select>
-         ) : (
-           <label className="w-full border-2 border-dashed border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center">
-             <UploadCloud size={24} className="mb-2 text-brand-500" />
-             <span className="font-medium text-sm">{testUploadFile ? testUploadFile.name : 'Tải lên mẫu bệnh phẩm'}</span>
-             <span className="text-xs text-neutral-600 mt-1">
-               Định dạng <span className="font-mono">.json</span> (giống mẫu test_set — chỉ cần giữ lại dữ liệu microarray, các trường khác có thể lược bỏ),
-               {' '}<span className="font-mono">.csv</span> (cột "samples,type,{'{probe}'}...") hoặc <span className="font-mono">.txt</span> (2 cột probe,giá trị)
-             </span>
-             <input type="file" accept=".json,.csv,.txt" className="hidden" onChange={(e) => dispatch({ type: 'test_upload_file_changed', file: e.target.files?.[0] || null })} />
-           </label>
-         )}
+          <TabContent value="sample" className="!p-0">
+            <Select
+              aria-label="Mẫu bệnh phẩm"
+              value={testSampleId}
+              onChange={(key) => dispatch({ type: 'test_sample_selected', sampleId: String(key) })}
+              className="w-full"
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+                <SelectIndicator />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="" textValue="-- Chọn mẫu bệnh phẩm (test set thật) --">-- Chọn mẫu bệnh phẩm (test set thật) --</SelectItem>
+                {testSamples.map(s => (
+                  <SelectItem key={s.sample_id} id={s.sample_id} textValue={s.sample_id}>
+                    {s.sample_id} (nhãn thật: {s.true_label})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </TabContent>
+
+          <TabContent value="upload" className="!p-0">
+            <FilePicker
+              value={testUploadFile}
+              onChange={(file) => dispatch({ type: 'test_upload_file_changed', file })}
+              accept=".json,.csv,.txt"
+              placeholder="Tải lên mẫu bệnh phẩm"
+            />
+            <p className="text-xs text-neutral-600 mt-2">
+              Định dạng <span className="font-mono">.json</span> (giống mẫu test_set — chỉ cần giữ lại dữ liệu microarray, các trường khác có thể lược bỏ),
+              {' '}<span className="font-mono">.csv</span> (cột "samples,type,{'{probe}'}...") hoặc <span className="font-mono">.txt</span> (2 cột probe,giá trị)
+            </p>
+          </TabContent>
+        </TabRoot>
 
           <Button
             onClick={handleTestSample}
@@ -198,12 +214,12 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
         onClick={() => dispatch({ type: 'test_results_toggled' })}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 rounded-full bg-success-50 flex items-center justify-center text-success-600 border border-success-100">
+          <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 border border-brand-100">
             <Activity size={20} />
           </div>
-          <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-success-700 transition-colors">Kết quả Thực nghiệm</h2>
+          <h2 className="text-lg font-semibold text-neutral-800 group-hover:text-brand-700 transition-colors">Kết quả Thực nghiệm</h2>
         </div>
-        <button className="p-2 rounded-full hover:bg-success-50 text-neutral-600 hover:text-success-600 transition-colors shrink-0">
+        <button className="p-2 rounded-full hover:bg-brand-50 text-neutral-600 hover:text-brand-600 transition-colors shrink-0">
           {isTestResultsCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
         </button>
       </div>
@@ -217,9 +233,11 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
               <AlertTriangle className="text-danger-500" size={24} />
               <h3 className="text-lg font-bold text-neutral-800">Lỗi khi thực nghiệm</h3>
             </div>
-            <p className="text-sm text-danger-700 bg-danger-50 border border-danger-200 rounded-lg px-3 py-2">
-              {testResults.explanation || 'Đã có lỗi xảy ra, vui lòng thử lại.'}
-            </p>
+            <Panel surface="danger" padding="xs">
+              <p className="text-sm text-danger-700">
+                {testResults.explanation || 'Đã có lỗi xảy ra, vui lòng thử lại.'}
+              </p>
+            </Panel>
           </div>
           ) : (
           <div className="bg-white p-6 rounded-2xl shadow-xs animate-in fade-in slide-in-from-right-4 duration-500 border border-neutral-200 h-full">
@@ -284,21 +302,27 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
               </div>
             </div>
             {testResults.rulePrediction && testResults.rulePrediction !== testResults.classification && (
-              <p className="text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2 mb-6">
-                Hai dự đoán không trùng nhau — mô hình quyết định dựa trên toàn bộ đặc trưng, còn tập luật chỉ phản ánh các luật đơn giản tình cờ khớp với mẫu này (xem "Tỷ lệ Luật Khớp theo Lớp" bên dưới).
-              </p>
+              <Panel surface="warning" padding="xs" className="mb-6 flex gap-2.5">
+                <AlertTriangle size={14} className="text-warning-800 shrink-0 mt-0.5" />
+                <p className="text-xs text-warning-800 leading-relaxed">
+                  Hai dự đoán không trùng nhau — mô hình quyết định dựa trên toàn bộ đặc trưng, còn tập luật chỉ phản ánh các luật đơn giản tình cờ khớp với mẫu này (xem "Tỷ lệ Luật Khớp theo Lớp" bên dưới).
+                </p>
+              </Panel>
             )}
 
-            {/* Matched-rules list — same bordered-box level as the vote breakdown
-                and biomedical assessment below it (previously this list floated
-                without its own box, unlike its siblings). */}
-            <div className="bg-white rounded-xl p-5 border border-neutral-200 mb-6">
+            {/* Every sub-section below (matched rules, matched genes, partial
+                matches, partial genes, the 3 vote breakdowns, biomedical
+                assessment) shares one flat divide-y flow instead of each
+                drawing its own bordered box — 9 stacked Panels here used to
+                read as border-on-border noise. */}
+            <div className="divide-y divide-neutral-200 [&>div]:py-6 [&>div:first-child]:pt-0 [&>div:last-child]:pb-0">
+            <div>
               <div
                 className="flex items-center justify-between mb-4 cursor-pointer group/rules"
                 onClick={() => dispatch({ type: 'matched_rules_toggled' })}
               >
-                <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 group-hover/rules:text-brand-800 transition-colors">
-                  Danh sách Luật Khớp ({testResults.rules.length})
+                <h4 className="text-base font-semibold text-neutral-800 group-hover/rules:text-brand-700 transition-colors">
+                  Danh sách luật khớp ({testResults.rules.length})
                 </h4>
                 <button className="text-neutral-400 hover:text-brand-600 transition-colors">
                   {isMatchedRulesCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -309,7 +333,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 {testResults.rules.map((rule) => {
                   const ruleColor = classColor(rule.class, canonicalClassLabels(state));
                   return (
-                  <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-brand-50 border border-brand-200" : "bg-white border border-neutral-200 opacity-60")}>
+                  <div key={rule.id} className={cn("rounded-xl overflow-hidden transition-all", rule.matched ? "bg-white border border-neutral-200" : "bg-white border border-neutral-200 opacity-50")}>
                     <div className="px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span
@@ -318,11 +342,11 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                         >
                           {displayLabel(rule.class, testResults.classDisplayNames)}
                         </span>
-                        <code className="font-mono text-xs md:text-sm text-brand-800">{rule.text}</code>
+                        <code className="font-mono text-xs md:text-sm text-neutral-700">{rule.text}</code>
                       </div>
                       <button
                         onClick={() => dispatch({ type: 'expanded_rule_toggled', ruleId: rule.id })}
-                        className="text-brand-700 hover:text-brand-900 transition-colors shrink-0 ml-4 pl-3 border-l border-brand-200"
+                        className="text-neutral-700 hover:text-brand-900 transition-colors shrink-0 ml-4 pl-3 border-l border-neutral-200"
                         title="Giải thích Y sinh"
                       >
                         <InfoCircle size={16} />
@@ -354,13 +378,14 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
               const matchedGenes = Array.from(new Set(
                 testResults.rules.flatMap((rule) => Object.keys(rule.sampleValues)),
               )) as string[];
-              return (
-                <GeneChipList
-                  className="mb-6"
-                  title="Danh sách Gene trong Luật Khớp"
-                  genes={matchedGenes}
-                  onJumpToGene={onJumpToGene}
-                />
+              return matchedGenes.length > 0 && (
+                <div>
+                  <GeneChipList
+                    title="Danh sách Gene trong Luật Khớp"
+                    genes={matchedGenes}
+                    onJumpToGene={onJumpToGene}
+                  />
+                </div>
               );
             })()}
 
@@ -372,12 +397,12 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 the whole chip); the ratio badge sits on its own header row so it never
                 crowds out the rule text like it did when squeezed inline before. */}
             {testResults.partialMatches && testResults.partialMatches.length > 0 && (
-              <Panel padding="lg" className="mb-6">
+              <div>
                 <div
                   className="flex items-center justify-between mb-4 cursor-pointer group/partial"
                   onClick={() => dispatch({ type: 'partial_matches_toggled' })}
                 >
-                  <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 group-hover/partial:text-brand-800 transition-colors">
+                  <h4 className="text-base font-semibold text-neutral-800 group-hover/partial:text-brand-700 transition-colors">
                     Luật Khớp Một Phần ({testResults.partialMatches.length})
                   </h4>
                   <button className="text-neutral-400 hover:text-brand-600 transition-colors">
@@ -417,7 +442,7 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                   })}
                 </div>
                 )}
-              </Panel>
+              </div>
             )}
 
             {/* Genes that actually SATISFIED a condition in a partial-match rule —
@@ -430,13 +455,14 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                   (p) => p.conditions.filter(c => c.ok).map(c => c.gene),
                 ),
               )) as string[];
-              return (
-                <GeneChipList
-                  className="mb-6"
-                  title="Danh sách Gene trong Luật Khớp Một Phần"
-                  genes={partialMatchedGenes}
-                  onJumpToGene={onJumpToGene}
-                />
+              return partialMatchedGenes.length > 0 && (
+                <div>
+                  <GeneChipList
+                    title="Danh sách Gene trong Luật Khớp Một Phần"
+                    genes={partialMatchedGenes}
+                    onJumpToGene={onJumpToGene}
+                  />
+                </div>
               );
             })()}
 
@@ -444,17 +470,18 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 matched rules point to each class, independent of the model's
                 own predict() call (a transparency/sanity-check signal). */}
             {Object.keys(testResults.classVotes || {}).length > 0 && (
-              <VoteBar
-                className="mb-6"
-                title="Tỷ lệ Luật Khớp hoàn toàn theo Lớp"
-                rows={Object.entries(testResults.classVotes as Record<string, { count: number, percentage: number }>).map(([label, v]) => ({
-                  key: label,
-                  label: displayLabel(label, testResults.classDisplayNames),
-                  caption: `${v.count} luật (${v.percentage}%)`,
-                  percentage: v.percentage,
-                  color: classColor(label, canonicalClassLabels(state)),
-                }))}
-              />
+              <div>
+                <VoteBar
+                  title="Tỷ lệ Luật Khớp hoàn toàn theo Lớp"
+                  rows={Object.entries(testResults.classVotes as Record<string, { count: number, percentage: number }>).map(([label, v]) => ({
+                    key: label,
+                    label: displayLabel(label, testResults.classDisplayNames),
+                    caption: `${v.count} luật (${v.percentage}%)`,
+                    percentage: v.percentage,
+                    color: classColor(label, canonicalClassLabels(state)),
+                  }))}
+                />
+              </div>
             )}
 
             {/* Per-class breakdown of PARTIAL matches only (>=50% but <100% of
@@ -462,17 +489,18 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 complementing "Tỷ lệ Luật Khớp theo Lớp" above (full matches only)
                 instead of duplicating it with matched rules mixed back in. */}
             {Object.keys(testResults.classVotesOver50 || {}).length > 0 && (
-              <VoteBar
-                className="mb-6"
-                title="Tỷ lệ Luật Khớp một phần theo Lớp"
-                rows={Object.entries(testResults.classVotesOver50 as Record<string, { count: number, percentage: number }>).map(([label, v]) => ({
-                  key: label,
-                  label: displayLabel(label, testResults.classDisplayNames),
-                  caption: `${v.count} luật (${v.percentage}%)`,
-                  percentage: v.percentage,
-                  color: classColor(label, canonicalClassLabels(state)),
-                }))}
-              />
+              <div>
+                <VoteBar
+                  title="Tỷ lệ Luật Khớp một phần theo Lớp"
+                  rows={Object.entries(testResults.classVotesOver50 as Record<string, { count: number, percentage: number }>).map(([label, v]) => ({
+                    key: label,
+                    label: displayLabel(label, testResults.classDisplayNames),
+                    caption: `${v.count} luật (${v.percentage}%)`,
+                    percentage: v.percentage,
+                    color: classColor(label, canonicalClassLabels(state)),
+                  }))}
+                />
+              </div>
             )}
 
             {/* Comparison of match TIERS (đủ 100% vs một phần >=50%) out of every
@@ -486,35 +514,36 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                 { key: 'partial', label: 'Khớp một phần (≥50%)', count: testResults.nPartialMatchesTotal || 0, color: '#fbbf24' },
               ];
               return (
-                <VoteBar
-                  className="mb-6"
-                  title="Tỷ lệ Luật Khớp Trên 50%"
-                  rows={tiers.map(t => {
-                    const pct = Math.round((t.count / total) * 1000) / 10;
-                    return { key: t.key, label: t.label, color: t.color, percentage: pct, caption: `${t.count}/${total} (${pct}%)` };
-                  })}
-                />
+                <div>
+                  <VoteBar
+                    title="Tỷ lệ Luật Khớp Trên 50%"
+                    rows={tiers.map(t => {
+                      const pct = Math.round((t.count / total) * 1000) / 10;
+                      return { key: t.key, label: t.label, color: t.color, percentage: pct, caption: `${t.count}/${total} (${pct}%)` };
+                    })}
+                  />
+                </div>
               );
             })()}
 
-            <Panel padding="lg">
-              <div className="flex items-center gap-2 mb-4 text-brand-700">
+            <div>
+              <div className="flex items-center gap-2 mb-5 text-brand-700">
                 <Brain size={18} />
-                <h4 className="font-semibold tracking-wide text-xs uppercase">
+                <h4 className="font-bold tracking-wide text-sm uppercase">
                   Đánh Giá Y Sinh {testResults.llmUsed === false && <span className="text-neutral-600 normal-case">(template — Gemini không khả dụng)</span>}
                 </h4>
               </div>
               <div className="space-y-5">
                 {testResults.biomedicalSummary && (
                   <div>
-                    <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1.5">Tóm tắt</span>
-                    <p className="text-neutral-800 leading-relaxed text-base font-medium">{testResults.biomedicalSummary}</p>
+                    <span className="text-neutral-700 text-xs uppercase tracking-wider font-bold block mb-1.5">Tóm tắt</span>
+                    <p className="text-neutral-800 leading-relaxed text-base">{testResults.biomedicalSummary}</p>
                   </div>
                 )}
                 {testResults.biomedicalRationale && (
                   <div>
-                    <span className="text-neutral-600 text-xs uppercase tracking-wider font-semibold block mb-1.5">Cơ sở Sinh học</span>
-                    <p className="text-neutral-600 leading-relaxed text-base">{testResults.biomedicalRationale}</p>
+                    <span className="text-neutral-700 text-xs uppercase tracking-wider font-bold block mb-1.5">Cơ sở Sinh học</span>
+                    <p className="text-neutral-800 leading-relaxed text-base">{testResults.biomedicalRationale}</p>
                   </div>
                 )}
                 {testResults.biomedicalModelVsRule && (
@@ -522,33 +551,29 @@ export function TestResultsPanel({ state, dispatch, onJumpToGene }: PanelProps) 
                     surface={testResults.rulePrediction && testResults.rulePrediction !== testResults.classification ? 'warning' : 'brand'}
                   >
                     <span className={cn(
-                      "text-xs uppercase tracking-wider font-semibold block mb-1.5",
+                      "text-xs uppercase tracking-wider font-bold block mb-1.5",
                       testResults.rulePrediction && testResults.rulePrediction !== testResults.classification ? "text-warning-700" : "text-brand-700"
                     )}>
                       So sánh Mô hình &harr; Tập luật
                     </span>
-                    <p className="text-neutral-700 leading-relaxed text-base">{testResults.biomedicalModelVsRule}</p>
+                    <p className="text-neutral-800 leading-relaxed text-base">{testResults.biomedicalModelVsRule}</p>
                   </Panel>
                 )}
                 {testResults.biomedicalDisclaimer && (
-                  <div className="flex items-start gap-2 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2.5 mt-1">
-                    <AlertTriangle size={14} className="text-warning-500 shrink-0 mt-0.5" />
+                  <Panel surface="warning" padding="xs" className="mt-1 flex gap-2.5">
+                    <AlertTriangle size={14} className="text-warning-800 shrink-0 mt-0.5" />
                     <p className="text-warning-800 text-xs leading-relaxed">{testResults.biomedicalDisclaimer}</p>
-                  </div>
+                  </Panel>
                 )}
               </div>
-            </Panel>
+            </div>
+            </div>
           </div>
           )
         ) : (
-          <div className="h-full bg-neutral-50 border border-neutral-200 border-dashed rounded-2xl flex flex-col items-center justify-center text-neutral-600 p-8 text-center min-h-[300px]">
-             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 border border-neutral-200 shadow-xs">
-               <Activity size={24} className="text-neutral-400" />
-             </div>
-             <p className="text-sm max-w-sm font-medium text-neutral-600">
-               Chọn một mẫu bệnh phẩm và nhấn "Dự Đoán Kết Quả" ở Bước 5 để bắt đầu.
-             </p>
-          </div>
+          <p className="text-sm text-neutral-600">
+            Chọn một mẫu bệnh phẩm và nhấn "Dự Đoán Kết Quả" ở Bước 5 để bắt đầu.
+          </p>
         )}
       </div>
       )}

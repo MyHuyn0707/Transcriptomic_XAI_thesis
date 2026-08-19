@@ -1,5 +1,4 @@
 import React from 'react';
-import Panel from './ui/Panel';
 
 interface VoteBarRow {
   key: string;
@@ -19,7 +18,7 @@ interface VoteBarProps {
  * and match-tier breakdowns in the test-results report. */
 export default function VoteBar({ title, rows, className }: VoteBarProps) {
   return (
-    <Panel padding="lg" className={className}>
+    <div className={className}>
       <h4 className="font-semibold tracking-wide text-xs uppercase text-brand-700 mb-4">{title}</h4>
       <div className="space-y-3">
         {rows.map(row => (
@@ -34,6 +33,6 @@ export default function VoteBar({ title, rows, className }: VoteBarProps) {
           </div>
         ))}
       </div>
-    </Panel>
+    </div>
   );
 }
