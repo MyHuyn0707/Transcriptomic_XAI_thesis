@@ -187,7 +187,7 @@ export default function DatasetOverview({
                   );
                 })()}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid md:grid-cols-2 gap-3">
                   {origin.geo_accession && <StatTile mono label="GEO" value={origin.geo_accession} />}
                   {content.organism && <StatTile mono label="Organism" value={content.organism} />}
                   {origin.samples_kept != null && (
@@ -325,7 +325,7 @@ export default function DatasetOverview({
                     "Phân phối các lớp" chart exactly (both index PALETTE by position in
                     raw_class_counts), so a class keeps the same color across both steps. */}
                 {Object.keys(classesContent).length > 0 && (
-                  <CollapsibleCard title="Đặc tính sinh học các phân lớp">
+                  <CollapsibleCard title={`Đặc tính sinh học các phân lớp (${Object.keys(classesContent).length})`}>
                     {content.dataset_note_vi && (
                       <Panel surface="warning" padding="md" className="mb-5 flex gap-2.5">
                         <AlertTriangle size={16} className="text-warning-800 shrink-0 mt-0.5" />
