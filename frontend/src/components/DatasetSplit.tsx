@@ -4,7 +4,7 @@ import { GitMerge, AlertTriangle } from 'lucide-react';
 import { ChevronDown, ChevronUp } from '@tailgrids/icons';
 import { api, ContentInfo, SplitStats } from '../lib/api';
 import { PALETTE, DROPPED_COLOR } from '../lib/palette';
-import Panel from './ui/Panel';
+import StatTile from './ui/StatTile';
 
 /** Right-column display for Bước 2 "Xử lý & Chia Dữ liệu" — moved out of
  * DatasetOverview so that component keeps only the dataset-identity content
@@ -83,41 +83,20 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
         {!isCollapsed && (
           <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-300 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Panel padding="lg" className="space-y-3">
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Tổng số mẫu ban đầu</span>
-                  <span className="text-neutral-800 font-bold font-mono">
-                    {Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)}
-                  </span>
+              <div className="grid grid-cols-2 gap-3 content-start">
+                <StatTile mono label="Tổng số mẫu ban đầu" value={Object.values(stats.raw_class_counts).reduce((a, b) => a + b, 0)} />
+                <StatTile mono label="Số mẫu sau khi loại lớp hiếm" value={stats.n_samples_total} />
+                <StatTile mono label="Tổng số lớp ban đầu" value={allLabels.length} />
+                <StatTile mono label="Số lớp sau khi loại lớp hiếm" value={stats.class_labels.length} />
+                <StatTile mono label="Ngưỡng loại lớp hiếm" value={`< ${stats.min_samples_per_class} mẫu`} />
+              </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile mono label="Huấn luyện / Kiểm thử" value={`${stats.n_train} / ${stats.n_test}`} />
+                  <StatTile mono label="Tỷ lệ test_size" value={stats.test_size} />
                 </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Số mẫu sau khi loại lớp hiếm</span>
-                  <span className="text-neutral-800 font-bold font-mono">{stats.n_samples_total}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Tổng số lớp ban đầu</span>
-                  <span className="text-neutral-800 font-bold font-mono">{allLabels.length}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Số lớp sau khi loại lớp hiếm</span>
-                  <span className="text-neutral-800 font-bold font-mono">{stats.class_labels.length}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Ngưỡng loại lớp hiếm</span>
-                  <span className="text-neutral-800 font-bold font-mono">{"< "}{stats.min_samples_per_class} mẫu</span>
-                </div>
-              </Panel>
-              <Panel padding="lg" className="space-y-3">
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Huấn luyện / Kiểm thử</span>
-                  <span className="text-neutral-800 font-bold font-mono">{stats.n_train} / {stats.n_test}</span>
-                </div>
-                <div className="flex justify-between gap-3 py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium">Tỷ lệ test_size</span>
-                  <span className="text-neutral-800 font-bold font-mono">{stats.test_size}</span>
-                </div>
-                <div className="flex flex-col py-2 border-b border-neutral-200/60">
-                  <span className="text-neutral-600 font-medium mb-1.5">Số lớp ({allLabels.length})</span>
+                <div>
+                  <span className="text-neutral-600 font-medium text-sm mb-1.5 block">Số lớp ({allLabels.length})</span>
                   <div className="flex flex-wrap gap-1.5">
                     {allLabels.map((label, idx) => {
                       const dropped = droppedSet.has(label);
@@ -141,7 +120,7 @@ export default function DatasetSplit({ datasetId, stats, collapseSignal }: { dat
                     })}
                   </div>
                 </div>
-              </Panel>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
