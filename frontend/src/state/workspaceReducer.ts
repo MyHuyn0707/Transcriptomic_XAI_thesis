@@ -11,18 +11,21 @@ const SPLIT_RESET = {
   splitStats: null,
   splitParams: null,
   splitLog: '',
+  splitRunId: null,
 };
 
 const FS_RESET = {
   extractionStats: null,
   fsRunId: null,
   fsLog: '',
+  fsStale: false,
 };
 
 const MODEL_RESET = {
   modelStats: null,
   modelRunId: null,
   modelLog: '',
+  modelStale: false,
 };
 
 const TEST_RESET = {
@@ -30,6 +33,7 @@ const TEST_RESET = {
   testSampleId: '',
   testResults: null,
   testUploadFile: null,
+  testStale: false,
 };
 
 function downstreamOf(level: 'dataset' | 'split' | 'fs' | 'model') {
@@ -73,16 +77,30 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, splitRuns: action.runs };
 
     case 'split_started':
-      return { ...state, ...downstreamOf('split'), isSplitLoading: true, splitLog: action.log };
+      // Retraining with new params invalidates any cached fs/model/test
+      // result below — lock their run history behind a "làm lại" warning
+      // until each is itself redone. Loading the cached default split isn't
+      // a change (it's what those caches were built against), so it doesn't.
+      return {
+        ...state,
+        ...downstreamOf('split'),
+        isSplitLoading: true,
+        splitLog: action.log,
+        ...(action.source === 'retrain' ? { fsStale: true, modelStale: true, testStale: true } : {}),
+      };
     case 'split_log_appended':
       return { ...state, splitLog: `${state.splitLog}\n${action.line}` };
     case 'split_computed':
+      // A fresh recompute (retrain) or the generic cached default isn't tied
+      // to one specific entry in the history list below, so nothing there
+      // should show as selected — same as fs/model's "load" runId: null.
       return {
         ...state,
         isSplitLoading: false,
         splitStats: action.stats,
         splitParams: action.params,
         splitInputs: action.inputs,
+        splitRunId: null,
       };
     case 'split_failed':
       return { ...state, isSplitLoading: false, splitLog: `${state.splitLog}\n${action.line}` };
@@ -96,6 +114,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         splitParams: action.params,
         splitInputs: action.params,
         splitLog: action.log,
+        splitRunId: action.runId,
       };
 
     case 'fs_method_changed':
@@ -113,7 +132,13 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, fsRuns: action.runs };
 
     case 'fs_started':
-      return { ...state, ...downstreamOf('fs'), isFsLoading: true, fsLog: action.log };
+      return {
+        ...state,
+        ...downstreamOf('fs'),
+        isFsLoading: true,
+        fsLog: action.log,
+        ...(action.source === 'retrain' ? { modelStale: true, testStale: true } : {}),
+      };
     case 'fs_log_set':
       return { ...state, fsLog: action.log };
     case 'fs_log_appended':
@@ -124,6 +149,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         isFsLoading: false,
         extractionStats: action.stats,
         fsRunId: action.runId,
+        fsStale: false,
       };
     case 'fs_failed':
       return { ...state, isFsLoading: false, fsLog: `${state.fsLog}\n${action.line}` };
@@ -138,7 +164,14 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
       return { ...state, modelRuns: action.runs };
 
     case 'model_started':
-      return { ...state, ...downstreamOf('model'), isModelLoading: true, modelStats: null, modelLog: action.log };
+      return {
+        ...state,
+        ...downstreamOf('model'),
+        isModelLoading: true,
+        modelStats: null,
+        modelLog: action.log,
+        ...(action.source === 'retrain' ? { testStale: true } : {}),
+      };
     case 'model_log_set':
       return { ...state, modelLog: action.log };
     case 'model_log_appended':
@@ -149,6 +182,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
         isModelLoading: false,
         modelStats: action.stats,
         modelRunId: action.runId,
+        modelStale: false,
       };
     case 'model_failed':
       return { ...state, isModelLoading: false, modelLog: `${state.modelLog}\n${action.line}` };
@@ -176,7 +210,7 @@ export function workspaceReducer(state: WorkspaceState, action: WorkspaceAction)
     case 'test_started':
       return { ...state, isTesting: true, testResults: null };
     case 'test_computed':
-      return { ...state, isTesting: false, testResults: action.result };
+      return { ...state, isTesting: false, testResults: action.result, testStale: false };
     case 'test_failed':
       return { ...state, isTesting: false, testResults: action.result };
     case 'test_results_toggled':

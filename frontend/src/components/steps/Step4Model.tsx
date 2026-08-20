@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { GitMerge } from 'lucide-react';
+import { AlertTriangle, GitMerge } from 'lucide-react';
 import { ChevronDown, ChevronUp, FileText, Table2, Reload, Play, Gear1 } from '@tailgrids/icons';
 import { api, ModelStatsResponse, pollJob, RunRecord } from '../../lib/api';
 import { classificationReport } from '../../lib/metrics';
@@ -39,7 +39,7 @@ function buildModelStatsUI(stats: ModelStatsResponse): ModelStatsUI {
 export default function Step4Model({ state, dispatch }: Props) {
   const {
     datasetId, splitParams, fsRunId, extractionStats,
-    modelType, modelConfig, modelLog, modelRuns, modelRunId,
+    modelType, modelConfig, modelLog, modelRuns, modelRunId, modelStale,
     isSplitLoading, isFsLoading, isModelLoading, isTesting,
   } = state;
   const fsMethodKey = fsMethodKeyOf(state);
@@ -48,7 +48,7 @@ export default function Step4Model({ state, dispatch }: Props) {
   // feature set that only exists under outputs_live/<fsRunId> — the cached
   // "Tai mo hinh cu" model was trained on the cached (outputs_holdout) fs
   // run's features, so it doesn't line up. Force retraining in that case.
-  const modelLoadDisabled = modelSectionLocked || !extractionStats || !!fsRunId;
+  const modelLoadDisabled = modelSectionLocked || !extractionStats || !!fsRunId || modelStale;
 
   useEffect(() => {
     let ignore = false;
@@ -67,7 +67,7 @@ export default function Step4Model({ state, dispatch }: Props) {
 
   const handleModelAction = async (action: 'retrain' | 'load') => {
     if (!datasetId) return;
-    dispatch({ type: 'model_started', log: action === 'retrain' ? '[HỆ THỐNG] Bắt đầu huấn luyện mô hình (chạy thật)...' : '' });
+    dispatch({ type: 'model_started', log: action === 'retrain' ? '[HỆ THỐNG] Bắt đầu huấn luyện mô hình (chạy thật)...' : '', source: action });
     try {
       let stats: ModelStatsResponse;
       let runId: string | null = null;
@@ -91,7 +91,7 @@ export default function Step4Model({ state, dispatch }: Props) {
 
   const loadPastModelRun = async (run: RunRecord) => {
     if (!datasetId || !run.model || !run.fs_method) return;
-    dispatch({ type: 'model_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...` });
+    dispatch({ type: 'model_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...`, source: 'load' });
     try {
       const stats = await api.getModelStats(datasetId, run.fs_method, run.model, run.run_id);
       dispatch({ type: 'model_computed', stats: buildModelStatsUI(stats), runId: run.run_id });
@@ -103,6 +103,15 @@ export default function Step4Model({ state, dispatch }: Props) {
 
   return (
     <fieldset disabled={modelSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
+      {modelStale && (
+        <Panel surface="warning" padding="xs" className="mb-4 flex gap-2.5">
+          <AlertTriangle size={14} className="text-warning-800 shrink-0 mt-0.5" />
+          <p className="text-xs text-warning-800 leading-relaxed">
+            Dữ liệu chia tách hoặc trích xuất đặc trưng đã thay đổi — mô hình cũ (kể cả lịch sử bên dưới) không còn khớp, cần "Huấn luyện lại".
+          </p>
+        </Panel>
+      )}
+
       <div className="flex gap-4 mb-5">
         <label className="flex items-center gap-2 cursor-pointer group">
           <RadioInput name="modelType" checked={modelType === 'rf'} onChange={() => dispatch({ type: 'model_type_changed', modelType: 'rf' })} />
@@ -224,7 +233,11 @@ export default function Step4Model({ state, dispatch }: Props) {
           variant="primary" appearance="outline"
           onClick={() => handleModelAction('load')}
           disabled={modelLoadDisabled}
-          title={fsRunId ? 'Không khả dụng khi đặc trưng hiện tại đến từ một lần chạy live' : undefined}
+          title={
+            fsRunId ? 'Không khả dụng khi đặc trưng hiện tại đến từ một lần chạy live'
+              : modelStale ? 'Dữ liệu chia tách hoặc trích xuất đặc trưng đã thay đổi — chạy "Huấn luyện lại" trước'
+              : undefined
+          }
           className="w-full"
         >
           <FileText size={16} className="text-neutral-600" />
@@ -237,8 +250,14 @@ export default function Step4Model({ state, dispatch }: Props) {
       <RunHistoryList
         title="Lịch sử huấn luyện"
         runs={modelRuns}
-        disabled={isModelLoading}
+        disabled={isModelLoading || modelStale}
         isSelected={run => modelRunId === run.run_id}
+        // Once a specific fs history entry is pinned (fsRunId set), only
+        // models trained against THAT fs run are a valid pick — others may
+        // have been trained on a different feature set entirely.
+        isAvailable={run => !fsRunId || run.summary?.fs_run_id === fsRunId}
+        unavailableTitle="Mô hình này được huấn luyện từ một lần trích xuất đặc trưng khác với lịch sử đang chọn ở Bước 3"
+        unavailableLabel="khác lịch sử trích xuất"
         onSelect={loadPastModelRun}
         renderLabel={run => `${run.fs_method}/${run.model} · ${run.run_id}`}
         renderStatus={run => `acc=${((run.summary?.accuracy as number ?? 0) * 100).toFixed(1)}%`}

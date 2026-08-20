@@ -40,7 +40,7 @@ function Brain(props: React.SVGProps<SVGSVGElement> & { size?: number }) {
 /** Bước 5 "Kiểm Thử (Thực Nghiệm)" — predict a held-out sample (or an
  * uploaded one) against Bước 4's model and matched rules. */
 export default function Step5Testing({ state, dispatch }: Props) {
-  const { datasetId, modelStats, modelType, modelRunId, splitParams, testMode, testSamples, testSampleId, testUploadFile, isTesting } = state;
+  const { datasetId, modelStats, modelType, modelRunId, splitParams, testMode, testSamples, testSampleId, testUploadFile, isTesting, testStale } = state;
   const fsMethodKey = fsMethodKeyOf(state);
 
   // Load the real held-out test samples once a model is trained/loaded.
@@ -114,6 +114,15 @@ export default function Step5Testing({ state, dispatch }: Props) {
   return (
     <fieldset disabled={isTesting} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
       <div className="flex flex-col gap-4">
+        {testStale && (
+          <Panel surface="warning" padding="xs" className="flex gap-2.5">
+            <AlertTriangle size={14} className="text-warning-800 shrink-0 mt-0.5" />
+            <p className="text-xs text-warning-800 leading-relaxed">
+              Dữ liệu ở bước trước đã thay đổi — kết quả thực nghiệm cũ (nếu có) không còn khớp, cần dự đoán lại.
+            </p>
+          </Panel>
+        )}
+
         <TabRoot
           value={testMode}
           onValueChange={(mode) => dispatch({ type: 'test_mode_changed', mode: mode as 'sample' | 'upload' })}

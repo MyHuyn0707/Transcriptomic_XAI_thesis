@@ -186,6 +186,7 @@ export interface WorkspaceState {
   isSplitLoading: boolean;
   splitLog: string;
   splitRuns: RunRecord[];
+  splitRunId: string | null;
 
   fsMethod: 'boruta' | 'mrmr';
   fsLog: string;
@@ -193,6 +194,12 @@ export interface WorkspaceState {
   extractionStats: FeatureExtractionStats | null;
   fsRunId: string | null;
   fsRuns: RunRecord[];
+  // True from the moment an upstream step (split) is RETRAINED with new
+  // params until this step is itself redone — while true, Bước 3's "Tải kết
+  // quả có sẵn" and its run history are locked (a cached/past fs run may not
+  // match the new split) and a warning banner shows at the top of its
+  // sidebar section.
+  fsStale: boolean;
   borutaConfig: BorutaConfig;
   mrmrConfig: MrmrConfig;
   mrmrKMode: '50' | '75' | 'custom';
@@ -203,6 +210,9 @@ export interface WorkspaceState {
   modelRunId: string | null;
   modelLog: string;
   modelRuns: RunRecord[];
+  // Same as fsStale, one level down — set when split OR feature-selection is
+  // retrained, cleared once the model is itself retrained.
+  modelStale: boolean;
   modelConfig: ModelConfig;
   isModelOverviewCollapsed: boolean;
   isModelConfigCollapsed: boolean;
@@ -219,6 +229,11 @@ export interface WorkspaceState {
   expandedRule: number | null;
   isMatchedRulesCollapsed: boolean;
   isPartialMatchesCollapsed: boolean;
+  // Same as fsStale/modelStale — set when split, fs, or model is retrained,
+  // cleared once a new prediction is made. Bước 5 has no run history to lock,
+  // just the warning banner (an existing prediction may not reflect the
+  // latest upstream retrain).
+  testStale: boolean;
 }
 
 // K is part of the artifact identifier — this is why cached K=50 and K=75
@@ -250,6 +265,7 @@ export const initialWorkspaceState: WorkspaceState = {
   isSplitLoading: false,
   splitLog: '',
   splitRuns: [],
+  splitRunId: null,
 
   fsMethod: 'boruta',
   fsLog: '',
@@ -257,6 +273,7 @@ export const initialWorkspaceState: WorkspaceState = {
   extractionStats: null,
   fsRunId: null,
   fsRuns: [],
+  fsStale: false,
   borutaConfig: DEFAULT_BORUTA_CONFIG,
   mrmrConfig: DEFAULT_MRMR_CONFIG,
   mrmrKMode: '50',
@@ -267,6 +284,7 @@ export const initialWorkspaceState: WorkspaceState = {
   modelRunId: null,
   modelLog: '',
   modelRuns: [],
+  modelStale: false,
   modelConfig: DEFAULT_MODEL_CONFIG,
   isModelOverviewCollapsed: false,
   isModelConfigCollapsed: false,
@@ -283,6 +301,7 @@ export const initialWorkspaceState: WorkspaceState = {
   expandedRule: null,
   isMatchedRulesCollapsed: false,
   isPartialMatchesCollapsed: false,
+  testStale: false,
 };
 
 export type WorkspaceAction =
@@ -294,17 +313,17 @@ export type WorkspaceAction =
   | { type: 'dataset_selected'; datasetId: string }
   | { type: 'split_inputs_changed'; inputs: SplitParams }
   | { type: 'split_runs_loaded'; runs: RunRecord[] }
-  | { type: 'split_started'; log: string }
+  | { type: 'split_started'; log: string; source: 'retrain' | 'load' }
   | { type: 'split_log_appended'; line: string }
   | { type: 'split_computed'; stats: SplitStats; params: SplitParams | null; inputs: SplitParams }
   | { type: 'split_failed'; line: string }
-  | { type: 'split_run_loaded'; stats: SplitStats; params: SplitParams; log: string }
+  | { type: 'split_run_loaded'; stats: SplitStats; params: SplitParams; log: string; runId: string }
   | { type: 'fs_method_changed'; method: 'boruta' | 'mrmr' }
   | { type: 'boruta_config_changed'; config: BorutaConfig }
   | { type: 'mrmr_config_changed'; config: MrmrConfig }
   | { type: 'mrmr_k_mode_changed'; mode: '50' | '75' | 'custom' }
   | { type: 'fs_runs_loaded'; runs: RunRecord[] }
-  | { type: 'fs_started'; log: string }
+  | { type: 'fs_started'; log: string; source: 'retrain' | 'load' }
   | { type: 'fs_log_set'; log: string }
   | { type: 'fs_log_appended'; line: string }
   | { type: 'fs_computed'; stats: FeatureExtractionStats; runId: string | null }
@@ -312,7 +331,7 @@ export type WorkspaceAction =
   | { type: 'model_type_changed'; modelType: 'dt' | 'rf' }
   | { type: 'model_config_changed'; config: ModelConfig }
   | { type: 'model_runs_loaded'; runs: RunRecord[] }
-  | { type: 'model_started'; log: string }
+  | { type: 'model_started'; log: string; source: 'retrain' | 'load' }
   | { type: 'model_log_set'; log: string }
   | { type: 'model_log_appended'; line: string }
   | { type: 'model_computed'; stats: ModelStatsUI; runId: string | null }

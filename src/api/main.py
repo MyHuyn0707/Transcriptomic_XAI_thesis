@@ -250,8 +250,11 @@ def get_feature_selection(dataset_id: str, fs_method: str, run_id: Optional[str]
 def train_feature_selection(dataset_id: str, fs_method: str, params: Dict[str, Any], background_tasks: BackgroundTasks):
     dataset_id, fs_method = _seg(dataset_id, "dataset_id"), _seg(fs_method, "fs_method")
     split_params = params.pop("split_params", None)
+    split_run_id = params.pop("split_run_id", None)
     job_id = jobs.create_job()
-    background_tasks.add_task(jobs.run_feature_selection_job, job_id, dataset_id, fs_method, params, split_params)
+    background_tasks.add_task(
+        jobs.run_feature_selection_job, job_id, dataset_id, fs_method, params, split_params, split_run_id,
+    )
     return {"job_id": job_id, "status": "running"}
 
 

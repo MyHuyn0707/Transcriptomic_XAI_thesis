@@ -306,10 +306,11 @@ export const api = {
     fsMethod: string,
     params: Record<string, unknown>,
     splitParams?: Record<string, unknown> | null,
+    splitRunId?: string | null,
   ) =>
     req<{ job_id: string }>(`/api/datasets/${enc(datasetId)}/feature-selection/${enc(fsMethod)}/train`, {
       method: 'POST',
-      body: JSON.stringify({ ...params, split_params: splitParams || null }),
+      body: JSON.stringify({ ...params, split_params: splitParams || null, split_run_id: splitRunId || null }),
     }),
 
   getModelStats: (datasetId: string, fsMethod: string, model: string, runId?: string | null) =>

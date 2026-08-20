@@ -22,8 +22,8 @@ interface Props {
  * since they're mutually exclusive feature-selection methods. */
 export default function Step3FeatureExtraction({ state, dispatch }: Props) {
   const {
-    datasets, datasetId, splitParams, splitStats,
-    fsMethod, borutaConfig, mrmrConfig, mrmrKMode, fsLog, fsRuns, fsRunId, extractionStats,
+    datasets, datasetId, splitParams, splitRunId, splitStats,
+    fsMethod, borutaConfig, mrmrConfig, mrmrKMode, fsLog, fsRuns, fsRunId, fsStale, extractionStats,
     isSplitLoading, isFsLoading, isModelLoading, isTesting,
   } = state;
   const isMrmr = fsMethod === 'mrmr';
@@ -50,15 +50,15 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
     if (!datasetId) return;
     try {
       if (action === 'load') {
-        dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải kết quả log trước đó cho thuật toán ${fsMethodKey.toUpperCase()}...` });
+        dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải kết quả log trước đó cho thuật toán ${fsMethodKey.toUpperCase()}...`, source: 'load' });
         const stats = await api.getFeatureSelection(datasetId, fsMethodKey);
         dispatch({ type: 'fs_computed', stats, runId: null });
         dispatch({ type: 'fs_log_appended', line: '[CACHE] Đã nạp thành công.' });
       } else {
         // Keep the requested K and the artifact key (mrmr_k{K}) aligned.
         const params = isMrmr ? mrmrConfig : borutaConfig;
-        dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Bắt đầu chạy thuật toán ${fsMethodKey.toUpperCase()} (chạy thật, có thể mất vài phút)...` });
-        const { job_id } = await api.trainFeatureSelection(datasetId, fsMethodKey, params, splitParams);
+        dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Bắt đầu chạy thuật toán ${fsMethodKey.toUpperCase()} (chạy thật, có thể mất vài phút)...`, source: 'retrain' });
+        const { job_id } = await api.trainFeatureSelection(datasetId, fsMethodKey, params, splitParams, splitRunId);
         const job = await pollJob(job_id, j => dispatch({ type: 'fs_log_set', log: j.log.join('\n') }));
         if (job.status === 'error') {
           throw new Error(job.error || 'Trich xuat dac trung that bai (xem log server).');
@@ -74,7 +74,7 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
 
   const loadPastFsRun = async (run: RunRecord) => {
     if (!datasetId || !run.fs_method) return;
-    dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...` });
+    dispatch({ type: 'fs_started', log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...`, source: 'load' });
     try {
       const stats = await api.getFeatureSelection(datasetId, run.fs_method, run.run_id);
       dispatch({ type: 'fs_computed', stats, runId: run.run_id });
@@ -86,6 +86,15 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
 
   return (
     <fieldset disabled={fsSectionLocked} className="border-0 p-0 m-0 min-w-0 disabled:opacity-60">
+      {fsStale && (
+        <Panel surface="warning" padding="xs" className="mb-4 flex gap-2.5">
+          <AlertTriangle size={14} className="text-warning-800 shrink-0 mt-0.5" />
+          <p className="text-xs text-warning-800 leading-relaxed">
+            Dữ liệu chia tách đã thay đổi — kết quả trích xuất cũ (kể cả lịch sử bên dưới) không còn khớp, cần "Trích xuất lại".
+          </p>
+        </Panel>
+      )}
+
       <div className="flex gap-4 mb-5">
         <label className="flex items-center gap-2 cursor-pointer group">
           <RadioInput name="fsMethod" checked={fsMethod === 'boruta'} onChange={() => dispatch({ type: 'fs_method_changed', method: 'boruta' })} />
@@ -258,7 +267,12 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
         <Button
           variant="primary" appearance="outline"
           onClick={() => handleFsAction('load')}
-          disabled={isFsLoading || !splitStats || !selectedDataset?.fs_models[fsMethodKey]}
+          disabled={isFsLoading || !splitStats || !selectedDataset?.fs_models[fsMethodKey] || fsStale || !!splitRunId}
+          title={
+            fsStale ? 'Dữ liệu chia tách đã thay đổi — chạy "Trích xuất lại" trước'
+              : splitRunId ? 'Một lịch sử chia dữ liệu cụ thể đang được chọn — chỉ có thể "Trích xuất lại" hoặc chọn lịch sử trích xuất khớp với nó'
+              : undefined
+          }
           className="w-full"
         >
           <FileText size={16} className="text-neutral-600" />
@@ -282,8 +296,14 @@ export default function Step3FeatureExtraction({ state, dispatch }: Props) {
       <RunHistoryList
         title="Lịch sử trích xuất"
         runs={fsRuns}
-        disabled={isFsLoading}
+        disabled={isFsLoading || fsStale}
         isSelected={run => fsRunId === run.run_id}
+        // Once a specific split history entry is pinned (splitRunId set),
+        // only fs runs trained against THAT split are a valid pick — others
+        // may reflect a different train/test partition entirely.
+        isAvailable={run => !splitRunId || run.summary?.split_run_id === splitRunId}
+        unavailableTitle="Kết quả này được trích xuất từ một lần chia dữ liệu khác với lịch sử đang chọn ở Bước 2"
+        unavailableLabel="khác lịch sử chia dữ liệu"
         onSelect={loadPastFsRun}
         renderLabel={run => `${run.fs_method} · ${run.run_id}`}
         renderStatus={run => `${run.summary?.n_selected_features ?? '?'} đặc trưng`}

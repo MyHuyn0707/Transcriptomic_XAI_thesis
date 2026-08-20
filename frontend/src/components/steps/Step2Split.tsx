@@ -20,7 +20,7 @@ interface Props {
  * FS/model/predict call so they all read the SAME split. */
 export default function Step2Split({ state, dispatch }: Props) {
   const {
-    datasets, datasetId, splitInputs, splitLog, splitRuns,
+    datasets, datasetId, splitInputs, splitLog, splitRuns, splitRunId,
     isSplitLoading, isFsLoading, isModelLoading, isTesting,
   } = state;
   const splitSectionLocked = isFsLoading || isModelLoading || isTesting;
@@ -44,7 +44,7 @@ export default function Step2Split({ state, dispatch }: Props) {
     if (!datasetId) return;
     try {
       if (action === 'load') {
-        dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tải số liệu chia dữ liệu (mặc định)...' });
+        dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tải số liệu chia dữ liệu (mặc định)...', source: 'load' });
         let stats: SplitStats;
         try {
           stats = await api.getOverview(datasetId);
@@ -59,7 +59,7 @@ export default function Step2Split({ state, dispatch }: Props) {
         });
         dispatch({ type: 'split_log_appended', line: '[CACHE] Đã nạp thành công.' });
       } else {
-        dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tính lại chia dữ liệu (train/test)...' });
+        dispatch({ type: 'split_started', log: '[HỆ THỐNG] Đang tính lại chia dữ liệu (train/test)...', source: 'retrain' });
         const stats = await api.splitPreview(datasetId, splitInputs);
         dispatch({ type: 'split_computed', stats, params: { ...splitInputs }, inputs: splitInputs });
         dispatch({ type: 'split_log_appended', line: '[OK] Đã tính lại thành công.' });
@@ -85,6 +85,7 @@ export default function Step2Split({ state, dispatch }: Props) {
       stats: run.summary as unknown as SplitStats,
       params,
       log: `[HỆ THỐNG] Đang tải lại kết quả chạy trước (${run.run_id})...\n[OK] Đã nạp lại kết quả chạy trước.`,
+      runId: run.run_id,
     });
   };
 
@@ -136,6 +137,7 @@ export default function Step2Split({ state, dispatch }: Props) {
         title="Lịch sử xử lý và phân chia dữ liệu"
         runs={splitRuns}
         disabled={isSplitLoading}
+        isSelected={run => splitRunId === run.run_id}
         onSelect={loadPastSplitRun}
         renderLabel={run => `min=${String(run.summary?.min_samples_per_class)} test=${String(run.summary?.test_size)} · ${run.run_id}`}
         renderStatus={run => `${run.summary?.n_train ?? '?'}/${run.summary?.n_test ?? '?'}`}

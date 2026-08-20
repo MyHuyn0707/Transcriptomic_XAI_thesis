@@ -166,6 +166,7 @@ def _normalize_fs_params(params: Dict[str, Any]) -> Dict[str, Any]:
 def run_feature_selection_job(
     job_id: str, dataset: str, fs_method: str, params: Dict[str, Any],
     split_params: Optional[Dict[str, Any]] = None,
+    split_run_id: Optional[str] = None,
 ) -> None:
     try:
         _log(job_id, f"[HỆ THỐNG] Bắt đầu chạy thuật toán {fs_method.upper()} (live)...")
@@ -199,7 +200,15 @@ def run_feature_selection_job(
         record_run({
             "run_id": job_id, "kind": "feature_selection", "dataset": dataset,
             "fs_method": fs_method, "status": "done", "created_at": time.time(),
-            "summary": {"n_selected_features": n_sel, "runtime_seconds": round(elapsed, 1)},
+            "summary": {
+                "n_selected_features": n_sel, "runtime_seconds": round(elapsed, 1),
+                # Which specific split history entry (Bước 2's "Lịch sử xử lý
+                # và phân chia dữ liệu") this fs run was trained against — lets
+                # Bước 3's history list grey out entries from a different split
+                # once the frontend has one pinned. None when the split used
+                # was the cached default (no discrete history entry for that).
+                "split_run_id": split_run_id,
+            },
         })
     except Exception as e:  # noqa: BLE001
         JOBS[job_id]["status"] = "error"
@@ -390,6 +399,12 @@ def run_rule_model_job(
                 "accuracy": best_metrics.get("accuracy"),
                 "f1_macro": best_metrics.get(select_metric) or best_metrics.get("f1_macro"),
                 "runtime_seconds": round(elapsed, 1),
+                # Which specific fs history entry (Bước 3's "Lịch sử trích
+                # xuất") this model was trained against — lets Bước 4's
+                # history list grey out entries from a different fs run once
+                # the frontend has one pinned. None when the fs result used
+                # was the cached default (no discrete history entry for that).
+                "fs_run_id": fs_run_id,
             },
         })
     except Exception as e:  # noqa: BLE001
